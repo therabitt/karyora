@@ -130,7 +130,14 @@ export default async function DashboardOverviewPage() {
                     className="p-4 flex items-center justify-between hover:bg-surface-muted/50 transition-colors block"
                   >
                     <div>
-                      <p className="text-sm font-medium text-ink">{inq.client_name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-ink">{inq.client_name}</p>
+                        {inq.admin_notes && (
+                          <span className="px-1.5 py-0.2 rounded text-[9px] bg-accent/10 text-accent font-semibold">
+                            Note
+                          </span>
+                        )}
+                      </div>
                       <p className="text-xs text-text-muted">
                         {inq.offering_title_snapshot} •{" "}
                         {new Date(inq.submitted_at).toLocaleDateString("en-US", {
@@ -138,6 +145,11 @@ export default async function DashboardOverviewPage() {
                           day: "numeric",
                         })}
                       </p>
+                      {inq.admin_notes && (
+                        <p className="text-[11px] text-text-muted italic line-clamp-1 mt-0.5 max-w-xs">
+                          &ldquo;{inq.admin_notes}&rdquo;
+                        </p>
+                      )}
                     </div>
                     <Badge variant={inq.status}>
                       {inq.status.charAt(0).toUpperCase() + inq.status.slice(1)}

@@ -54,14 +54,14 @@ export default async function AdminCommissionsPage({
         description="Review prospective client briefs, manage workflow transitions, and track private notes."
       />
 
-      {/* Status Filter Tabs (COM-006 MUST) */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-4">
+      {/* Status Filter Segmented Navigation (COM-006 MUST) */}
+      <div className="flex flex-wrap items-center gap-1.5 p-1 bg-surface-muted/60 rounded-xl border border-border w-fit">
         <Link
           href="/dashboard/commissions"
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
             !selectedStatus
-              ? "bg-ink text-surface"
-              : "text-text-muted hover:bg-surface-muted"
+              ? "bg-surface text-ink font-semibold shadow-xs border border-border"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           All ({counts.all})
@@ -69,12 +69,12 @@ export default async function AdminCommissionsPage({
 
         <Link
           href="/dashboard/commissions?status=new"
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors inline-flex items-center gap-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all inline-flex items-center gap-1.5 ${
             selectedStatus === "new"
-              ? "bg-ink text-surface"
+              ? "bg-surface text-ink font-semibold shadow-xs border border-border"
               : counts.new > 0
-              ? "text-accent bg-accent-soft/30 hover:bg-accent-soft/50 font-bold"
-              : "text-text-muted hover:bg-surface-muted"
+              ? "text-accent font-bold"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           <span>New</span>
@@ -82,7 +82,7 @@ export default async function AdminCommissionsPage({
             <span
               className={`w-4 h-4 rounded-full text-[10px] inline-flex items-center justify-center font-bold ${
                 selectedStatus === "new"
-                  ? "bg-surface text-ink"
+                  ? "bg-accent text-white"
                   : "bg-accent text-white"
               }`}
             >
@@ -93,10 +93,10 @@ export default async function AdminCommissionsPage({
 
         <Link
           href="/dashboard/commissions?status=reviewing"
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
             selectedStatus === "reviewing"
-              ? "bg-ink text-surface"
-              : "text-text-muted hover:bg-surface-muted"
+              ? "bg-surface text-ink font-semibold shadow-xs border border-border"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           Reviewing ({counts.reviewing})
@@ -104,10 +104,10 @@ export default async function AdminCommissionsPage({
 
         <Link
           href="/dashboard/commissions?status=accepted"
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
             selectedStatus === "accepted"
-              ? "bg-ink text-surface"
-              : "text-text-muted hover:bg-surface-muted"
+              ? "bg-surface text-ink font-semibold shadow-xs border border-border"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           Accepted ({counts.accepted})
@@ -115,10 +115,10 @@ export default async function AdminCommissionsPage({
 
         <Link
           href="/dashboard/commissions?status=declined"
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
             selectedStatus === "declined"
-              ? "bg-ink text-surface"
-              : "text-text-muted hover:bg-surface-muted"
+              ? "bg-surface text-ink font-semibold shadow-xs border border-border"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           Declined ({counts.declined})
@@ -126,10 +126,10 @@ export default async function AdminCommissionsPage({
 
         <Link
           href="/dashboard/commissions?status=completed"
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
             selectedStatus === "completed"
-              ? "bg-ink text-surface"
-              : "text-text-muted hover:bg-surface-muted"
+              ? "bg-surface text-ink font-semibold shadow-xs border border-border"
+              : "text-text-muted hover:text-ink"
           }`}
         >
           Completed ({counts.completed})
@@ -161,15 +161,16 @@ export default async function AdminCommissionsPage({
               )}
             </div>
           ) : (
-            <table className="w-full text-left text-sm min-w-[700px]">
-              <thead className="bg-surface-muted border-b border-border text-xs uppercase tracking-wider text-text-muted">
+            <table className="w-full text-left text-sm min-w-[760px]">
+              <thead className="bg-surface-muted/70 border-b border-border text-[11px] font-semibold uppercase tracking-wider text-text-muted">
                 <tr>
-                  <th className="p-4">Client</th>
-                  <th className="p-4">Offering</th>
-                  <th className="p-4">Budget</th>
-                  <th className="p-4">Submitted</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="py-3.5 px-5">Client</th>
+                  <th className="py-3.5 px-4">Offering</th>
+                  <th className="py-3.5 px-4">Budget</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-4">Private Note</th>
+                  <th className="py-3.5 px-4">Submitted</th>
+                  <th className="py-3.5 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -188,29 +189,53 @@ export default async function AdminCommissionsPage({
                       key={inq.id}
                       className="hover:bg-surface-muted/30 transition-colors"
                     >
-                      <td className="p-4">
-                        <p className="font-medium text-ink">{inq.client_name}</p>
-                        <p className="text-xs text-text-muted">{inq.client_email}</p>
+                      <td className="py-4 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-accent-soft/80 border border-accent/20 flex items-center justify-center text-xs font-serif font-bold text-accent shrink-0 shadow-xs">
+                            {inq.client_name.slice(0, 1).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-ink truncate">{inq.client_name}</p>
+                            <p className="text-xs text-text-muted truncate">{inq.client_email}</p>
+                          </div>
+                        </div>
                       </td>
-                      <td className="p-4">
-                        <p className="text-sm text-ink">
+                      <td className="py-4 px-4">
+                        <p className="text-sm font-medium text-ink leading-tight">
                           {inq.offering_title_snapshot}
                         </p>
-                        <span className="text-[11px] text-text-muted capitalize">
+                        <span className="inline-block mt-1 text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-muted text-text-muted border border-border">
                           Mode: {inq.availability_at_submission}
                         </span>
                       </td>
-                      <td className="p-4 font-mono text-xs text-ink font-medium">
-                        {formatPrice(inq.budget_amount, inq.budget_currency)}
+                      <td className="py-4 px-4 font-mono text-xs text-ink">
+                        <span className="bg-surface-muted/60 px-2.5 py-1 rounded-md border border-border/60 font-medium">
+                          {formatPrice(inq.budget_amount, inq.budget_currency)}
+                        </span>
                       </td>
-                      <td className="p-4 text-xs text-text-muted">{displayDate}</td>
-                      <td className="p-4">
+                      <td className="py-4 px-4">
                         <Badge variant={inq.status}>{inq.status}</Badge>
                       </td>
-                      <td className="p-4 text-right">
+                      <td className="py-4 px-4">
+                        {inq.admin_notes ? (
+                          <div
+                            title={inq.admin_notes}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/8 border border-accent/20 text-accent text-xs font-medium max-w-[200px]"
+                          >
+                            <span className="text-[11px] shrink-0">📝</span>
+                            <span className="italic truncate">&ldquo;{inq.admin_notes}&rdquo;</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-text-muted/40 font-mono">—</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4 text-xs text-text-muted whitespace-nowrap">
+                        {displayDate}
+                      </td>
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Link href={`/dashboard/commissions/${inq.id}`}>
-                          <Button variant="ghost" size="sm">
-                            View & Manage →
+                          <Button variant="outline" size="sm" className="hover:border-ink hover:text-ink">
+                            Manage →
                           </Button>
                         </Link>
                       </td>
