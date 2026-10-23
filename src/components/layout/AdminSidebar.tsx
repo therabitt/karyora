@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { logoutAction } from "@/app/actions/auth";
 
 interface NavItem {
   href: string;
@@ -48,12 +49,15 @@ export function AdminSidebar() {
           <span>View Public Site</span>
           <span aria-hidden="true">↗</span>
         </Link>
-        <Link
-          href="/login"
-          className="block w-full text-center px-3.5 py-2 text-xs font-medium text-surface/80 hover:text-danger bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-        >
-          Sign Out
-        </Link>
+
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="w-full text-center px-3.5 py-2 text-xs font-medium text-surface/80 hover:text-danger bg-white/5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+          >
+            Sign Out
+          </button>
+        </form>
       </div>
     </aside>
   );

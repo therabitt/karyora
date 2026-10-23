@@ -1,0 +1,29 @@
+project_id = "karyora"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
+extra_search_path = ["public", "extensions"]
+max_rows = 100
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = false
+
+[storage]
+enabled = true
+file_size_limit = "5MiB"
+buckets = [
+  { id = "artworks-private", public = false, file_size_limit = "5MiB", allowed_mime_types = ["image/jpeg", "image/png", "image/webp"] },
+  { id = "artworks-public", public = true, file_size_limit = "5MiB", allowed_mime_types = ["image/webp"] },
+  { id = "profiles-public", public = true, file_size_limit = "5MiB", allowed_mime_types = ["image/webp"] }
+]
