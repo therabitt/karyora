@@ -50,7 +50,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="flex flex-col h-full bg-[#181614]">
+    <div className="flex flex-col h-full bg-[#181614] overflow-y-auto">
       {/* Editorial Studio Header */}
       <div className="p-6 border-b border-white/[0.08]">
         <Link href="/dashboard" className="block group" onClick={onNavigate}>
@@ -110,7 +110,7 @@ export function AdminSidebar() {
   return (
     <>
       {/* ─── Desktop Sidebar (lg+) ─── */}
-      <aside className="hidden lg:flex w-64 bg-ink text-surface flex-col shrink-0 min-h-screen">
+      <aside className="hidden lg:flex lg:fixed lg:top-0 lg:left-0 lg:bottom-0 w-64 bg-ink text-surface flex-col shrink-0 z-30">
         <SidebarContent />
       </aside>
 
