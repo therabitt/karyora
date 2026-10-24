@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createServiceClient } from "@/lib/supabase/service";
+import { ensureAdminProfile } from "@/lib/data/profile";
 import { z } from "zod";
 import type { Database } from "@/types/database.types";
 
@@ -68,6 +69,9 @@ export async function createSignedUpload({
 
   const supabase = createServiceClient();
 
+  // Ensure the admin profile exists in public.profiles to satisfy foreign key constraints
+  await ensureAdminProfile(adminUserId);
+
   // 1. Insert pending_uploads row
   const { error: insertError } = await supabase.from("pending_uploads").insert({
     id: uploadId,
@@ -87,7 +91,7 @@ export async function createSignedUpload({
 
   if (insertError) {
     console.error("Failed to insert pending_uploads record:", insertError);
-    throw new Error("Could not initialize upload registration.");
+    throw new Error(`Could not initialize upload registration: ${insertError.message}`);
   }
 
   // 2. Issue exact-path signed upload URL from Storage API (path relative to bucket)
@@ -104,7 +108,7 @@ export async function createSignedUpload({
       .update({ state: "rejected" })
       .eq("id", uploadId);
 
-    throw new Error("Could not generate authorized upload URL.");
+    throw new Error(`Could not generate authorized upload URL: ${storageError?.message || "Storage error"}`);
   }
 
   return {

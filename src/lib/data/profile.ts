@@ -65,3 +65,35 @@ export async function getAdminProfile(adminUserId: string): Promise<AdminProfile
 
   return data;
 }
+
+/**
+ * Ensures an admin profile record exists in public.profiles for the given admin ID.
+ * Prevents foreign key constraint violations on artworks, offerings, and pending_uploads.
+ */
+export async function ensureAdminProfile(adminUserId: string, email?: string): Promise<void> {
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", adminUserId)
+      .maybeSingle();
+
+    if (!data) {
+      await supabase.from("profiles").upsert(
+        {
+          id: adminUserId,
+          display_name: "Karyora Artist",
+          contact_email: email || "artist@karyora.internal",
+          bio: "Independent visual artist and illustrator specializing in imaginative character design, atmospheric environmental painting, and narrative digital art.",
+          commission_availability: "open",
+          availability_message: "Commissions are currently open for personal and commercial projects.",
+          social_links: { instagram: "https://instagram.com" },
+        },
+        { onConflict: "id" }
+      );
+    }
+  } catch (err) {
+    console.warn("Could not ensure admin profile existence:", err);
+  }
+}
