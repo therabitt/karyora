@@ -21,7 +21,7 @@ Before changing code, the agent MUST:
 2. Read `README.md` and inspect the actual repository tree.
 3. Read `package.json`, `package-lock.json`, `tsconfig.json`, `next.config.ts`, and `eslint.config.mjs` before making assumptions about versions, scripts, compiler settings, image configuration, or linting behavior.
 4. Inspect the relevant existing source files before creating or modifying them.
-5. Consult `docs/` for the applicable blueprint, architecture decisions, database design, and implementation notes.
+5. Consult `docs/` for the applicable blueprint, architecture decisions, database design, and implementation notes. Before any public-facing visual/UI change, MUST read `docs/design/visual-direction.md` and follow its design principles and acceptance criteria. Treat that brief as the project's explicit visual preference record, not optional inspiration.
 6. Identify whether the change affects authentication, authorization, database access, Storage, image processing, inquiry integrity, public caching, accessibility, or environment configuration.
 7. Follow the existing architecture and the rules in this document.
 8. Determine which tests, static checks, and manual verification are necessary for the change.
