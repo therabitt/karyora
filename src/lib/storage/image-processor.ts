@@ -2,7 +2,7 @@ import "server-only";
 
 import sharp from "sharp";
 
-export const MAX_SOURCE_BYTES = 5 * 1024 * 1024; // 5 MiB = 5,242,880 bytes
+export const MAX_SOURCE_BYTES = 25 * 1024 * 1024; // 25 MiB = 26,214,400 bytes
 export const MAX_DIMENSION = 4000; // 4,000 pixels
 export const MAX_TOTAL_PIXELS = 16_000_000; // 16 MP
 export const MAX_ARTWORK_DERIVATIVE_DIMENSION = 1600; // 1,600 pixels bounding box
@@ -34,7 +34,7 @@ export async function validateSourceImageMetadata(buffer: Buffer) {
 
   if (buffer.length > MAX_SOURCE_BYTES) {
     throw new ImageValidationError(
-      `File size (${buffer.length} bytes) exceeds the allowed limit of 5 MiB (5,242,880 bytes).`
+      `File size (${buffer.length} bytes) exceeds the allowed limit of 25 MiB (26,214,400 bytes).`
     );
   }
 

@@ -10,7 +10,7 @@ interface ImageUploaderProps {
   disabled?: boolean;
 }
 
-const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MiB = 5,242,880 bytes
+const MAX_SIZE_BYTES = 25 * 1024 * 1024; // 25 MiB = 26,214,400 bytes
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 export function ImageUploader({
@@ -39,7 +39,7 @@ export function ImageUploader({
 
     if (file.size > MAX_SIZE_BYTES) {
       setUploadError(
-        `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MiB). Maximum allowed is 5.0 MiB.`
+        `File is too large (${(file.size / (1024 * 1024)).toFixed(1)} MiB). Maximum allowed is 25.0 MiB.`
       );
       return;
     }
@@ -151,7 +151,7 @@ export function ImageUploader({
                 Click to upload source image
               </p>
               <p className="text-xs text-text-muted">
-                JPEG, PNG, or WebP up to 5 MiB (max 4,000 × 4,000 px)
+                JPEG, PNG, or WebP up to 25 MiB (max 4,000 × 4,000 px)
               </p>
             </div>
             <Button

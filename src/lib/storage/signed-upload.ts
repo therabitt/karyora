@@ -9,7 +9,7 @@ export type PendingUploadRow = Database["public"]["Tables"]["pending_uploads"]["
 export const signedUploadRequestSchema = z.object({
   filename: z.string().trim().min(1).max(255),
   mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-  sizeBytes: z.number().int().positive().max(5 * 1024 * 1024, "File size must not exceed 5 MiB (5,242,880 bytes)"),
+  sizeBytes: z.number().int().positive().max(25 * 1024 * 1024, "File size must not exceed 25 MiB (26,214,400 bytes)"),
   purpose: z.enum(["artwork_source", "profile_avatar"]).default("artwork_source"),
 });
 

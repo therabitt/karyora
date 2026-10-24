@@ -21,9 +21,9 @@ enable_signup = false
 
 [storage]
 enabled = true
-file_size_limit = "5MiB"
+file_size_limit = "25MiB"
 buckets = [
-  { id = "artworks-private", public = false, file_size_limit = "5MiB", allowed_mime_types = ["image/jpeg", "image/png", "image/webp"] },
-  { id = "artworks-public", public = true, file_size_limit = "5MiB", allowed_mime_types = ["image/webp"] },
+  { id = "artworks-private", public = false, file_size_limit = "25MiB", allowed_mime_types = ["image/jpeg", "image/png", "image/webp"] },
+  { id = "artworks-public", public = true, file_size_limit = "10MiB", allowed_mime_types = ["image/webp"] },
   { id = "profiles-public", public = true, file_size_limit = "5MiB", allowed_mime_types = ["image/webp"] }
 ]
