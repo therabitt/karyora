@@ -22,7 +22,7 @@ async function runTests() {
 
   // Transform to WebP derivative with bounding box 1600px
   const derivative = await sharp(testPngBuffer, {
-    limitInputPixels: 16_000_000,
+    limitInputPixels: 64_000_000,
     failOn: "error",
   })
     .rotate()
@@ -40,14 +40,14 @@ async function runTests() {
 
   // Test 2: EXIF Orientation bounds check (orientation 6: 90 deg clockwise rotation swaps width & height)
   const orientation = 6;
-  const rawW = 3000;
-  const rawH = 4500;
+  const rawW = 8000;
+  const rawH = 10500;
   const isSwapped = [5, 6, 7, 8].includes(orientation);
   const effectiveW = isSwapped ? rawH : rawW;
   const effectiveH = isSwapped ? rawW : rawH;
-  assert.strictEqual(effectiveW, 4500);
-  assert.strictEqual(effectiveH, 3000);
-  assert(effectiveW > 4000, "Should correctly detect effective width exceeding 4000px boundary!");
+  assert.strictEqual(effectiveW, 10500);
+  assert.strictEqual(effectiveH, 8000);
+  assert(effectiveW > 10000, "Should correctly detect effective width exceeding 10000px boundary!");
   console.log("✓ Orientation swap bound check verified!");
 
   // Test 3: Animated image / format restriction

@@ -3,8 +3,8 @@ import "server-only";
 import sharp from "sharp";
 
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024; // 25 MiB = 26,214,400 bytes
-export const MAX_DIMENSION = 4000; // 4,000 pixels
-export const MAX_TOTAL_PIXELS = 16_000_000; // 16 MP
+export const MAX_DIMENSION = 10_000; // 10,000 pixels
+export const MAX_TOTAL_PIXELS = 64_000_000; // 64 MP (e.g. 8,000 × 8,000 px)
 export const MAX_ARTWORK_DERIVATIVE_DIMENSION = 1600; // 1,600 pixels bounding box
 export const MAX_AVATAR_DERIVATIVE_DIMENSION = 512; // 512 pixels bounding box
 
@@ -76,14 +76,14 @@ export async function validateSourceImageMetadata(buffer: Buffer) {
 
   if (effectiveWidth > MAX_DIMENSION || effectiveHeight > MAX_DIMENSION) {
     throw new ImageValidationError(
-      `Image dimensions (${effectiveWidth}x${effectiveHeight}) exceed the 4,000 x 4,000 pixel boundary.`
+      `Image dimensions (${effectiveWidth}x${effectiveHeight}) exceed the 10,000 x 10,000 pixel boundary.`
     );
   }
 
   const effectiveArea = effectiveWidth * effectiveHeight;
   if (effectiveArea > MAX_TOTAL_PIXELS) {
     throw new ImageValidationError(
-      `Image area (${effectiveArea} pixels) exceeds the maximum allowed limit of 16,000,000 pixels.`
+      `Image area (${effectiveArea} pixels) exceeds the maximum allowed limit of 64,000,000 pixels.`
     );
   }
 

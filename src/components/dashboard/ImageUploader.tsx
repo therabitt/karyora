@@ -151,7 +151,7 @@ export function ImageUploader({
                 Click to upload source image
               </p>
               <p className="text-xs text-text-muted">
-                JPEG, PNG, or WebP up to 25 MiB (max 4,000 × 4,000 px)
+                JPEG, PNG, or WebP up to 25 MiB (max 10,000 × 10,000 px)
               </p>
             </div>
             <Button
