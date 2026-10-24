@@ -30,10 +30,13 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-paper text-ink">
+    <div className="min-h-screen bg-paper text-ink">
       <AdminSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <main className="flex-1 p-8 overflow-y-auto">{children}</main>
+      {/* Desktop: offset by sidebar width. Mobile: offset by top bar height */}
+      <div className="lg:pl-64 flex flex-col min-h-screen">
+        <main className="flex-1 pt-14 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-y-auto max-w-[1400px]">
+          {children}
+        </main>
       </div>
     </div>
   );
