@@ -62,7 +62,7 @@ const DEFAULT_ARTWORKS: PublicArtwork[] = [
 /**
  * Retrieves featured published artworks for the homepage exhibition.
  */
-export async function getFeaturedPublishedArtworks(): Promise<PublicArtwork[]> {
+export async function getFeaturedPublishedArtworks(limit = 8): Promise<PublicArtwork[]> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -70,7 +70,7 @@ export async function getFeaturedPublishedArtworks(): Promise<PublicArtwork[]> {
       .select("*")
       .eq("is_featured", true)
       .order("published_at", { ascending: false })
-      .limit(3);
+      .limit(limit);
 
     if (error || !data || data.length === 0) {
       // If no explicitly featured artworks, display the latest published works
@@ -78,13 +78,13 @@ export async function getFeaturedPublishedArtworks(): Promise<PublicArtwork[]> {
         .from("public_artworks")
         .select("*")
         .order("published_at", { ascending: false })
-        .limit(3);
+        .limit(limit);
 
       if (latestData && latestData.length > 0) {
         return latestData;
       }
 
-      return DEFAULT_ARTWORKS.filter((a) => a.is_featured);
+      return DEFAULT_ARTWORKS;
     }
 
     return data;
@@ -93,7 +93,7 @@ export async function getFeaturedPublishedArtworks(): Promise<PublicArtwork[]> {
       throw err;
     }
     console.warn("Could not fetch featured artworks, using fallback:", err);
-    return DEFAULT_ARTWORKS.filter((a) => a.is_featured);
+    return DEFAULT_ARTWORKS;
   }
 }
 
