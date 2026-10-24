@@ -2,7 +2,6 @@
 
 import React, { useActionState, useState } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { submitInquiryAction, type InquiryActionResult } from "@/app/actions/inquiry";
@@ -44,8 +43,8 @@ export function CommissionInquiryForm({
   // If rate limit triggered, hide form and show dedicated cooldown notice
   if (state?.isRateLimited) {
     return (
-      <div className="p-8 sm:p-12 text-center space-y-6 bg-surface-muted/50 rounded-2xl border border-accent/20">
-        <div className="w-16 h-16 mx-auto rounded-full bg-accent-soft/40 flex items-center justify-center text-accent text-2xl font-serif">
+      <div className="p-8 sm:p-12 text-center space-y-6 bg-surface border border-accent/30 shadow-xs">
+        <div className="w-16 h-16 mx-auto rounded-full bg-accent-soft text-accent flex items-center justify-center text-2xl font-serif">
           ⏱
         </div>
         <div className="space-y-2 max-w-md mx-auto">
@@ -56,16 +55,22 @@ export function CommissionInquiryForm({
             {state.error ||
               "You have reached the submission limit. Please wait 15 minutes before sending another inquiry."}
           </p>
-          <p className="text-xs text-text-muted/80 mt-2">
-            If you already submitted an inquiry, rest assured it has been received safely by the artist!
+          <p className="text-xs text-text-muted/80 mt-2 font-mono">
+            If you already submitted an inquiry, rest assured it has been received safely by the artist.
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-          <Link href="/gallery">
-            <Button variant="outline">Browse Gallery</Button>
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+          <Link
+            href="/gallery"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors"
+          >
+            Browse Gallery
           </Link>
-          <Link href="/contact">
-            <Button variant="ghost">Contact Information</Button>
+          <Link
+            href="/contact"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm text-ink-soft hover:text-ink transition-colors"
+          >
+            Contact Information
           </Link>
         </div>
       </div>
@@ -77,8 +82,8 @@ export function CommissionInquiryForm({
 
   if (isSuccessActive) {
     return (
-      <div className="p-8 sm:p-12 text-center space-y-6 bg-surface-muted/50 rounded-2xl border border-border">
-        <div className="w-16 h-16 mx-auto rounded-full bg-accent-soft flex items-center justify-center text-accent text-2xl font-serif">
+      <div className="p-8 sm:p-12 text-center space-y-6 bg-surface border border-border shadow-xs">
+        <div className="w-16 h-16 mx-auto rounded-full bg-accent-soft text-accent flex items-center justify-center text-2xl font-serif">
           ✓
         </div>
         <div className="space-y-2 max-w-md mx-auto">
@@ -90,16 +95,20 @@ export function CommissionInquiryForm({
               "Your commission inquiry has been sent to the artist. You will receive an email response regarding scheduling and scope."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-          <Link href="/gallery">
-            <Button variant="outline">Browse Gallery</Button>
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+          <Link
+            href="/gallery"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm bg-accent text-white hover:bg-accent-hover transition-colors"
+          >
+            Browse Gallery
           </Link>
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             onClick={() => setDismissedTimestamp(state?.timestamp ?? Date.now())}
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors cursor-pointer"
           >
             Submit Another Inquiry
-          </Button>
+          </button>
         </div>
       </div>
     );
@@ -219,21 +228,30 @@ export function CommissionInquiryForm({
       </div>
 
       {/* Consideration and Privacy Notice */}
-      <div className="p-4 rounded-xl bg-surface-muted text-xs text-text-muted leading-relaxed space-y-1 border border-border">
-        <p className="font-medium text-ink">Privacy & Consideration Notice</p>
+      <div className="p-4 bg-surface-muted text-xs text-text-muted leading-relaxed space-y-1 border border-border">
+        <p className="font-semibold text-ink uppercase tracking-wider text-[10px]">
+          Privacy & Consideration Notice
+        </p>
         <p>
           Submitting this inquiry is a request for artist consideration. It does not constitute a confirmed booking, agreement, or payment obligation. Your email is kept strictly private.
         </p>
       </div>
 
       <div>
-        <Button variant="primary" size="lg" type="submit" disabled={isPending}>
-          {isPending
-            ? "Sending Inquiry..."
-            : isWaitlist
-            ? "Submit to Waitlist"
-            : "Send Commission Inquiry"}
-        </Button>
+        <button
+          type="submit"
+          disabled={isPending}
+          className="w-full sm:w-auto inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-8 py-3.5 rounded-sm bg-accent text-white hover:bg-accent-hover active:bg-accent-hover/90 transition-all shadow-xs gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span>
+            {isPending
+              ? "Sending Inquiry..."
+              : isWaitlist
+              ? "Submit to Waitlist"
+              : "Send Commission Inquiry"}
+          </span>
+          <span aria-hidden="true">→</span>
+        </button>
       </div>
     </form>
   );

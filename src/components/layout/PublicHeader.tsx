@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 
 const navItems = [
@@ -11,6 +12,7 @@ const navItems = [
 
 export function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   // Lock body scroll when menu open
   useEffect(() => {
@@ -26,39 +28,57 @@ export function PublicHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-paper/95 backdrop-blur-xs">
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-paper/90 backdrop-blur-md transition-colors">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link
-            href="/"
-            className="font-serif text-2xl tracking-tight text-ink hover:text-accent transition-colors"
-          >
-            Karyora
+          {/* Editorial Logo */}
+          <Link href="/" className="group flex items-baseline gap-2.5">
+            <span className="font-serif text-2xl sm:text-3xl tracking-tight text-ink group-hover:text-accent transition-colors">
+              Karyora
+            </span>
+            <span className="hidden sm:inline-block text-[10px] tracking-[0.25em] uppercase text-text-muted font-sans font-medium">
+              · Studio
+            </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav aria-label="Main Navigation" className="hidden sm:flex items-center gap-6 sm:gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm font-medium text-ink-soft hover:text-accent transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
+          {/* Desktop Nav - Centered & Refined */}
+          <nav aria-label="Main Navigation" className="hidden sm:flex items-center gap-8">
+            {navItems.map((item) => {
+              const isActive =
+                item.href === "/gallery"
+                  ? pathname.startsWith("/gallery") || pathname.startsWith("/artworks")
+                  : pathname === item.href;
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`text-xs uppercase tracking-[0.15em] font-medium transition-colors relative py-1 ${
+                    isActive
+                      ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
+                      : "text-ink-soft hover:text-accent"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Desktop CTA */}
+          <div className="hidden sm:flex items-center">
             <Link
               href="/commission"
-              className="inline-flex items-center justify-center text-xs font-semibold px-3.5 py-1.5 rounded-full bg-accent text-white hover:bg-accent-hover transition-colors"
+              className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-4 py-1.5 rounded-sm border border-accent text-accent hover:bg-accent hover:text-white transition-all shadow-xs"
             >
               Inquire
             </Link>
-          </nav>
+          </div>
 
           {/* Mobile: Inquire CTA + Hamburger */}
           <div className="sm:hidden flex items-center gap-3">
             <Link
               href="/commission"
-              className="inline-flex items-center justify-center text-xs font-semibold px-3 py-1.5 rounded-full bg-accent text-white hover:bg-accent-hover transition-colors"
+              className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-3 py-1.5 rounded-sm border border-accent text-accent hover:bg-accent hover:text-white transition-all"
             >
               Inquire
             </Link>
@@ -89,7 +109,7 @@ export function PublicHeader() {
       {/* Mobile Menu Drawer */}
       {mobileOpen && (
         <div
-          className="sm:hidden fixed inset-0 z-30 bg-black/40"
+          className="sm:hidden fixed inset-0 z-30 bg-black/40 backdrop-blur-xs"
           aria-hidden="true"
           onClick={() => setMobileOpen(false)}
         />
@@ -97,22 +117,34 @@ export function PublicHeader() {
 
       <nav
         aria-label="Mobile Navigation"
-        className={`sm:hidden fixed top-16 left-0 right-0 z-30 bg-paper border-b border-border shadow-lg transition-all duration-200 ${
+        className={`sm:hidden fixed top-16 left-0 right-0 z-30 bg-paper border-b border-border shadow-xl transition-all duration-200 ${
           mobileOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
         }`}
       >
         <ul className="flex flex-col divide-y divide-border">
-          {navItems.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className="flex items-center px-6 py-4 text-sm font-medium text-ink-soft hover:text-accent hover:bg-surface-muted transition-colors"
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.label}
-              </Link>
-            </li>
-          ))}
+          {navItems.map((item) => {
+            const isActive =
+              item.href === "/gallery"
+                ? pathname.startsWith("/gallery") || pathname.startsWith("/artworks")
+                : pathname === item.href;
+
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  className={`flex items-center justify-between px-6 py-4 text-xs uppercase tracking-wider font-medium transition-colors ${
+                    isActive
+                      ? "text-accent bg-accent-soft/30 font-semibold"
+                      : "text-ink-soft hover:text-accent hover:bg-surface-muted"
+                  }`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  <span>{item.label}</span>
+                  {isActive && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </nav>
     </>
