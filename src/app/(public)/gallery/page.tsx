@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { getPublishedArtworks } from "@/lib/data/artworks";
-import { getStoragePublicUrl } from "@/lib/storage/urls";
 import { ARTWORK_CATEGORIES } from "@/types/domain";
+import { LivingIndexGallery } from "@/components/gallery/LivingIndexGallery";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Gallery",
-  description: "Browse the curated portfolio of digital paintings, character illustrations, and traditional studies.",
+  title: "The Living Index — Curated Artwork Archive",
+  description:
+    "An interactive typographic catalog of original character art, digital paintings, and visual studies by Karyora.",
 };
 
 interface GalleryPageProps {
@@ -15,229 +16,347 @@ interface GalleryPageProps {
     category?: string;
     sort?: "newest" | "oldest";
     page?: string;
+    item?: string;
   }>;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  "original-character": "Original Character",
+  "fan-art": "Fan Art",
+  portrait: "Portrait",
+  landscape: "Landscape",
+  other: "Other Studies",
+};
+
 export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const params = await searchParams;
-  const currentQuery = params.q || "";
+  const currentQuery = (params.q || "").trim();
   const currentCategory = params.category || "all";
   const currentSort = params.sort === "oldest" ? "oldest" : "newest";
   const currentPage = Math.max(1, Number(params.page) || 1);
+  const initialIndex = params.item ? Math.max(0, Number(params.item) - 1) : 0;
+  const pageSize = 12;
 
   const { artworks, total, totalPages } = await getPublishedArtworks({
     query: currentQuery,
     category: currentCategory,
     sort: currentSort,
     page: currentPage,
-    pageSize: 9,
+    pageSize,
   });
 
+  const isFiltered = currentQuery !== "" || currentCategory !== "all";
+  const startItem = (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, total);
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 w-full space-y-12">
-      {/* Editorial Header */}
-      <div className="border-b border-border pb-8 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold block">
-              Archive & Catalog
-            </span>
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-ink tracking-tight">
-              Artwork Gallery
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12 w-full space-y-8 sm:space-y-10">
+      {/* ─── Editorial Living Index Masthead ─── */}
+      <section className="border-b border-border pb-5 sm:pb-6 space-y-3">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-1 max-w-2xl">
+            <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold">
+              <span>Archive & Catalog</span>
+              <span className="text-border-strong font-normal">/</span>
+              <span className="text-text-muted">Living Index</span>
+            </div>
+            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-ink tracking-tight leading-[1.08]">
+              The Living Index
             </h1>
           </div>
-          <div className="text-xs font-mono text-text-muted tracking-wider uppercase">
-            [ Total: <span className="text-ink font-semibold">{total}</span> {total === 1 ? "Work" : "Works"} ]
+
+          {/* Catalog Counter Badge */}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="px-3.5 py-1 bg-surface border border-border text-[11px] font-mono tracking-wider text-text-muted uppercase rounded-xs shadow-2xs">
+              [ Total: <span className="text-ink font-semibold">{total}</span>{" "}
+              {total === 1 ? "Work" : "Works"} Cataloged ]
+            </div>
           </div>
         </div>
-        <p className="text-base text-ink-soft leading-relaxed max-w-2xl font-normal">
-          Explore finished illustrations, character art, and conceptual works. Each piece represents a deliberate exploration of form, lighting, and narrative depth.
-        </p>
-      </div>
 
-      {/* Filter and Search Bar */}
-      <div className="space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-border pb-4">
-          {/* Category Filter Underline Tabs */}
-          <div className="flex flex-wrap items-center gap-6 text-xs uppercase tracking-[0.15em] font-medium">
+        <p className="text-xs sm:text-sm text-ink-soft leading-relaxed max-w-2xl font-normal pt-0.5">
+          An interactive typographic catalog of original character art, digital paintings, and visual studies.
+          Hover or focus an entry to reveal its exhibition plate.
+        </p>
+      </section>
+
+      {/* ─── Refined Editorial Discovery Bar (Underline Tabs, Understated Search) ─── */}
+      <section className="space-y-3.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border pb-3">
+          {/* Category Filter Underline Strip */}
+          <nav
+            aria-label="Filter works by category"
+            className="flex items-center gap-6 overflow-x-auto py-1 scrollbar-none"
+          >
             <Link
-              href={`/gallery${currentQuery ? `?q=${encodeURIComponent(currentQuery)}` : ""}`}
-              className={`pb-2 transition-all relative ${
+              href={`/gallery${
+                currentQuery ? `?q=${encodeURIComponent(currentQuery)}` : ""
+              }${currentSort !== "newest" ? `${currentQuery ? "&" : "?"}sort=${currentSort}` : ""}`}
+              className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1.5 transition-colors relative ${
                 currentCategory === "all"
-                  ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-accent"
-                  : "text-text-muted hover:text-ink"
+                  ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
+                  : "text-text-muted hover:text-ink font-medium"
               }`}
             >
               All Works
             </Link>
-            {ARTWORK_CATEGORIES.map((cat) => (
+            {ARTWORK_CATEGORIES.map((cat) => {
+              const isActive = currentCategory === cat;
+              const label = CATEGORY_LABELS[cat] || cat.replace("-", " ");
+
+              return (
+                <Link
+                  key={cat}
+                  href={`/gallery?category=${cat}${
+                    currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""
+                  }${currentSort !== "newest" ? `&sort=${currentSort}` : ""}`}
+                  className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1.5 transition-colors relative ${
+                    isActive
+                      ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
+                      : "text-text-muted hover:text-ink font-medium"
+                  }`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Understated Search & Sort Controls Toolbar */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 shrink-0">
+            {/* Search Input Form */}
+            <form
+              method="GET"
+              action="/gallery"
+              className="relative flex items-center min-w-[220px] sm:w-56"
+            >
+              {currentCategory !== "all" && (
+                <input type="hidden" name="category" value={currentCategory} />
+              )}
+              {currentSort !== "newest" && (
+                <input type="hidden" name="sort" value={currentSort} />
+              )}
+              <input
+                type="search"
+                name="q"
+                defaultValue={currentQuery}
+                placeholder="Search archive..."
+                aria-label="Search archive by title or keyword"
+                className="w-full pl-8 pr-7 py-1 text-xs bg-paper border border-border/80 rounded-xs text-ink placeholder:text-text-muted focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent focus:border-accent transition-colors"
+              />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-3 h-3 text-text-muted absolute left-2.5 pointer-events-none"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+
+              {currentQuery && (
+                <Link
+                  href={`/gallery${
+                    currentCategory !== "all" ? `?category=${currentCategory}` : ""
+                  }${
+                    currentSort !== "newest"
+                      ? `${currentCategory !== "all" ? "&" : "?"}sort=${currentSort}`
+                      : ""
+                  }`}
+                  aria-label="Clear search query"
+                  className="absolute right-2 text-text-muted hover:text-ink text-xs font-semibold p-0.5"
+                >
+                  ✕
+                </Link>
+              )}
+            </form>
+
+            {/* Sort Selector */}
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-mono text-text-muted shrink-0 pl-1">
+              <span className="text-[10px] text-text-muted/70">Sort:</span>
               <Link
-                key={cat}
-                href={`/gallery?category=${cat}${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-                className={`pb-2 transition-all relative capitalize ${
-                  currentCategory === cat
-                    ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-accent"
-                    : "text-text-muted hover:text-ink"
+                href={`/gallery?sort=newest${
+                  currentCategory !== "all" ? `&category=${currentCategory}` : ""
+                }${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
+                className={`transition-colors ${
+                  currentSort === "newest"
+                    ? "text-accent font-semibold"
+                    : "hover:text-ink"
                 }`}
               >
-                {cat.replace("-", " ")}
+                Newest
               </Link>
-            ))}
-          </div>
-
-          {/* Sort Selector */}
-          <div className="flex items-center gap-3 text-xs uppercase tracking-wider font-mono text-text-muted shrink-0">
-            <span>Sort:</span>
-            <Link
-              href={`/gallery?sort=newest${currentCategory !== "all" ? `&category=${currentCategory}` : ""}${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-              className={`transition-colors ${currentSort === "newest" ? "text-accent font-semibold underline decoration-accent underline-offset-4" : "hover:text-ink"}`}
-            >
-              Newest
-            </Link>
-            <span className="text-border-strong">/</span>
-            <Link
-              href={`/gallery?sort=oldest${currentCategory !== "all" ? `&category=${currentCategory}` : ""}${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-              className={`transition-colors ${currentSort === "oldest" ? "text-accent font-semibold underline decoration-accent underline-offset-4" : "hover:text-ink"}`}
-            >
-              Oldest
-            </Link>
+              <span className="text-border-strong font-normal">/</span>
+              <Link
+                href={`/gallery?sort=oldest${
+                  currentCategory !== "all" ? `&category=${currentCategory}` : ""
+                }${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
+                className={`transition-colors ${
+                  currentSort === "oldest"
+                    ? "text-accent font-semibold"
+                    : "hover:text-ink"
+                }`}
+              >
+                Oldest
+              </Link>
+            </div>
           </div>
         </div>
 
-        {/* Search Input Form */}
-        <form method="GET" action="/gallery" className="max-w-md flex items-center gap-3">
-          {currentCategory !== "all" && (
-            <input type="hidden" name="category" value={currentCategory} />
-          )}
-          {currentSort !== "newest" && (
-            <input type="hidden" name="sort" value={currentSort} />
-          )}
-          <div className="relative flex-1">
-            <input
-              type="search"
-              name="q"
-              defaultValue={currentQuery}
-              placeholder="Search works by title or keyword..."
-              className="w-full px-4 py-2.5 text-xs bg-surface border border-border rounded-sm text-ink placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-4 py-2.5 text-xs uppercase tracking-wider font-semibold rounded-sm bg-ink text-surface hover:bg-accent transition-colors cursor-pointer"
-          >
-            Search
-          </button>
-          {(currentQuery || currentCategory !== "all") && (
-            <Link
-              href="/gallery"
-              className="px-3 py-2.5 text-xs uppercase tracking-wider text-text-muted hover:text-ink transition-colors"
-            >
-              Clear
-            </Link>
-          )}
-        </form>
-      </div>
+        {/* Active Filter Summary Strip */}
+        {isFiltered && (
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-muted/50 border border-border/70 px-3.5 py-2 rounded-xs text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-ink-soft">
+              <span className="text-text-muted font-mono uppercase tracking-wider text-[10px]">
+                Filter:
+              </span>
+              {currentCategory !== "all" && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-paper border border-border/80 rounded-2xs font-mono text-[10px] text-ink">
+                  Category: {CATEGORY_LABELS[currentCategory] || currentCategory}
+                </span>
+              )}
+              {currentQuery && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-paper border border-border/80 rounded-2xs font-mono text-[10px] text-ink">
+                  Keyword: &ldquo;{currentQuery}&rdquo;
+                </span>
+              )}
+              <span className="text-text-muted font-mono text-[10px]">
+                ({total} {total === 1 ? "result" : "results"})
+              </span>
+            </div>
 
-      {/* Artwork Grid / Empty State */}
-      {artworks.length === 0 ? (
-        <div className="border border-border bg-surface p-12 sm:p-16 text-center space-y-4 max-w-lg mx-auto">
-          <p className="font-serif text-3xl text-ink">No Artworks Found</p>
-          <p className="text-sm text-text-muted leading-relaxed">
-            No published artwork matches your current filter or search criteria.
-          </p>
-          <div className="pt-3">
             <Link
               href="/gallery"
-              className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors"
+              className="text-xs font-mono uppercase tracking-wider text-accent hover:text-accent-hover font-semibold transition-colors flex items-center gap-1"
             >
-              Reset All Filters
+              <span>Reset Archive</span>
+              <span aria-hidden="true">↺</span>
             </Link>
+          </div>
+        )}
+      </section>
+
+      {/* ─── Living Index Artwork Experience ─── */}
+      {artworks.length === 0 ? (
+        /* Empty State */
+        <div className="border border-dashed border-border bg-surface p-12 sm:p-16 text-center space-y-4 max-w-xl mx-auto rounded-xs shadow-2xs">
+          <div className="w-12 h-12 rounded-full border border-border bg-surface-muted flex items-center justify-center mx-auto text-text-muted">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+          </div>
+
+          <div className="space-y-1.5">
+            <h2 className="font-serif text-2xl sm:text-3xl text-ink">
+              {isFiltered ? "No Matching Works Found" : "Exhibition in Preparation"}
+            </h2>
+            <p className="text-xs sm:text-sm text-ink-soft leading-relaxed max-w-md mx-auto">
+              {isFiltered
+                ? "No published pieces match your selected category or search keyword. Try adjusting your query or resetting filters."
+                : "The artist archive is currently being assembled. New original artworks and studies will appear here shortly."}
+            </p>
+          </div>
+
+          <div className="pt-2">
+            {isFiltered ? (
+              <Link
+                href="/gallery"
+                className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-xs border border-ink bg-ink text-surface hover:bg-accent hover:border-accent transition-all shadow-xs gap-1.5"
+              >
+                <span>Reset All Filters</span>
+                <span aria-hidden="true">↺</span>
+              </Link>
+            ) : (
+              <Link
+                href="/commission"
+                className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-xs bg-accent text-white hover:bg-accent-hover transition-all shadow-xs gap-1.5"
+              >
+                <span>Inquire About a Commission</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            )}
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
-          {artworks.map((artwork, idx) => {
-            const cardImageUrl = getStoragePublicUrl(artwork.public_image_path);
-            const globalIndex = (currentPage - 1) * 9 + idx + 1;
-            const formattedIndex = String(globalIndex).padStart(2, "0");
-
-            return (
-              <Link
-                key={artwork.id}
-                href={`/artworks/${artwork.slug}`}
-                className="group block space-y-3"
-              >
-                {/* Artwork Plate */}
-                <div className="relative aspect-4/3 bg-surface-muted border border-border overflow-hidden">
-                  {cardImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={cardImageUrl}
-                      alt={artwork.alt_text}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center p-4 text-center">
-                      <span className="font-serif text-lg text-ink/70 group-hover:text-accent transition-colors">
-                        {artwork.title}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Corner Index Tag */}
-                  <div className="absolute top-3 left-3 px-2 py-0.5 bg-paper/90 backdrop-blur-xs text-[10px] font-mono text-ink tracking-wider border border-border/80">
-                    № {formattedIndex}
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-1 pt-1">
-                  <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.18em] text-text-muted font-medium">
-                    <span className="capitalize">{artwork.category.replace("-", " ")}</span>
-                    <span>·</span>
-                    <span className="capitalize">{artwork.medium.replace("-", " ")}</span>
-                  </div>
-                  <h2 className="font-serif text-xl sm:text-2xl text-ink group-hover:text-accent transition-colors flex items-center justify-between">
-                    <span>{artwork.title}</span>
-                    <span className="text-sm opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all text-accent" aria-hidden="true">
-                      →
-                    </span>
-                  </h2>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+        <LivingIndexGallery
+          artworks={artworks}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          initialIndex={initialIndex}
+        />
       )}
 
-      {/* Pagination Controls */}
+      {/* ─── Pagination Controls ─── */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-10 border-t border-border">
+        <nav
+          aria-label="Gallery pagination navigation"
+          className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-border text-xs font-mono"
+        >
+          {/* Previous Link */}
           <Link
-            href={`/gallery?page=${currentPage - 1}${currentCategory !== "all" ? `&category=${currentCategory}` : ""}${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-            className={`text-xs uppercase tracking-wider font-mono font-semibold transition-colors flex items-center gap-2 ${
-              currentPage <= 1 ? "pointer-events-none opacity-30 text-text-muted" : "text-ink hover:text-accent"
+            href={`/gallery?page=${currentPage - 1}${
+              currentCategory !== "all" ? `&category=${currentCategory}` : ""
+            }${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}${
+              currentSort !== "newest" ? `&sort=${currentSort}` : ""
+            }`}
+            aria-disabled={currentPage <= 1}
+            tabIndex={currentPage <= 1 ? -1 : undefined}
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center gap-2 px-4 py-2 border rounded-xs uppercase tracking-wider font-semibold transition-all ${
+              currentPage <= 1
+                ? "pointer-events-none opacity-30 text-text-muted border-border bg-transparent"
+                : "text-ink border-border bg-surface hover:bg-surface-muted hover:border-border-strong cursor-pointer"
             }`}
           >
             <span aria-hidden="true">←</span>
             <span>Previous</span>
           </Link>
 
-          <span className="text-xs font-mono uppercase tracking-widest text-text-muted">
-            Page {currentPage} of {totalPages}
-          </span>
+          {/* Current Page Status */}
+          <div className="text-center space-y-0.5">
+            <span className="uppercase tracking-widest text-text-muted block text-[11px]">
+              Page {currentPage} of {totalPages}
+            </span>
+            <span className="text-[10px] text-text-muted/70 block">
+              Showing {startItem}–{endItem} of {total} Works
+            </span>
+          </div>
 
+          {/* Next Link */}
           <Link
-            href={`/gallery?page=${currentPage + 1}${currentCategory !== "all" ? `&category=${currentCategory}` : ""}${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-            className={`text-xs uppercase tracking-wider font-mono font-semibold transition-colors flex items-center gap-2 ${
-              currentPage >= totalPages ? "pointer-events-none opacity-30 text-text-muted" : "text-ink hover:text-accent"
+            href={`/gallery?page=${currentPage + 1}${
+              currentCategory !== "all" ? `&category=${currentCategory}` : ""
+            }${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}${
+              currentSort !== "newest" ? `&sort=${currentSort}` : ""
+            }`}
+            aria-disabled={currentPage >= totalPages}
+            tabIndex={currentPage >= totalPages ? -1 : undefined}
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center gap-2 px-4 py-2 border rounded-xs uppercase tracking-wider font-semibold transition-all ${
+              currentPage >= totalPages
+                ? "pointer-events-none opacity-30 text-text-muted border-border bg-transparent"
+                : "text-ink border-border bg-surface hover:bg-surface-muted hover:border-border-strong cursor-pointer"
             }`}
           >
             <span>Next</span>
             <span aria-hidden="true">→</span>
           </Link>
-        </div>
+        </nav>
       )}
     </div>
   );
