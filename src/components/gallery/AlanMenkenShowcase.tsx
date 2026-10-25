@@ -45,6 +45,7 @@ export function AlanMenkenShowcase({
 
   const [viewMode, setViewMode] = useState<"ribbons" | "sliced">("ribbons");
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false);
 
   const current = displayArtworks[activeIndex] || displayArtworks[0];
   const prevArtwork = displayArtworks[(activeIndex - 1 + total) % total];
@@ -144,11 +145,14 @@ export function AlanMenkenShowcase({
         </div>
 
         {/* Center: Custom Handwritten/Script Logo ("beautiful custom font logo") */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+        <div className="absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2">
           <Link
             href="/"
-            aria-label="Karyora Studio Homepage"
-            className="font-brand text-3xl sm:text-4xl lg:text-[44px] tracking-tight text-ink hover:text-accent transition-colors"
+            aria-label="Karyora home"
+            className={
+              "font-brand text-3xl sm:text-4xl lg:text-[44px] tracking-tight transition-colors " +
+              (isNavigationOpen ? "text-paper" : "text-ink hover:text-accent")
+            }
           >
             Karyora
           </Link>
@@ -156,7 +160,10 @@ export function AlanMenkenShowcase({
 
         {/* Shared hamburger navigation */}
         <div className="flex items-center">
-          <PublicNavigationMenu buttonClassName="p-2 sm:p-2.5 text-ink hover:text-accent" />
+          <PublicNavigationMenu
+            buttonClassName="p-2 sm:p-2.5 text-ink hover:text-accent"
+            onOpenChange={setIsNavigationOpen}
+          />
         </div>
       </header>
 

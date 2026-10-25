@@ -7,11 +7,13 @@ import { useEffect, useRef, useState } from "react";
 type PublicNavigationMenuProps = {
   commissionHref?: string;
   buttonClassName?: string;
+  onOpenChange?: (isOpen: boolean) => void;
 };
 
 export function PublicNavigationMenu({
   commissionHref = "/commission",
   buttonClassName = "",
+  onOpenChange,
 }: PublicNavigationMenuProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +40,7 @@ export function PublicNavigationMenu({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        setIsOpen(false);
+        changeMenuState(false);
         triggerRef.current?.focus();
         return;
       }
@@ -69,8 +71,13 @@ export function PublicNavigationMenu({
     };
   }, [isOpen]);
 
+  function changeMenuState(nextOpen: boolean) {
+    setIsOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }
+
   function closeMenu() {
-    setIsOpen(false);
+    changeMenuState(false);
   }
 
   function isCurrent(key: string) {
@@ -89,7 +96,7 @@ export function PublicNavigationMenu({
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => changeMenuState(!isOpen)}
         aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={isOpen}
         aria-controls="karyora-public-navigation"
@@ -136,18 +143,8 @@ export function PublicNavigationMenu({
             isOpen ? "translate-y-0" : "-translate-y-full"
           )}
         >
-          {/* Keep the logo aligned with the homepage masthead; only its contrast changes. */}
+          {/* The original page wordmark stays above this panel. */}
           <div className="relative flex h-16 shrink-0 items-center justify-end px-4 sm:h-20 sm:px-8 lg:px-12">
-            <Link
-              href="/"
-              tabIndex={isOpen ? 0 : -1}
-              onClick={closeMenu}
-              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight text-paper transition-colors hover:text-accent sm:text-4xl lg:text-[44px]"
-              aria-label="Karyora home"
-            >
-              Karyora
-            </Link>
-
             <button
               type="button"
               tabIndex={isOpen ? 0 : -1}
