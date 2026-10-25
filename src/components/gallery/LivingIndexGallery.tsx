@@ -70,7 +70,7 @@ export function LivingIndexGallery({
                 setActiveIndex((prev) => Math.max(0, prev - 1));
               }
             }}
-            className="max-h-[540px] xl:max-h-[570px] overflow-y-auto overscroll-contain pr-1.5 editorial-scroll focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent"
+            className="max-h-[580px] xl:max-h-[640px] overflow-y-auto overscroll-contain pr-1.5 editorial-scroll focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent"
           >
             <ol className="divide-y divide-border">
               {artworks.map((artwork, idx) => {
@@ -193,7 +193,7 @@ export function LivingIndexGallery({
               <Link
                 href={`/artworks/${activeArtwork.slug}`}
                 aria-label={`View full case study: ${activeArtwork.title}`}
-                className="group/stage relative w-full h-[330px] xl:h-[370px] rounded-xs border border-border/70 bg-paper/70 p-3 sm:p-4 overflow-hidden transition-all hover:border-accent/40 hover:shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent flex items-center justify-center block"
+                className="group/stage relative w-full h-[380px] xl:h-[440px] rounded-xs border border-border/80 bg-paper/80 p-4 sm:p-5 overflow-hidden transition-all hover:border-accent/40 hover:shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent flex items-center justify-center block"
               >
                 <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
                   {activeImageUrl && !activeImageFailed ? (

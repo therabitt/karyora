@@ -50,49 +50,41 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const endItem = Math.min(currentPage * pageSize, total);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-12 w-full space-y-4 sm:space-y-5">
-      {/* ─── Editorial Living Index Masthead ─── */}
-      <section className="border-b border-border pb-3 sm:pb-3.5 space-y-2">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
-          <div className="space-y-0.5 max-w-2xl">
-            <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold">
-              <span>Archive & Catalog</span>
-              <span className="text-border-strong font-normal">/</span>
-              <span className="text-text-muted">Living Index</span>
-            </div>
-            <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-[1.08]">
-              The Living Index
-            </h1>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-16 w-full space-y-4 sm:space-y-6">
+      {/* ─── Editorial Living Index Masthead (Compact, Art-Directed) ─── */}
+      <section className="border-b border-border pb-3 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div className="space-y-0.5 max-w-2xl">
+          <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold">
+            <span>Archive & Catalog</span>
+            <span className="text-border-strong font-normal">/</span>
+            <span className="text-text-muted">Living Index</span>
           </div>
-
-          {/* Catalog Counter Badge */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="px-3.5 py-1 bg-surface border border-border text-[11px] font-mono tracking-wider text-text-muted uppercase rounded-xs shadow-2xs">
-              [ Total: <span className="text-ink font-semibold">{total}</span>{" "}
-              {total === 1 ? "Work" : "Works"} Cataloged ]
-            </div>
-          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-[1.08]">
+            The Living Index
+          </h1>
         </div>
 
-        <p className="text-xs sm:text-sm text-ink-soft leading-relaxed max-w-2xl font-normal pt-0.5">
-          An interactive typographic catalog of original character art, digital paintings, and visual studies.
-          Hover or focus an entry to reveal its exhibition plate.
-        </p>
+        {/* Catalog Counter */}
+        <div className="flex items-center gap-2 text-[11px] font-mono tracking-wider text-text-muted uppercase">
+          <span>[ Catalog:</span>
+          <span className="text-ink font-semibold">{total}</span>
+          <span>{total === 1 ? "Work" : "Works"} Cataloged ]</span>
+        </div>
       </section>
 
       {/* ─── Refined Editorial Discovery Bar (Underline Tabs, Understated Search) ─── */}
-      <section className="space-y-2.5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-border pb-2.5">
+      <section className="space-y-2">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-border pb-2">
           {/* Category Filter Underline Strip */}
           <nav
             aria-label="Filter works by category"
-            className="flex items-center gap-6 overflow-x-auto py-1 scrollbar-none"
+            className="flex items-center gap-5 sm:gap-6 overflow-x-auto py-1 scrollbar-none"
           >
             <Link
               href={`/gallery${
                 currentQuery ? `?q=${encodeURIComponent(currentQuery)}` : ""
               }${currentSort !== "newest" ? `${currentQuery ? "&" : "?"}sort=${currentSort}` : ""}`}
-              className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1.5 transition-colors relative ${
+              className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1 transition-colors relative ${
                 currentCategory === "all"
                   ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
                   : "text-text-muted hover:text-ink font-medium"
@@ -110,7 +102,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                   href={`/gallery?category=${cat}${
                     currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""
                   }${currentSort !== "newest" ? `&sort=${currentSort}` : ""}`}
-                  className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1.5 transition-colors relative ${
+                  className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1 transition-colors relative ${
                     isActive
                       ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
                       : "text-text-muted hover:text-ink font-medium"
@@ -128,7 +120,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             <form
               method="GET"
               action="/gallery"
-              className="relative flex items-center min-w-[220px] sm:w-56"
+              className="relative flex items-center min-w-[200px] sm:w-52"
             >
               {currentCategory !== "all" && (
                 <input type="hidden" name="category" value={currentCategory} />
@@ -208,31 +200,27 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
           </div>
         </div>
 
-        {/* Active Filter Summary Strip */}
+        {/* Quiet Inline Filter Summary */}
         {isFiltered && (
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-muted/50 border border-border/70 px-3.5 py-2 rounded-xs text-xs">
-            <div className="flex flex-wrap items-center gap-2 text-ink-soft">
-              <span className="text-text-muted font-mono uppercase tracking-wider text-[10px]">
-                Filter:
-              </span>
+          <div className="flex items-center justify-between gap-3 py-1 text-xs font-mono text-ink-soft">
+            <div className="flex items-center gap-2">
+              <span className="text-text-muted uppercase tracking-wider text-[10px]">Filtered:</span>
               {currentCategory !== "all" && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-paper border border-border/80 rounded-2xs font-mono text-[10px] text-ink">
-                  Category: {CATEGORY_LABELS[currentCategory] || currentCategory}
+                <span className="text-ink font-semibold">
+                  {CATEGORY_LABELS[currentCategory] || currentCategory}
                 </span>
               )}
               {currentQuery && (
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-paper border border-border/80 rounded-2xs font-mono text-[10px] text-ink">
-                  Keyword: &ldquo;{currentQuery}&rdquo;
-                </span>
+                <span className="text-ink font-semibold">&ldquo;{currentQuery}&rdquo;</span>
               )}
-              <span className="text-text-muted font-mono text-[10px]">
-                ({total} {total === 1 ? "result" : "results"})
+              <span className="text-text-muted text-[11px]">
+                ({total} {total === 1 ? "work" : "works"})
               </span>
             </div>
 
             <Link
               href="/gallery"
-              className="text-xs font-mono uppercase tracking-wider text-accent hover:text-accent-hover font-semibold transition-colors flex items-center gap-1"
+              className="text-accent hover:text-accent-hover font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1 transition-colors"
             >
               <span>Reset Archive</span>
               <span aria-hidden="true">↺</span>

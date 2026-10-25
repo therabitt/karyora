@@ -4,17 +4,24 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
+import { Badge } from "@/components/ui/Badge";
 
-interface ArtworkStageShowcaseProps {
+export interface ArtworkStageShowcaseProps {
   artworks: PublicArtwork[];
   initialIndex?: number;
+  profile?: {
+    display_name?: string | null;
+    commission_availability?: "open" | "waitlist" | "closed" | null;
+    availability_message?: string | null;
+  };
 }
 
 export function ArtworkStageShowcase({
   artworks,
   initialIndex = 0,
+  profile,
 }: ArtworkStageShowcaseProps) {
-  // Limit desktop and mobile showcase to a maximum of 5 works
+  // Limit showcase to 5 curated featured works
   const displayArtworks = artworks.slice(0, 5);
   const total = displayArtworks.length;
 
@@ -74,33 +81,70 @@ export function ArtworkStageShowcase({
 
   if (!displayArtworks || displayArtworks.length === 0) {
     return (
-      <div className="w-full py-16 text-center border border-dashed border-border bg-surface-muted/50 rounded-xs">
-        <p className="font-serif text-xl text-ink">Exhibition in preparation</p>
-        <p className="text-xs text-text-muted mt-2">
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center p-8 text-center border border-dashed border-border bg-surface-muted/30 rounded-xs">
+        <p className="font-serif text-2xl text-ink">Exhibition in Preparation</p>
+        <p className="text-xs text-text-muted mt-2 max-w-sm">
           New original works will be presented here shortly.
         </p>
+        <Link
+          href="/gallery"
+          className="mt-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold px-4 py-2 bg-ink text-surface hover:bg-accent rounded-xs transition-colors"
+        >
+          <span>Browse Archive</span>
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
     );
   }
 
-  const currentImageUrl = getStoragePublicUrl(current.public_image_path);
-  const currentImageFailed = failedImages[current.id];
-  const currentRatio = aspectRatios[current.id] || 1;
+  const currentImageUrl = current ? getStoragePublicUrl(current.public_image_path) : null;
+  const currentImageFailed = current ? failedImages[current.id] : false;
+  const currentRatio = current ? aspectRatios[current.id] || 1 : 1;
   const isCurrentPortrait = currentRatio > 1.15;
   const formattedIndex = String(activeIndex + 1).padStart(2, "0");
   const formattedTotal = String(total).padStart(2, "0");
 
+  const isCommissionOpen = profile?.commission_availability === "open";
+  const isWaitlist = profile?.commission_availability === "waitlist";
+
   return (
-    <div className="w-full space-y-5 select-none">
-      {/* ─── Artwork Exhibition Stage ─── */}
-      <div className="relative w-full">
-        {/* Desktop Accordion Ribbon (hidden on mobile, visible md+) */}
-        {/* Solution 2A: Adaptive flex ratios & object-top framing for portrait artworks */}
-        <div
-          role="region"
-          aria-label="Featured Artworks Showcase"
-          className="hidden md:flex items-stretch gap-2.5 lg:gap-3.5 h-[380px] md:h-[420px] lg:h-[480px] xl:h-[520px] w-full overflow-hidden"
-        >
+    <div className="w-full flex flex-col">
+      {/* ─── Screen 1: Full-Viewport Editorial Exhibition Stage ─── */}
+      <section
+        role="region"
+        aria-label="Featured Artworks Showcase"
+        className="w-full min-h-[100dvh] flex flex-col justify-between pt-16 sm:pt-20 pb-4 sm:pb-6 px-4 sm:px-6 lg:px-8 max-w-[1440px] mx-auto select-none"
+      >
+        {/* Masthead Bar Underneath Floating Navigation */}
+        <div className="flex items-center justify-between gap-4 border-b border-border/70 pb-3">
+          <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-[0.22em] text-accent font-semibold">
+            <span>{profile?.display_name || "Karyora Studio"}</span>
+            <span className="text-border-strong font-normal">/</span>
+            <span className="text-text-muted">Curated Exhibition</span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {profile?.commission_availability && (
+              <Badge variant={profile.commission_availability}>
+                {isCommissionOpen
+                  ? "● Commissions Open"
+                  : isWaitlist
+                  ? "● Waitlist Open"
+                  : "○ Currently Closed"}
+              </Badge>
+            )}
+            <Link
+              href="/gallery"
+              className="text-xs font-mono uppercase tracking-wider text-text-muted hover:text-accent transition-colors hidden sm:inline-flex items-center gap-1"
+            >
+              <span>Catalog № {formattedTotal}</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Desktop Accordion Ribbon (Dominant Selected Artwork + Supporting Panels) */}
+        <div className="hidden md:flex items-stretch gap-2.5 lg:gap-3.5 my-3 sm:my-4 w-full flex-1 min-h-[460px] max-h-[72vh] overflow-hidden">
           {displayArtworks.map((artwork, idx) => {
             const isActive = idx === activeIndex;
             const imageUrl = getStoragePublicUrl(artwork.public_image_path);
@@ -119,9 +163,9 @@ export function ArtworkStageShowcase({
                 className={`relative overflow-hidden text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-[cubic-bezier(0.25,1,0.5,1)] group ${
                   isActive
                     ? isPortrait
-                      ? "flex-[2.4] md:flex-[2.6] lg:flex-[2.8] xl:flex-[3.0] rounded-xs border-2 border-accent shadow-xl z-10 cursor-default"
-                      : "flex-[4] md:flex-[4.5] lg:flex-[5] xl:flex-[5.2] rounded-xs border-2 border-accent shadow-xl z-10 cursor-default"
-                    : "flex-1 hover:flex-[1.15] rounded-xs border border-border/80 opacity-60 hover:opacity-90 grayscale hover:grayscale-0 hover:border-ink/40 cursor-pointer"
+                      ? "flex-[2.8] lg:flex-[3.2] xl:flex-[3.6] rounded-xs border-2 border-accent shadow-2xl z-10 cursor-default"
+                      : "flex-[4.2] lg:flex-[5] xl:flex-[5.6] rounded-xs border-2 border-accent shadow-2xl z-10 cursor-default"
+                    : "flex-1 hover:flex-[1.2] rounded-xs border border-border/80 opacity-60 hover:opacity-90 grayscale hover:grayscale-0 hover:border-ink/40 cursor-pointer"
                 }`}
               >
                 {imageUrl && !isFailed ? (
@@ -156,7 +200,6 @@ export function ArtworkStageShowcase({
                     } ${isActive ? "scale-100" : "scale-105"}`}
                   />
                 ) : (
-                  /* Designed Exhibition Placeholder Canvas */
                   <div className="w-full h-full bg-linear-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center border border-border/40">
                     <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2.5 text-accent font-serif text-base">
                       {itemNumber}
@@ -175,15 +218,13 @@ export function ArtworkStageShowcase({
                   <div
                     className={`absolute inset-0 flex flex-col justify-between p-3.5 pointer-events-none transition-colors ${
                       imageUrl && !isFailed
-                        ? "bg-ink/35 group-hover:bg-ink/15"
+                        ? "bg-ink/40 group-hover:bg-ink/15"
                         : "bg-paper/30 group-hover:bg-paper/10"
                     }`}
                   >
                     <span
                       className={`text-[10px] font-mono tracking-widest font-semibold ${
-                        imageUrl && !isFailed
-                          ? "text-white/95"
-                          : "text-ink font-bold"
+                        imageUrl && !isFailed ? "text-white/95" : "text-ink font-bold"
                       }`}
                     >
                       № {itemNumber}
@@ -202,10 +243,43 @@ export function ArtworkStageShowcase({
 
                 {/* Active strip spotlight tag */}
                 {isActive && (
-                  <div className="absolute top-3 left-3 pointer-events-none">
-                    <span className="text-[10px] font-mono tracking-[0.2em] text-white uppercase bg-ink/80 px-2.5 py-1 rounded-xs backdrop-blur-xs shadow-xs">
-                      Spotlight · {itemNumber}
+                  <div className="absolute top-3.5 left-3.5 pointer-events-none">
+                    <span className="text-[10px] font-mono tracking-[0.22em] text-white uppercase bg-ink/85 px-3 py-1 rounded-xs backdrop-blur-xs shadow-xs font-semibold">
+                      Spotlight · {itemNumber} of {formattedTotal}
                     </span>
+                  </div>
+                )}
+
+                {/* Active Artwork Integrated Lower Plaque */}
+                {isActive && (
+                  <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 pointer-events-auto">
+                    <div className="bg-paper/92 backdrop-blur-md border border-border/80 px-4 sm:px-5 py-3 rounded-xs shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-0.5 min-w-0 pr-2">
+                        <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.18em] text-accent font-semibold">
+                          <span>{artwork.category.replace("-", " ")}</span>
+                          <span className="text-border-strong font-normal">/</span>
+                          <span>{artwork.medium.replace("-", " ")}</span>
+                        </div>
+                        <h2 className="font-serif text-lg sm:text-xl md:text-2xl text-ink tracking-tight truncate font-normal">
+                          {artwork.title}
+                        </h2>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-3">
+                        <Link
+                          href={`/artworks/${artwork.slug}`}
+                          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-semibold px-3.5 py-1.5 bg-ink text-surface hover:bg-accent hover:text-white rounded-xs transition-all shadow-xs group/link"
+                        >
+                          <span>Case Study</span>
+                          <span
+                            aria-hidden="true"
+                            className="motion-safe:transition-transform group-hover/link:translate-x-1"
+                          >
+                            →
+                          </span>
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 )}
               </button>
@@ -214,11 +288,11 @@ export function ArtworkStageShowcase({
         </div>
 
         {/* Mobile View: Dedicated Touch Focal Card */}
-        <div className="md:hidden space-y-3">
+        <div className="md:hidden space-y-3 my-4 flex-1 flex flex-col justify-center">
           <div
             className={`relative ${
               isCurrentPortrait ? "aspect-3/4 max-w-xs" : "aspect-4/3 max-w-sm"
-            } mx-auto overflow-hidden rounded-xs border border-border bg-surface-muted shadow-md`}
+            } mx-auto w-full overflow-hidden rounded-xs border border-border bg-surface-muted shadow-md`}
           >
             {currentImageUrl && !currentImageFailed ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -252,166 +326,201 @@ export function ArtworkStageShowcase({
                 </span>
               </div>
             )}
-            <div className="absolute top-3 left-3 px-2 py-0.5 bg-ink/85 text-white font-mono text-[10px] tracking-wider rounded-xs">
+            <div className="absolute top-3 left-3 px-2 py-0.5 bg-ink/85 text-white font-mono text-[10px] tracking-wider rounded-xs font-semibold">
               № {formattedIndex} / {formattedTotal}
             </div>
           </div>
 
-          {/* Mobile Prev / Next Controls */}
-          <div className="flex items-center justify-between px-1 max-w-sm mx-auto">
-            <button
-              type="button"
-              onClick={handlePrev}
-              disabled={total <= 1}
-              aria-label="Previous artwork"
-              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-xs uppercase font-mono font-semibold px-4 py-2 border border-border bg-surface text-ink hover:bg-surface-muted disabled:opacity-40 rounded-xs"
-            >
-              ← Prev
-            </button>
-            <span className="text-xs font-mono text-text-muted">
-              {formattedIndex} / {formattedTotal}
-            </span>
-            <button
-              type="button"
-              onClick={handleNext}
-              disabled={total <= 1}
-              aria-label="Next artwork"
-              className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-xs uppercase font-mono font-semibold px-4 py-2 border border-border bg-surface text-ink hover:bg-surface-muted disabled:opacity-40 rounded-xs"
-            >
-              Next →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Active Artwork Information & Dedicated Detail Action ─── */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pt-1 pb-1">
-        <div className="space-y-1.5 max-w-2xl">
-          {/* Metadata pill */}
-          <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-mono uppercase tracking-[0.15em] sm:tracking-[0.2em] text-accent font-semibold">
-            <span>
-              № {formattedIndex} of {formattedTotal}
-            </span>
-            <span className="text-border-strong font-normal">/</span>
-            <span>{current.category.replace("-", " ")}</span>
-            <span className="text-border-strong font-normal">/</span>
-            <span>{current.medium.replace("-", " ")}</span>
-          </div>
-
-          {/* Title */}
-          <h2 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-tight">
-            {current.title}
-          </h2>
-
-          {/* Visible Artwork Narrative */}
-          {current.description && (
-            <p className="text-xs sm:text-sm text-ink-soft leading-relaxed max-w-xl font-normal pt-0.5 line-clamp-2">
-              {current.description}
-            </p>
-          )}
-        </div>
-
-        {/* Dedicated Single Detail Link */}
-        <div className="shrink-0 pt-1 md:pt-0">
-          <Link
-            href={`/artworks/${current.slug}`}
-            className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-1 border-b-2 border-accent/40 hover:border-accent transition-all group"
-          >
-            <span>Explore Artwork Details</span>
-            <span
-              aria-hidden="true"
-              className="motion-safe:transition-transform group-hover:translate-x-1"
-            >
-              →
-            </span>
-          </Link>
-        </div>
-      </div>
-
-      {/* ─── Exhibition Index Dock ─── */}
-      <div className="border-t border-border pt-3.5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          {/* Dock Status / Index */}
-          <div className="flex items-center gap-2 text-text-muted font-mono text-[11px] uppercase tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-            <span>Curated Exhibition Index</span>
-          </div>
-
-          {/* Interactive Thumb & Number Ribbon */}
-          <div
-            role="tablist"
-            aria-label="Exhibition index navigation"
-            className="flex items-center gap-2 overflow-x-auto max-w-full py-1 scrollbar-none"
-          >
-            {displayArtworks.map((artwork, idx) => {
-              const isSelected = idx === activeIndex;
-              const itemNumber = String(idx + 1).padStart(2, "0");
-              const thumbUrl = getStoragePublicUrl(artwork.public_image_path);
-              const thumbFailed = failedImages[artwork.id];
-
-              return (
-                <button
-                  key={artwork.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={isSelected}
-                  onClick={() => setActiveIndex(idx)}
-                  className={`group relative flex items-center gap-2 px-3 py-1.5 rounded-xs transition-all cursor-pointer border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
-                    isSelected
-                      ? "bg-ink text-surface border-ink shadow-sm"
-                      : "bg-surface text-ink-soft border-border hover:border-border-strong hover:bg-surface-muted"
-                  }`}
-                  aria-label={`Switch to piece ${itemNumber}: ${artwork.title}`}
+          {/* Mobile Prev / Next Controls & Direct Title Action */}
+          <div className="space-y-3 max-w-sm mx-auto w-full">
+            <div className="text-center space-y-0.5 px-2">
+              <div className="flex items-center justify-center gap-2 text-[10px] font-mono uppercase tracking-[0.18em] text-accent font-semibold">
+                <span>{current.category.replace("-", " ")}</span>
+                <span className="text-border-strong font-normal">/</span>
+                <span>{current.medium.replace("-", " ")}</span>
+              </div>
+              <h2 className="font-serif text-lg text-ink tracking-tight font-normal">
+                {current.title}
+              </h2>
+              <div className="pt-0.5">
+                <Link
+                  href={`/artworks/${current.slug}`}
+                  className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] font-semibold text-accent hover:text-accent-hover"
                 >
-                  {/* Micro Thumbnail */}
-                  <span className="w-4 h-4 rounded-xs overflow-hidden shrink-0 border border-black/10 bg-surface-muted inline-flex items-center justify-center">
-                    {thumbUrl && !thumbFailed ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={thumbUrl}
-                        alt=""
-                        onError={() => handleImageError(artwork.id)}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="w-1.5 h-1.5 rounded-full bg-accent/60" />
-                    )}
-                  </span>
+                  <span>Explore Case Study</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </div>
 
-                  <span className="font-mono text-[11px] tracking-wider font-semibold">
-                    {itemNumber}
-                  </span>
-
-                  <span
-                    className={`text-xs font-serif max-w-[120px] truncate hidden xl:inline-block ${
-                      isSelected
-                        ? "text-surface"
-                        : "text-ink group-hover:text-accent"
-                    }`}
-                  >
-                    {artwork.title}
-                  </span>
-
-                  {isSelected && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-accent ml-0.5 shrink-0" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Direct Link to Complete Archive */}
-          <div className="shrink-0">
-            <Link
-              href="/gallery"
-              className="text-xs font-mono uppercase tracking-wider text-ink-soft hover:text-accent transition-colors flex items-center gap-1.5"
-            >
-              <span>Full Archive</span>
-              <span aria-hidden="true">↗</span>
-            </Link>
+            <div className="flex items-center justify-between px-1">
+              <button
+                type="button"
+                onClick={handlePrev}
+                disabled={total <= 1}
+                aria-label="Previous artwork"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-xs uppercase font-mono font-semibold px-4 py-2 border border-border bg-surface text-ink hover:bg-surface-muted disabled:opacity-40 rounded-xs"
+              >
+                ← Prev
+              </button>
+              <span className="text-xs font-mono text-text-muted">
+                {formattedIndex} / {formattedTotal}
+              </span>
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={total <= 1}
+                aria-label="Next artwork"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-xs uppercase font-mono font-semibold px-4 py-2 border border-border bg-surface text-ink hover:bg-surface-muted disabled:opacity-40 rounded-xs"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* Lower Viewport Editorial Bar */}
+        <div className="flex items-center justify-between gap-4 border-t border-border/70 pt-3">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-serif text-ink-soft">
+            <span className="italic font-normal">&ldquo;Where imagination finds its deliberate form.&rdquo;</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.2em] text-text-muted ml-auto">
+            <span>Scroll for Archive & Offerings</span>
+            <span aria-hidden="true" className="animate-bounce inline-block text-accent font-semibold">
+              ↓
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Screen 2: Curated Exhibition Index & Detailed Metadata Plate ─── */}
+      <section className="w-full border-t border-border bg-surface/50 pt-18 sm:pt-24 pb-16 sm:pb-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          {/* Active Piece Detailed Dossier */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-border pb-8">
+            <div className="space-y-2 max-w-2xl">
+              <div className="inline-flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold">
+                <span>
+                  № {formattedIndex} of {formattedTotal}
+                </span>
+                <span className="text-border-strong font-normal">/</span>
+                <span>{current.category.replace("-", " ")}</span>
+                <span className="text-border-strong font-normal">/</span>
+                <span>{current.medium.replace("-", " ")}</span>
+              </div>
+
+              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-ink tracking-tight leading-[1.1]">
+                <Link
+                  href={`/artworks/${current.slug}`}
+                  className="hover:text-accent transition-colors"
+                >
+                  {current.title}
+                </Link>
+              </h2>
+
+              {current.description && (
+                <p className="text-sm sm:text-base text-ink-soft leading-relaxed max-w-xl font-normal pt-1">
+                  {current.description}
+                </p>
+              )}
+            </div>
+
+            <div className="shrink-0 flex items-center gap-4">
+              <Link
+                href={`/artworks/${current.slug}`}
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-1 border-b-2 border-accent/40 hover:border-accent transition-all group"
+              >
+                <span>Explore Full Case Study & Palette</span>
+                <span
+                  aria-hidden="true"
+                  className="motion-safe:transition-transform group-hover:translate-x-1"
+                >
+                  →
+                </span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Exhibition Index Switcher Ribbon */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-text-muted font-semibold">
+                Curated Exhibition Switcher
+              </span>
+              <Link
+                href="/gallery"
+                className="text-xs font-mono uppercase tracking-wider text-accent hover:text-accent-hover font-semibold flex items-center gap-1.5 transition-colors"
+              >
+                <span>Complete Archive (21 Works)</span>
+                <span aria-hidden="true">↗</span>
+              </Link>
+            </div>
+
+            <div
+              role="tablist"
+              aria-label="Exhibition index navigation"
+              className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"
+            >
+              {displayArtworks.map((artwork, idx) => {
+                const isSelected = idx === activeIndex;
+                const itemNumber = String(idx + 1).padStart(2, "0");
+                const thumbUrl = getStoragePublicUrl(artwork.public_image_path);
+                const thumbFailed = failedImages[artwork.id];
+
+                return (
+                  <button
+                    key={artwork.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isSelected}
+                    onClick={() => setActiveIndex(idx)}
+                    className={`group relative flex items-center gap-3 p-3 rounded-xs transition-all text-left border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                      isSelected
+                        ? "bg-ink text-surface border-ink shadow-md"
+                        : "bg-surface text-ink-soft border-border hover:border-border-strong hover:bg-surface-muted"
+                    }`}
+                    aria-label={`Select exhibition piece ${itemNumber}: ${artwork.title}`}
+                  >
+                    <span className="w-10 h-10 rounded-2xs overflow-hidden shrink-0 border border-black/10 bg-surface-muted inline-flex items-center justify-center">
+                      {thumbUrl && !thumbFailed ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={thumbUrl}
+                          alt=""
+                          onError={() => handleImageError(artwork.id)}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs font-mono font-semibold text-accent">
+                          {itemNumber}
+                        </span>
+                      )}
+                    </span>
+
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <span
+                        className={`text-[10px] font-mono tracking-widest uppercase block ${
+                          isSelected ? "text-accent" : "text-text-muted"
+                        }`}
+                      >
+                        № {itemNumber}
+                      </span>
+                      <span
+                        className={`text-xs font-serif truncate block ${
+                          isSelected ? "text-surface font-medium" : "text-ink group-hover:text-accent"
+                        }`}
+                      >
+                        {artwork.title}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

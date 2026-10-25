@@ -12,7 +12,20 @@ const navItems = [
 
 export function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
+  const isHome = pathname === "/";
+
+  // Scroll listener for homepage transparent-to-solid overlay transition
+  useEffect(() => {
+    if (!isHome) return;
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isHome]);
 
   // Lock body scroll when menu open
   useEffect(() => {
@@ -28,7 +41,15 @@ export function PublicHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-paper transition-colors">
+      <header
+        className={`w-full transition-all duration-300 ${
+          isHome
+            ? isScrolled
+              ? "fixed top-0 left-0 right-0 z-40 bg-paper/95 backdrop-blur-md border-b border-border shadow-2xs"
+              : "fixed top-0 left-0 right-0 z-40 bg-linear-to-b from-paper/90 via-paper/50 to-transparent border-b border-transparent pointer-events-auto"
+            : "sticky top-0 z-40 bg-paper border-b border-border"
+        }`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Editorial Logo */}
           <Link href="/" className="group flex items-baseline gap-2.5">

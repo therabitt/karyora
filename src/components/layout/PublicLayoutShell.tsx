@@ -7,11 +7,11 @@ import { PublicFooter } from "@/components/layout/PublicFooter";
 
 export function PublicLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // Check if on an artwork detail page (e.g. /artworks/slug)
-  // Dedicated KERN Inc. exhibition layout operates as a full-viewport canvas
+  // Artwork detail (/artworks/slug) and Homepage (/) operate as dedicated full-viewport exhibition canvases
   const isArtworkDetail = pathname.startsWith("/artworks/");
+  const isHome = pathname === "/";
 
-  if (isArtworkDetail) {
+  if (isArtworkDetail || isHome) {
     return <div className="min-h-screen flex flex-col bg-paper">{children}</div>;
   }
 
