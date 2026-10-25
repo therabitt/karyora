@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, DM_Sans } from "next/font/google";
+import { Alex_Brush, Caveat, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const dmSerif = DM_Serif_Display({
+const alexBrush = Alex_Brush({
   weight: "400",
   subsets: ["latin"],
-  variable: "--font-dm-serif",
+  variable: "--font-alex-brush",
+  display: "swap",
+});
+
+const caveat = Caveat({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-caveat",
   display: "swap",
 });
 
@@ -32,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSerif.variable} ${dmSans.variable} h-full antialiased`}
+      className={alexBrush.variable + " " + caveat.variable + " " + dmSans.variable + " h-full antialiased"}
     >
       <body className="min-h-full flex flex-col font-sans bg-paper text-ink selection:bg-accent-soft selection:text-ink">
         {children}
@@ -40,4 +47,3 @@ export default function RootLayout({
     </html>
   );
 }
-

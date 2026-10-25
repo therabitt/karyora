@@ -9,7 +9,7 @@ export function PublicFooter() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
             <div className="flex items-baseline justify-center sm:justify-start gap-2">
-              <span className="font-serif text-2xl text-ink">Karyora</span>
+              <span className="font-brand text-2xl text-ink">Karyora</span>
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-accent font-semibold">
                 · Studio
               </span>

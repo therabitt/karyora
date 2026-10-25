@@ -49,7 +49,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
             <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold block">
               Bespoke Works & Inquiries
             </span>
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-ink tracking-tight">
+            <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl text-ink tracking-tight">
               Commission Inquiries
             </h1>
           </div>
@@ -77,7 +77,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
             <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold block">
               01 / Standard Catalog
             </span>
-            <h2 className="font-serif text-2xl sm:text-3xl text-ink">Commission Offerings</h2>
+            <h2 className="font-sans text-2xl sm:text-3xl text-ink">Commission Offerings</h2>
           </div>
           <span className="text-xs font-mono text-text-muted">
             Starting Baselines
@@ -103,7 +103,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
                     <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-accent font-semibold block">
                       From {formattedStartingPrice}
                     </span>
-                    <h3 className="font-serif text-2xl text-ink">{offering.title}</h3>
+                    <h3 className="font-sans text-2xl text-ink">{offering.title}</h3>
                     <p className="text-xs text-text-muted leading-relaxed whitespace-pre-line pt-1">
                       {offering.description}
                     </p>
@@ -126,7 +126,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
             <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold block">
               02 / Consideration Form
             </span>
-            <h2 className="font-serif text-2xl sm:text-3xl text-ink">Submit an Inquiry</h2>
+            <h2 className="font-sans text-2xl sm:text-3xl text-ink">Submit an Inquiry</h2>
           </div>
           <span className="text-xs font-mono text-text-muted">
             Strictly Non-Binding
@@ -136,7 +136,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
         <div className="bg-surface border border-border p-6 sm:p-12 max-w-3xl shadow-xs">
           {isClosed ? (
             <div className="p-8 border border-border bg-surface-muted text-center space-y-3">
-              <p className="font-serif text-xl text-ink">Commissions Are Currently Closed</p>
+              <p className="font-sans text-xl text-ink">Commissions Are Currently Closed</p>
               <p className="text-xs text-text-muted max-w-md mx-auto leading-relaxed">
                 The artist is not currently accepting new commission inquiries. Please check back later or follow social announcements for upcoming queue reopenings.
               </p>
