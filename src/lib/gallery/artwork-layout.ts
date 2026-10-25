@@ -64,7 +64,7 @@ export function getArtworkWindow(
 
   const count = Math.min(total, Math.max(1, Math.floor(maxItems)));
   const normalizedActive = ((Math.floor(activeIndex) % total) + total) % total;
-  const firstOffset = -Math.floor((count - 1) / 2);
+  const firstOffset = -Math.floor(count / 2);
 
   return Array.from({ length: count }, (_, position) => {
     const offset = firstOffset + position;

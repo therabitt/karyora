@@ -174,19 +174,27 @@ export function AlanMenkenShowcase({
   const stageHeight = stageSize.height || 520;
   const visiblePanelCount = getResponsivePanelCount(stageWidth, total);
   const stageWindow = getArtworkWindow(total, activeIndex, 9);
-  const previewWidth = Math.max(38, Math.min(124, stageWidth * 0.075));
   const ribbonGap = Math.max(5, Math.min(10, stageWidth * 0.006));
-  const remainingForActive =
-    stageWidth - (visiblePanelCount - 1) * (previewWidth + ribbonGap) - 12;
-  const preferredActiveWidth = stageWidth < 640 ? stageWidth * 0.52 : stageWidth * 0.36;
-  const activeMaxWidth = Math.max(96, Math.min(preferredActiveWidth, remainingForActive));
+  const previewPanelCount = Math.max(0, visiblePanelCount - 1);
+  const preferredActiveWidth = stageWidth < 640 ? stageWidth * 0.54 : stageWidth * 0.36;
   const activeDimensions = getDimensions(current);
   const activeSize = fitArtworkWithinBounds(
     activeDimensions.width,
     activeDimensions.height,
-    activeMaxWidth,
+    preferredActiveWidth,
     stageHeight * 0.86
   );
+  const availablePreviewWidth = previewPanelCount > 0
+    ? (stageWidth - activeSize.width - previewPanelCount * ribbonGap - 12) / previewPanelCount
+    : 0;
+  const maxPreviewWidth = stageWidth < 640
+    ? stageWidth * 0.24
+    : stageWidth < 1024
+    ? stageWidth * 0.15
+    : 140;
+  const previewWidth = previewPanelCount > 0
+    ? Math.max(38, Math.min(maxPreviewWidth, availablePreviewWidth))
+    : 0;
 
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);

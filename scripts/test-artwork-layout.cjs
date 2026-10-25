@@ -55,6 +55,10 @@ assert.deepEqual(
   getArtworkWindow(5, 0, 9).map((entry) => entry.index),
   [3, 4, 0, 1, 2],
 );
+assert.deepEqual(
+  getArtworkWindow(4, 0, 9).map((entry) => entry.index),
+  [2, 3, 0, 1],
+);
 assert.equal(getResponsivePanelCount(390, 21), 3);
 assert.equal(getResponsivePanelCount(800, 21), 5);
 assert.equal(getResponsivePanelCount(1100, 21), 7);
