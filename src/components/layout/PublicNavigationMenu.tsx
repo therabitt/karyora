@@ -116,8 +116,11 @@ export function PublicNavigationMenu({
           type="button"
           aria-label="Close navigation menu"
           tabIndex={isOpen ? 0 : -1}
-          onClick={closeMenu}
-          className={"absolute inset-0 h-full w-full bg-[#121110]/45 backdrop-saturate-50 transition-opacity duration-400 motion-reduce:transition-none " + (
+          onClick={() => {
+            closeMenu();
+            triggerRef.current?.focus();
+          }}
+          className={"absolute inset-0 h-full w-full bg-[#121110]/45 backdrop-saturate-50 transition-opacity duration-300 motion-reduce:transition-none " + (
             isOpen ? "opacity-100" : "opacity-0"
           )}
         />
