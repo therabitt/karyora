@@ -27,49 +27,63 @@ async function main() {
   }
   console.log(`Using active port: ${activePort}`);
 
-  const captures = [
+  const testCases = [
     {
-      name: "palette_forest_spirits_gaze",
-      url: `http://localhost:${activePort}/artworks/the-forest-spirits-gaze`,
-      width: 1440,
-      height: 900,
-      delay: 3500,
+      name: "palette_monochrome_rose_verified",
+      slug: "monochrome-rose",
+      category: "Monochrome Rose (Architectural Graphite & Silver Mist Verification)",
     },
     {
-      name: "palette_solitude_in_crimson",
-      url: `http://localhost:${activePort}/artworks/solitude-in-crimson`,
-      width: 1440,
-      height: 900,
-      delay: 3500,
+      name: "palette_unleashed_madness",
+      slug: "unleashed-madness",
+      category: "Vivid Acid Green + Electric Violet (High-Chroma Clash)",
     },
     {
-      name: "palette_beautiful_rythm",
-      url: `http://localhost:${activePort}/artworks/beautiful-rythm`,
-      width: 1440,
-      height: 900,
-      delay: 3500,
+      name: "palette_frieren_separated",
+      slug: "frieren",
+      category: "Celestial Moonstone Slate + Chrono Gold (Resolved Cluster)",
+    },
+    {
+      name: "palette_lilith_crimson",
+      slug: "lilith",
+      category: "Gothic Obsidian Crimson + Blood Rose (Resolved Cluster)",
+    },
+    {
+      name: "palette_butterfly_coral",
+      slug: "butterfly-woman",
+      category: "Coral Crimson Metamorphosis (Resolved Green Collision)",
+    },
+    {
+      name: "palette_eyes_rearview",
+      slug: "eyes-on-the-rearview",
+      category: "Retro Vermilion Sunset (Rich Warm Terrestrial)",
+    },
+    {
+      name: "palette_beautiful_woman_neutral",
+      slug: "beautiful-woman",
+      category: "Graphite Slate (Architectural Neutral / Monochrome)",
     },
   ];
 
-  console.log("Starting palette verification captures...");
+  console.log("Starting expanded palette verification captures...");
 
-  for (const cap of captures) {
-    const outputPath = path.join(artifactDir, `${cap.name}.png`);
-    console.log(`Capturing ${cap.name} (${cap.width}x${cap.height}) from ${cap.url}...`);
+  for (const tc of testCases) {
+    const url = `http://localhost:${activePort}/artworks/${tc.slug}`;
+    const outputPath = path.join(artifactDir, `${tc.name}.png`);
+    console.log(`\nCapturing [${tc.category}] from ${url}...`);
 
     const tmpProfile = `/tmp/chromium-cap-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    const cmd = `/usr/bin/chromium --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage --user-data-dir=${tmpProfile} --hide-scrollbars --window-size=${cap.width},${cap.height} --run-all-compositor-stages-before-draw --virtual-time-budget=${cap.delay} --screenshot="${outputPath}" "${cap.url}"`;
+    const cmd = `/usr/bin/chromium --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage --user-data-dir=${tmpProfile} --hide-scrollbars --window-size=1440,900 --run-all-compositor-stages-before-draw --virtual-time-budget=3500 --screenshot="${outputPath}" "${url}"`;
 
     try {
       execSync(cmd, { stdio: "inherit" });
       console.log(`  ✓ Saved: ${outputPath}`);
     } catch (err) {
-      console.error(`  ✗ Failed to capture ${cap.name}:`, err.message);
+      console.error(`  ✗ Failed to capture ${tc.name}:`, err.message);
     }
   }
 
-  console.log("All palette verification captures completed!");
+  console.log("\nAll expanded palette verification captures completed!");
 }
 
 main();
-

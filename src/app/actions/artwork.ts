@@ -10,6 +10,8 @@ import {
   deleteArtwork,
 } from "@/lib/storage/artwork-lifecycle";
 import { validateSourceImageMetadata } from "@/lib/storage/image-processor";
+import { extractImageColorAnalysis } from "@/lib/storage/palette-extractor";
+import { generateArtworkHarmoniousPalette } from "@/lib/color/palette-engine";
 import {
   getValidPendingUpload,
   markPendingUploadConsumed,
@@ -411,3 +413,64 @@ export async function deleteArtworkAction(
     };
   }
 }
+
+/**
+ * Regenerates the artwork-aware harmonious palette for an artwork using Sharp and OKLab.
+ */
+export async function regenerateArtworkPaletteAction(
+  artworkId: string
+): Promise<{ success?: boolean; error?: string; palette?: unknown }> {
+  try {
+    const adminContext = await requireAdmin();
+    const supabase = createServiceClient();
+
+    const { data: artwork, error: fetchErr } = await supabase
+      .from("artworks")
+      .select("*")
+      .eq("id", artworkId)
+      .eq("profile_id", adminContext.adminUserId)
+      .maybeSingle();
+
+    if (fetchErr || !artwork) {
+      return { error: "Artwork not found or unauthorized." };
+    }
+
+    const imagePath = artwork.private_image_path || artwork.public_image_path;
+    if (!imagePath) {
+      return { error: "Artwork has no image source to analyze." };
+    }
+
+    const sourceBuffer = await downloadPrivateSource(imagePath);
+    const analysis = await extractImageColorAnalysis(sourceBuffer);
+    const generatedPalette = generateArtworkHarmoniousPalette({
+      analysis,
+      title: artwork.title,
+      category: artwork.category,
+    });
+
+    const now = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from("artworks")
+      .update({
+        palette_metadata: JSON.parse(JSON.stringify(generatedPalette)),
+        updated_at: now,
+      })
+      .eq("id", artwork.id);
+
+    if (updateError) {
+      console.warn("Could not save palette to database column:", updateError.message);
+    }
+
+    revalidatePath(`/artworks/${artwork.slug}`);
+    revalidatePath("/gallery");
+    revalidatePath(`/dashboard/artworks/${artwork.id}/edit`);
+
+    return { success: true, palette: generatedPalette };
+  } catch (err: unknown) {
+    console.error("Palette regeneration failed:", err);
+    return {
+      error: err instanceof Error ? err.message : "Failed to regenerate palette.",
+    };
+  }
+}
+

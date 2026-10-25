@@ -21,14 +21,11 @@ interface KernArtworkDetailProps {
 // - Rear layer: solid dominant palette color.
 // - Middle layer: tilted abstract card with complementary colors, textures & patterns.
 // - Front layer: the actual artwork image preserving native aspect ratio.
-interface StackTheme {
-  dominantColor: string;
-  abstractBg: string;
-  patternType: "topographic" | "astrolabe" | "botanical" | "geometric" | "horizon" | "filigree" | "minimal";
-  accentColor: string;
-  subtleLineColor: string;
-  plateTag: string;
-}
+import {
+  type StackTheme,
+  CATALOG_THEMES,
+  getHarmoniousThemeForArtwork,
+} from "@/lib/color/artwork-themes";
 
 // Helper to convert HSL to Hex
 function hslToHex(h: number, s: number, l: number): string {
@@ -42,214 +39,58 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${f(0)}${f(8)}${f(4)}`;
 }
 
-// Bespoke, calibrated themes for all artworks in the catalog
-const ARTWORK_THEMES: Record<string, StackTheme> = {
-  // 01. The Forest Spirit's Gaze (Ethereal nocturnal cyan / Princess Mononoke tribute)
-  "the-forest-spirits-gaze": {
-    dominantColor: "#1B3B5F", // Deep nocturnal navy
-    abstractBg: "linear-gradient(135deg, #0D1E33 0%, #173357 50%, #0A1626 100%)",
-    patternType: "topographic",
-    accentColor: "#5CE1E6", // Bioluminescent spirit cyan
-    subtleLineColor: "rgba(92, 225, 230, 0.28)",
-    plateTag: "FOREST SPIRIT · NOCTURNAL CYAN",
-  },
-  // 02. witch underworld (Deep obsidian umber & candlelight gold)
-  "witch-underworld": {
-    dominantColor: "#3E332B", // Deep obsidian umber
-    abstractBg: "linear-gradient(135deg, #211B17 0%, #302721 50%, #15110E 100%)",
-    patternType: "filigree",
-    accentColor: "#D9B88A", // Candlelight gold
-    subtleLineColor: "rgba(217, 184, 138, 0.22)",
-    plateTag: "UNDERWORLD VEIL · CHIP AND BONE",
-  },
-  // 03. Lilith (Gothic dusty velvet mauve)
-  lilith: {
-    dominantColor: "#6B4B55", // Gothic dusty mauve
-    abstractBg: "linear-gradient(135deg, #362228 0%, #472D36 50%, #241419 100%)",
-    patternType: "filigree",
-    accentColor: "#DCA6B4", // Velvet rose
-    subtleLineColor: "rgba(220, 166, 180, 0.22)",
-    plateTag: "NOCTURNE MONOGRAPH · MAUVE STUDY",
-  },
-  // 04. Frieren (Moonstone slate-violet & celestial astrolabe gold)
-  frieren: {
-    dominantColor: "#524963", // Mystic moonstone violet
-    abstractBg: "linear-gradient(135deg, #2D263B 0%, #3D344F 50%, #1E1829 100%)",
-    patternType: "astrolabe",
-    accentColor: "#E5D5AA", // Celestial gold
-    subtleLineColor: "rgba(229, 213, 170, 0.25)",
-    plateTag: "CHRONO ARCHIVE · CELESTIAL STUDY",
-  },
-  // 05. Solitude in Crimson (Twilight lilac & amethyst violet dreamscape)
-  "solitude-in-crimson": {
-    dominantColor: "#6B4E75", // Twilight lilac & amethyst violet
-    abstractBg: "linear-gradient(135deg, #38243E 0%, #4B3154 50%, #26172B 100%)",
-    patternType: "topographic",
-    accentColor: "#D9A8D4", // Soft lavender rose
-    subtleLineColor: "rgba(217, 168, 212, 0.25)",
-    plateTag: "SOLITUDE TWILIGHT · VIOLET STUDY",
-  },
-  // 06. Princess of fantasy world (Dusky quartz plum & cameo rose)
-  "princess-of-fantasy-world": {
-    dominantColor: "#70485A", // Dusky quartz plum
-    abstractBg: "linear-gradient(135deg, #38202C 0%, #4A2D3C 50%, #24121B 100%)",
-    patternType: "filigree",
-    accentColor: "#E2B0C4", // Cameo rose
-    subtleLineColor: "rgba(226, 176, 196, 0.22)",
-    plateTag: "FANTASY MONOGRAPH · PRISMATIC VALUE",
-  },
-  "princess-of-fantasy": {
-    dominantColor: "#70485A",
-    abstractBg: "linear-gradient(135deg, #38202C 0%, #4A2D3C 50%, #24121B 100%)",
-    patternType: "filigree",
-    accentColor: "#E2B0C4",
-    subtleLineColor: "rgba(226, 176, 196, 0.22)",
-    plateTag: "FANTASY MONOGRAPH · PRISMATIC VALUE",
-  },
-  // 07. Super Woman (Heroic cape scarlet & cobalt vector matrix)
-  "super-woman": {
-    dominantColor: "#9E3C32", // Cape scarlet
-    abstractBg: "linear-gradient(135deg, #1B2B47 0%, #273D63 50%, #111E33 100%)", // Bodysuit cobalt
-    patternType: "geometric",
-    accentColor: "#F4C264", // Sunburst Gold
-    subtleLineColor: "rgba(244, 194, 100, 0.25)",
-    plateTag: "HEROIC VELOCITY · DYNAMIC MATRIX",
-  },
-  // 08. Butterfly Woman (Deep forest jade & coral butterfly wing)
-  "butterfly-woman": {
-    dominantColor: "#2D4A38", // Deep forest jade
-    abstractBg: "linear-gradient(135deg, #572A32 0%, #6E3640 50%, #3D1B21 100%)", // Vermilion plum
-    patternType: "botanical",
-    accentColor: "#F2A798", // Coral wing
-    subtleLineColor: "rgba(242, 167, 152, 0.25)",
-    plateTag: "METAMORPHOSIS · CORAL WING",
-  },
-  // 09. Desert Woman (Sunlit dune ochre & twilight horizon azure)
-  "desert-woman": {
-    dominantColor: "#A66A38", // Sunlit dune ochre
-    abstractBg: "linear-gradient(135deg, #223347 0%, #304663 50%, #162230 100%)", // Horizon twilight blue
-    patternType: "horizon",
-    accentColor: "#F0BC82", // Golden mirage
-    subtleLineColor: "rgba(240, 188, 130, 0.25)",
-    plateTag: "TERRESTRIAL DUNE · SUNLIT MIRAGE",
-  },
-  // 10. girls (Harmonic wisteria amethyst)
-  girls: {
-    dominantColor: "#594B73", // Wisteria amethyst
-    abstractBg: "linear-gradient(135deg, #2E243E 0%, #3F3354 50%, #1E172B 100%)",
-    patternType: "geometric",
-    accentColor: "#D5C5EE", // Pastel lilac
-    subtleLineColor: "rgba(213, 197, 238, 0.25)",
-    plateTag: "HARMONIC DUALITY · WISTERIA CHORD",
-  },
-  // 11. beautiful woman (Graphite slate & pearl mist)
-  "beautiful-woman": {
-    dominantColor: "#4B5866", // Graphite slate
-    abstractBg: "linear-gradient(135deg, #232A33 0%, #323D47 50%, #151A21 100%)",
-    patternType: "minimal",
-    accentColor: "#B5CBDC", // Pearl mist
-    subtleLineColor: "rgba(181, 203, 220, 0.22)",
-    plateTag: "PROPORTION & LIGHT · CLASSICAL STUDY",
-  },
-  // 12. beautiful rythm (Electric ultramarine cobalt & neon guitar mint)
-  "beautiful-rythm": {
-    dominantColor: "#1752C7", // Pure electric ultramarine cobalt
-    abstractBg: "linear-gradient(135deg, #091736 0%, #122552 50%, #061026 100%)",
-    patternType: "geometric",
-    accentColor: "#4EE8DC", // Electric mint guitar neon
-    subtleLineColor: "rgba(78, 232, 220, 0.3)",
-    plateTag: "DYNAMIC CADENCE · ELECTRIC BLUE",
-  },
-  // 13. Whispering Pines (Alpine evergreen & terracotta canopy)
-  "whispering-pines": {
-    dominantColor: "#2F4A38",
-    abstractBg: "linear-gradient(135deg, #704033 0%, #875042 50%, #542D23 100%)",
-    patternType: "botanical",
-    accentColor: "#EBB3A7",
-    subtleLineColor: "rgba(235, 179, 167, 0.22)",
-    plateTag: "SILVAN CANOPY · DAPPLED LUMEN",
-  },
-};
-
-const DEFAULT_THEME: StackTheme = {
-  dominantColor: "#3A4A59", // Balanced editorial slate rather than muddy brown
-  abstractBg: "linear-gradient(135deg, #1C2630 0%, #2A3947 50%, #131B24 100%)",
-  patternType: "minimal",
-  accentColor: "#A8C5DB",
-  subtleLineColor: "rgba(168, 197, 219, 0.2)",
-  plateTag: "KARYORA MONOGRAPH · ARCHIVAL PLATE",
-};
-
-// Algorithmic theme generator for new artworks without a preset
-function generateAlgorithmicTheme(artwork: PublicArtwork): StackTheme {
-  const seed = (artwork.title + artwork.category + artwork.slug).split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const hue = seed % 360;
-  const domSat = 50;
-  const domLight = 36;
-  const dominantColor = hslToHex(hue, domSat, domLight);
-
-  const compHue = (hue + 175) % 360;
-  const abstractBg = `linear-gradient(135deg, hsl(${compHue}, 30%, 15%) 0%, hsl(${compHue}, 35%, 22%) 50%, hsl(${compHue}, 26%, 11%) 100%)`;
-  const accentColor = `hsl(${hue}, 70%, 75%)`;
-  const subtleLineColor = `hsla(${compHue}, 50%, 75%, 0.22)`;
-
-  let patternType: StackTheme["patternType"] = "topographic";
-  if (hue >= 180 && hue <= 250) patternType = "geometric";
-  else if (hue >= 80 && hue < 180) patternType = "botanical";
-  else if (hue >= 250 && hue <= 320) patternType = "astrolabe";
-  else if (hue > 320 || hue < 40) patternType = "filigree";
-  else patternType = "horizon";
-
-  return {
-    dominantColor,
-    abstractBg,
-    patternType,
-    accentColor,
-    subtleLineColor,
-    plateTag: `${artwork.title.toUpperCase().slice(0, 22)} · ARCHIVAL PLATE`,
-  };
-}
-
-function getArtworkStackTheme(artwork: PublicArtwork, dynamicMap?: Record<string, StackTheme>): StackTheme {
-  if (!artwork) return DEFAULT_THEME;
-  const slugKey = artwork.slug?.toLowerCase().trim();
-  if (slugKey && ARTWORK_THEMES[slugKey]) {
-    return ARTWORK_THEMES[slugKey];
-  }
-  if (dynamicMap && dynamicMap[artwork.id]) {
-    return dynamicMap[artwork.id];
-  }
-  return generateAlgorithmicTheme(artwork);
-}
-
 // ─── DYNAMIC CLIENT-SIDE PALETTE EXTRACTION ──────────────────────────────────
 // Samples pixels from an image element in 1ms to extract true dominant colors
 function extractPaletteFromImage(img: HTMLImageElement): StackTheme | null {
   try {
     const canvas = document.createElement("canvas");
-    canvas.width = 24;
-    canvas.height = 24;
+    canvas.width = 32;
+    canvas.height = 32;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) return null;
-    ctx.drawImage(img, 0, 0, 24, 24);
-    const data = ctx.getImageData(0, 0, 24, 24).data;
+    ctx.drawImage(img, 0, 0, 32, 32);
+    const data = ctx.getImageData(0, 0, 32, 32).data;
 
-    let rSum = 0, gSum = 0, bSum = 0, validCount = 0;
-    const hueBins: { count: number; rSum: number; gSum: number; bSum: number }[] = Array.from({ length: 12 }, () => ({
-      count: 0, rSum: 0, gSum: 0, bSum: 0,
-    }));
+    let totalOpaquePixels = 0;
+    let achromaticPixelCount = 0;
+    let chromaticPixelCount = 0;
+
+    const hueBins: { count: number; rSum: number; gSum: number; bSum: number }[] = Array.from(
+      { length: 12 },
+      () => ({ count: 0, rSum: 0, gSum: 0, bSum: 0 })
+    );
 
     for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      rSum += r; gSum += g; bSum += b; validCount++;
+      const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+      if (a < 128) continue; // transparent pixel
+      totalOpaquePixels++;
 
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      const diff = max - min;
+
+      // Check if pixel is neutral/achromatic (grayscale, black, white, gray)
+      // Channels differ by <= 14 units out of 255
+      if (diff <= 14) {
+        achromaticPixelCount++;
+        continue;
+      }
+
       const l = (max + min) / 510;
-      if (l < 0.12 || l > 0.90) continue;
+      if (l < 0.10 || l > 0.92) {
+        achromaticPixelCount++;
+        continue;
+      }
+
       const d = max - min;
       const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1)) / 255;
-      if (s < 0.16) continue;
+      if (s < 0.14) {
+        achromaticPixelCount++;
+        continue;
+      }
 
+      // Valid chromatic pixel
+      chromaticPixelCount++;
       let h = 0;
       if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
       else if (max === g) h = ((b - r) / d + 2) / 6;
@@ -257,8 +98,28 @@ function extractPaletteFromImage(img: HTMLImageElement): StackTheme | null {
 
       const binIdx = Math.floor((h * 360) / 30) % 12;
       const bin = hueBins[binIdx];
-      bin.count += (1 + s);
-      bin.rSum += r; bin.gSum += g; bin.bSum += b;
+      bin.count += 1 + s;
+      bin.rSum += r;
+      bin.gSum += g;
+      bin.bSum += b;
+    }
+
+    if (totalOpaquePixels === 0) return null;
+
+    // ── MONOCHROME / BLACK & WHITE / GRAYSCALE DETECTION ─────────────────────
+    // If >= 80% of pixels are achromatic OR chromatic count is negligible:
+    // Pure Architectural Graphite & Silver Mist palette (NO PURPLE, NO OLIVE GREEN!)
+    const neutralRatio = achromaticPixelCount / totalOpaquePixels;
+    if (neutralRatio >= 0.80 || chromaticPixelCount < totalOpaquePixels * 0.08) {
+      return {
+        dominantColor: "#2A3036", // Charcoal Slate
+        abstractBg: "linear-gradient(135deg, #131618 0%, #1E2226 50%, #0E1012 100%)", // Obsidian Deep Gradient
+        patternType: "minimal",
+        accentColor: "#C2CCD6", // Pearl Silver
+        subtleLineColor: "rgba(194, 204, 214, 0.22)",
+        plateTag: "MONOCHROME ARCHIVE · GRAPHITE STUDY",
+        temperature: "neutral",
+      };
     }
 
     let bestBin = hueBins[0];
@@ -289,11 +150,17 @@ function extractPaletteFromImage(img: HTMLImageElement): StackTheme | null {
       domSat = Math.round(Math.min(Math.max(s * 100, 36), 68));
       const targetL = Math.round(Math.min(Math.max(l * 100, 26), 42));
       dominantHex = hslToHex(domHue, domSat, targetL);
-    } else if (validCount > 0) {
-      const r = Math.round(rSum / validCount);
-      const g = Math.round(gSum / validCount);
-      const b = Math.round(bSum / validCount);
-      dominantHex = `#${[r, g, b].map(x => x.toString(16).padStart(2, "0")).join("")}`;
+    } else {
+      // Pure fallback to monochrome if no chromatic bin has points
+      return {
+        dominantColor: "#2A3036",
+        abstractBg: "linear-gradient(135deg, #131618 0%, #1E2226 50%, #0E1012 100%)",
+        patternType: "minimal",
+        accentColor: "#C2CCD6",
+        subtleLineColor: "rgba(194, 204, 214, 0.22)",
+        plateTag: "MONOCHROME ARCHIVE · GRAPHITE STUDY",
+        temperature: "neutral",
+      };
     }
 
     const compHue = (domHue + 175) % 360;
@@ -315,6 +182,7 @@ function extractPaletteFromImage(img: HTMLImageElement): StackTheme | null {
       accentColor,
       subtleLineColor,
       plateTag: "DYNAMIC CHROMATIC ARCHIVE",
+      temperature: domHue >= 45 && domHue <= 135 ? "warm" : "cool",
     };
   } catch {
     return null;
@@ -486,7 +354,7 @@ export function KernArtworkDetail({
 
   // Artwork-specific stack theme for the currently active artwork
   const currentTheme = useMemo(
-    () => getArtworkStackTheme(currentArtwork, dynamicThemes),
+    () => getHarmoniousThemeForArtwork(currentArtwork, dynamicThemes),
     [currentArtwork, dynamicThemes]
   );
 
@@ -936,7 +804,8 @@ export function KernArtworkDetail({
                       crossOrigin="anonymous"
                       onLoad={(e) => {
                         const slugKey = currentArtwork.slug?.toLowerCase().trim();
-                        if (!ARTWORK_THEMES[slugKey] && !dynamicThemes[currentArtwork.id]) {
+                        const hasPersistedOrCurated = currentArtwork.palette_metadata || (slugKey && CATALOG_THEMES[slugKey]);
+                        if (!hasPersistedOrCurated && !dynamicThemes[currentArtwork.id]) {
                           const extracted = extractPaletteFromImage(e.currentTarget);
                           if (extracted) {
                             setDynamicThemes((prev) => ({ ...prev, [currentArtwork.id]: extracted }));

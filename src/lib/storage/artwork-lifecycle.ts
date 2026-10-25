@@ -6,6 +6,8 @@ import {
   createPublicDerivative,
   type ProcessedImageResult,
 } from "@/lib/storage/image-processor";
+import { extractImageColorAnalysis } from "@/lib/storage/palette-extractor";
+import { generateArtworkHarmoniousPalette } from "@/lib/color/palette-engine";
 import { revalidatePath } from "next/cache";
 import type { Database } from "@/types/database.types";
 
@@ -129,18 +131,48 @@ export async function publishArtwork({
       sourceBuffer
     );
 
-    // 4. Update artwork to published status atomically
+    // 4. Extract colors and generate harmonious, unique palette metadata
+    let paletteMetadata: unknown = null;
+    try {
+      const analysis = await extractImageColorAnalysis(sourceBuffer);
+      paletteMetadata = generateArtworkHarmoniousPalette({
+        analysis,
+        title: artwork.title,
+        category: artwork.category,
+      });
+    } catch (paletteErr) {
+      console.warn("Palette extraction failed during publication, proceeding:", paletteErr);
+    }
+
+    // 5. Update artwork to published status atomically
     const now = new Date().toISOString();
-    const { error: updateError } = await supabase
+    const updatePayload: Database["public"]["Tables"]["artworks"]["Update"] = {
+      status: "published",
+      published_at: now,
+      public_image_path: derivativePath,
+      updated_at: now,
+    };
+    if (paletteMetadata) {
+      updatePayload.palette_metadata = JSON.parse(JSON.stringify(paletteMetadata));
+    }
+
+    let { error: updateError } = await supabase
       .from("artworks")
-      .update({
-        status: "published",
-        published_at: now,
-        public_image_path: derivativePath,
-        updated_at: now,
-      })
+      .update(updatePayload)
       .eq("id", artwork.id)
       .eq("status", "draft");
+
+    // Graceful fallback if database column migration is pending in remote schema cache
+    if (updateError && updateError.code === "PGRST204" && paletteMetadata) {
+      console.warn("palette_metadata column not yet in schema cache, committing status without metadata");
+      delete updatePayload.palette_metadata;
+      const retryResult = await supabase
+        .from("artworks")
+        .update(updatePayload)
+        .eq("id", artwork.id)
+        .eq("status", "draft");
+      updateError = retryResult.error;
+    }
 
     if (updateError) {
       console.error("Failed to update artwork status to published:", updateError);

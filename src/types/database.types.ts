@@ -162,6 +162,7 @@ export interface Database {
           status: ArtworkStatus;
           is_featured: boolean;
           published_at: string | null;
+          palette_metadata?: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -181,6 +182,7 @@ export interface Database {
           status?: ArtworkStatus;
           is_featured?: boolean;
           published_at?: string | null;
+          palette_metadata?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -200,6 +202,7 @@ export interface Database {
           status?: ArtworkStatus;
           is_featured?: boolean;
           published_at?: string | null;
+          palette_metadata?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -431,6 +434,7 @@ export interface Database {
           status: "published";
           is_featured: boolean;
           published_at: string;
+          palette_metadata?: Json | null;
         };
         Relationships: [];
       };

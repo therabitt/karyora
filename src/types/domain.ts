@@ -200,3 +200,38 @@ export const inquiryStatusUpdateSchema = z.object({
 });
 
 export type InquiryStatusUpdateInput = z.infer<typeof inquiryStatusUpdateSchema>;
+
+export const paletteMetadataSchema = z.object({
+  rearColor: z.string(),
+  abstractBg: z.string(),
+  middleBgColor: z.string(),
+  patternType: z.enum([
+    "topographic",
+    "geometric",
+    "botanical",
+    "astrolabe",
+    "filigree",
+    "horizon",
+    "minimal",
+  ]),
+  accentColor: z.string(),
+  subtleLineColor: z.string(),
+  plateTag: z.string(),
+  temperature: z.enum(["warm", "cool", "neutral"]).default("neutral"),
+  harmonyScore: z.number().default(100),
+  uniquenessDistance: z.number().default(0.15),
+  strategyUsed: z.string().optional(),
+  clusters: z
+    .array(
+      z.object({
+        hex: z.string(),
+        proportion: z.number(),
+        isNeutral: z.boolean(),
+      })
+    )
+    .optional(),
+  manualOverride: z.boolean().optional(),
+});
+
+export type PaletteMetadata = z.infer<typeof paletteMetadataSchema>;
+
