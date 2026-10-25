@@ -254,3 +254,13 @@ Before implementing a public-facing UI task, the agent MUST:
 8. Report files changed, checks run, visual limitations, and remaining work.
 
 An instruction such as “make it more like Robin Noguier / Alan Menken / KERN” is not sufficient by itself. Use this file to translate that preference into actual layout, hierarchy, motion, and interaction decisions.
+
+
+## Approved homepage viewport implementation
+
+The homepage artwork stage must remain edge-to-edge and preserve both interactive viewport modes. Ribbons displays one selected artwork with subdued, intentionally cropped neighboring previews; Sliced renders five staggered strips from a single aspect-ratio-correct source composition. Do not remove either mode as a layout simplification.
+
+The selected artwork must never be stretched or cropped to fit a fixed portrait card. Fit its true image dimensions inside the available width and height. Cropping is allowed for secondary ribbons previews only. Sliced strips must share one scaled image coordinate system, with gaps inserted between strips rather than stretching the image across a fixed-width background.
+
+Keep the artwork viewport full-width, keep preview gaps bounded, reduce the number of visible neighboring panels on narrower screens, and keep the active artwork centered. Place the title, description, and medium/category metadata below the viewport. The bottom bar contains the archive link, the two-mode control, and the commission inquiry link; avoid decorative audio icons and redundant showcase captions.
+Image dimensions are stored as nullable image_width/image_height presentation metadata, extracted after orientation is applied. Existing published rows without dimensions must fall back to the browser's natural image dimensions after load. This metadata does not change private-image access rules.
