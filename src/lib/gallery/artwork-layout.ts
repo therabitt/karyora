@@ -83,5 +83,8 @@ export function getResponsivePanelCount(viewportWidth: number, total: number): n
     viewportWidth >= 1024 ? 7 :
     viewportWidth >= 640 ? 5 : 3;
 
-  return Math.min(Math.floor(total), breakpointCount);
+  const count = Math.min(Math.floor(total), breakpointCount);
+  // Keep the active artwork centered by preferring odd panel counts. Two works
+  // remain a two-panel case because hiding either would make selection confusing.
+  return count > 2 && count % 2 === 0 ? count - 1 : count;
 }

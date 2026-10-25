@@ -103,15 +103,19 @@ export async function createArtworkAction(
 
     let publicImagePath: string | null = null;
     let publishedAt: string | null = null;
+    let imageWidth = validatedMeta.effectiveWidth;
+    let imageHeight = validatedMeta.effectiveHeight;
 
     // 3. If published, generate exhibition WebP derivative
     if (shouldPublish) {
-      const { derivativePath } = await generateAndUploadArtworkDerivative(
+      const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
         artworkId,
         sourceBuffer
       );
       publicImagePath = derivativePath;
       publishedAt = now;
+      imageWidth = derivative.width;
+      imageHeight = derivative.height;
     }
 
     // 4. Insert into artworks table
@@ -127,8 +131,8 @@ export async function createArtworkAction(
       tags: parsed.data.tags,
       private_image_path: pendingUpload.object_path,
       public_image_path: publicImagePath,
-      image_width: validatedMeta.effectiveWidth,
-      image_height: validatedMeta.effectiveHeight,
+      image_width: imageWidth,
+      image_height: imageHeight,
       status: shouldPublish ? "published" : "draft",
       is_featured: shouldPublish ? parsed.data.is_featured : false,
       published_at: publishedAt,
@@ -254,16 +258,19 @@ export async function updateArtworkAction(
 
       if (isPublished) {
         // Generate new derivative with rollback intent
-        const { derivativePath } = await generateAndUploadArtworkDerivative(
+        const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
           currentArtwork.id,
           sourceBuffer
         );
         newPublicPath = derivativePath;
+        newImageWidth = derivative.width;
+        newImageHeight = derivative.height;
+      } else {
+        newImageWidth = validatedMeta.effectiveWidth;
+        newImageHeight = validatedMeta.effectiveHeight;
       }
 
       newPrivatePath = pendingUpload.object_path;
-      newImageWidth = validatedMeta.effectiveWidth;
-      newImageHeight = validatedMeta.effectiveHeight;
 
       // Queue old private source for cleanup
       if (currentArtwork.private_image_path) {

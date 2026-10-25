@@ -192,9 +192,9 @@ export function AlanMenkenShowcase({
     ? (stageWidth - activeSize.width - previewPanelCount * ribbonGap - 12) / previewPanelCount
     : 0;
   const maxPreviewWidth = stageWidth < 640
-    ? stageWidth * 0.24
+    ? stageWidth * 0.31
     : stageWidth < 1024
-    ? stageWidth * 0.15
+    ? stageWidth * 0.18
     : 140;
   const previewWidth = previewPanelCount > 0
     ? Math.max(18, Math.min(maxPreviewWidth, availablePreviewWidth))

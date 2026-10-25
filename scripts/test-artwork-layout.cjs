@@ -63,5 +63,8 @@ assert.equal(getResponsivePanelCount(390, 21), 3);
 assert.equal(getResponsivePanelCount(800, 21), 5);
 assert.equal(getResponsivePanelCount(1100, 21), 7);
 assert.equal(getResponsivePanelCount(1500, 21), 9);
+assert.equal(getResponsivePanelCount(1500, 8), 7);
+assert.equal(getResponsivePanelCount(900, 4), 3);
+assert.equal(getResponsivePanelCount(390, 2), 2);
 
 console.log("Artwork layout checks passed: ratios, fallback dimensions, circular window, and panel counts.");
