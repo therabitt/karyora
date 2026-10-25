@@ -113,7 +113,7 @@ export function AlanMenkenShowcase({
   return (
     <div className="relative w-full h-[100dvh] min-h-[640px] bg-paper text-ink overflow-hidden flex flex-col justify-between select-none">
       {/* ─── Top Bar ─── */}
-      <header className="relative z-30 w-full h-16 sm:h-20 px-4 sm:px-8 lg:px-12 flex items-center justify-between">
+      <header className="relative z-[101] w-full h-16 sm:h-20 px-4 sm:px-8 lg:px-12 flex items-center justify-between">
         {/* Left: Availability Status Pill ("other stuff maybe?") */}
         <div className="flex items-center">
           <Link

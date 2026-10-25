@@ -683,7 +683,7 @@ export function KernArtworkDetail({
         className="relative w-full min-h-screen lg:h-screen lg:max-h-screen flex flex-col bg-paper text-ink select-none overflow-x-hidden overflow-y-auto lg:overflow-hidden"
       >
         {/* ─── 1. Shared hamburger navigation ─── */}
-        <header className="w-full shrink-0 z-30 px-6 sm:px-10 lg:px-14 pt-5 sm:pt-7 pb-2 flex items-center justify-end">
+        <header className="relative z-[101] w-full shrink-0 px-6 sm:px-10 lg:px-14 pt-5 sm:pt-7 pb-2 flex items-center justify-end">
           <PublicNavigationMenu
             commissionHref={"/commission?ref=" + encodeURIComponent(currentArtwork.slug)}
             buttonClassName="text-ink hover:text-accent"
