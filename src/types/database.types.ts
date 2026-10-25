@@ -159,6 +159,8 @@ export interface Database {
           search_vector: string;
           private_image_path: string;
           public_image_path: string | null;
+          image_width: number | null;
+          image_height: number | null;
           status: ArtworkStatus;
           is_featured: boolean;
           published_at: string | null;
@@ -179,6 +181,8 @@ export interface Database {
           search_vector?: string;
           private_image_path: string;
           public_image_path?: string | null;
+          image_width?: number | null;
+          image_height?: number | null;
           status?: ArtworkStatus;
           is_featured?: boolean;
           published_at?: string | null;
@@ -199,6 +203,8 @@ export interface Database {
           search_vector?: string;
           private_image_path?: string;
           public_image_path?: string | null;
+          image_width?: number | null;
+          image_height?: number | null;
           status?: ArtworkStatus;
           is_featured?: boolean;
           published_at?: string | null;
@@ -435,6 +441,8 @@ export interface Database {
           is_featured: boolean;
           published_at: string;
           palette_metadata?: Json | null;
+          image_width: number | null;
+          image_height: number | null;
         };
         Relationships: [];
       };

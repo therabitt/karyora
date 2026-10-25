@@ -126,7 +126,7 @@ export async function publishArtwork({
     const sourceBuffer = await downloadPrivateSource(artwork.private_image_path);
 
     // 3. Generate derivative and upload with rollback intent
-    const { derivativePath } = await generateAndUploadArtworkDerivative(
+    const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
       artwork.id,
       sourceBuffer
     );
@@ -150,6 +150,8 @@ export async function publishArtwork({
       status: "published",
       published_at: now,
       public_image_path: derivativePath,
+      image_width: derivative.width,
+      image_height: derivative.height,
       updated_at: now,
     };
     if (paletteMetadata) {

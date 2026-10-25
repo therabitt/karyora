@@ -127,6 +127,8 @@ export async function createArtworkAction(
       tags: parsed.data.tags,
       private_image_path: pendingUpload.object_path,
       public_image_path: publicImagePath,
+      image_width: validatedMeta.effectiveWidth,
+      image_height: validatedMeta.effectiveHeight,
       status: shouldPublish ? "published" : "draft",
       is_featured: shouldPublish ? parsed.data.is_featured : false,
       published_at: publishedAt,
@@ -237,6 +239,8 @@ export async function updateArtworkAction(
   try {
     let newPrivatePath = currentArtwork.private_image_path;
     let newPublicPath = currentArtwork.public_image_path;
+    let newImageWidth = currentArtwork.image_width;
+    let newImageHeight = currentArtwork.image_height;
 
     if (newUploadId) {
       // Image replacement flow (Section 4.8.6)
@@ -258,6 +262,8 @@ export async function updateArtworkAction(
       }
 
       newPrivatePath = pendingUpload.object_path;
+      newImageWidth = validatedMeta.effectiveWidth;
+      newImageHeight = validatedMeta.effectiveHeight;
 
       // Queue old private source for cleanup
       if (currentArtwork.private_image_path) {
@@ -300,6 +306,8 @@ export async function updateArtworkAction(
         is_featured: isPublished ? parsed.data.is_featured : false,
         private_image_path: newPrivatePath,
         public_image_path: newPublicPath,
+        image_width: newImageWidth,
+        image_height: newImageHeight,
         updated_at: now,
       })
       .eq("id", currentArtwork.id)
