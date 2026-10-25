@@ -135,7 +135,7 @@ export function LivingIndexGallery({
 
                           {/* Title */}
                           <h2
-                            className={`font-serif text-lg xl:text-xl tracking-tight transition-colors truncate leading-tight ${
+                            className={`font-artwork-title text-lg xl:text-xl tracking-tight transition-colors truncate leading-tight ${
                               isActive
                                 ? "text-accent font-normal"
                                 : "text-ink group-hover:text-accent font-normal"
@@ -166,7 +166,7 @@ export function LivingIndexGallery({
                             {year}
                           </span>
                           <span
-                            className={`text-sm font-serif transition-transform duration-150 ${
+                            className={`text-sm font-sans transition-transform duration-150 ${
                               isActive
                                 ? "text-accent translate-x-1"
                                 : "text-border-strong group-hover:text-accent group-hover:translate-x-1"
@@ -208,10 +208,10 @@ export function LivingIndexGallery({
                   ) : (
                     /* Designed Exhibition Canvas Fallback */
                     <div className="w-full h-full bg-linear-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center select-none border border-border/40 rounded-2xs">
-                      <div className="w-12 h-12 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-3 text-accent font-serif text-lg font-semibold">
+                      <div className="w-12 h-12 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-3 text-accent font-sans text-lg font-semibold">
                         {String(activeIndex + 1).padStart(2, "0")}
                       </div>
-                      <span className="font-serif text-lg text-ink font-medium max-w-[220px]">
+                      <span className="font-artwork-title text-lg text-ink font-normal max-w-[220px]">
                         {activeArtwork.title}
                       </span>
                       <span className="text-[10px] font-mono tracking-widest text-text-muted uppercase mt-1">
@@ -235,7 +235,7 @@ export function LivingIndexGallery({
                   <span>{activeArtwork.medium.replace("-", " ")}</span>
                 </div>
 
-                <h3 className="font-serif text-xl xl:text-2xl text-ink leading-tight font-normal">
+                <h3 className="font-artwork-title text-2xl xl:text-3xl text-ink leading-tight font-normal">
                   <Link
                     href={`/artworks/${activeArtwork.slug}`}
                     className="hover:text-accent transition-colors"
@@ -292,7 +292,7 @@ export function LivingIndexGallery({
                 </div>
 
                 {/* Title */}
-                <h2 className="font-serif text-2xl sm:text-3xl text-ink leading-tight font-normal">
+                <h2 className="font-artwork-title text-3xl sm:text-4xl text-ink leading-tight font-normal">
                   <Link
                     href={`/artworks/${artwork.slug}`}
                     className="hover:text-accent transition-colors"
@@ -319,10 +319,10 @@ export function LivingIndexGallery({
                       />
                     ) : (
                       <div className="w-full h-full bg-linear-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center">
-                        <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2 text-accent font-serif text-base font-semibold">
+                        <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2 text-accent font-sans text-base font-semibold">
                           {itemNumber}
                         </div>
-                        <span className="font-serif text-lg text-ink font-medium">
+                        <span className="font-artwork-title text-lg text-ink font-normal">
                           {artwork.title}
                         </span>
                       </div>

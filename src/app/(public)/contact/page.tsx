@@ -18,7 +18,7 @@ export default async function ContactPage() {
         <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold block">
           Communications & Inquiries
         </span>
-        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-ink tracking-tight">
+        <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl text-ink tracking-tight">
           Get in Touch
         </h1>
         <p className="text-base text-ink-soft leading-relaxed max-w-xl font-normal">
@@ -31,7 +31,7 @@ export default async function ContactPage() {
           <span className="text-[10px] font-mono font-semibold text-accent uppercase tracking-[0.18em] block">
             Direct Communication
           </span>
-          <p className="font-serif text-2xl text-ink">{profile.display_name}</p>
+          <p className="font-sans text-2xl text-ink">{profile.display_name}</p>
           <p className="text-xs text-text-muted leading-relaxed">
             For direct inquiries outside the standard commission intake workflow:
           </p>
@@ -62,7 +62,7 @@ export default async function ContactPage() {
                 : "Closed"}
             </Badge>
           </div>
-          <p className="font-serif text-2xl text-ink">Commission Requests</p>
+          <p className="font-sans text-2xl text-ink">Commission Requests</p>
           <p className="text-xs text-text-muted leading-relaxed">
             For personal commissions, character artwork, and commercial briefs:
           </p>

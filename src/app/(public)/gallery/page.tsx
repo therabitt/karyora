@@ -59,7 +59,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             <span className="text-border-strong font-normal">/</span>
             <span className="text-text-muted">Living Index</span>
           </div>
-          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-[1.08]">
+          <h1 className="font-sans text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-[1.08]">
             The Living Index
           </h1>
         </div>
@@ -252,7 +252,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
           </div>
 
           <div className="space-y-1.5">
-            <h2 className="font-serif text-2xl sm:text-3xl text-ink">
+            <h2 className="font-sans text-2xl sm:text-3xl text-ink">
               {isFiltered ? "No Matching Works Found" : "Exhibition in Preparation"}
             </h2>
             <p className="text-xs sm:text-sm text-ink-soft leading-relaxed max-w-md mx-auto">

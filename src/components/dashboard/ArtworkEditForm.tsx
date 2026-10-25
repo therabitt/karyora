@@ -190,7 +190,7 @@ export function ArtworkEditForm({ artwork }: ArtworkEditFormProps) {
         <Card>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between border-b border-border pb-4">
-              <h2 className="font-serif text-lg text-ink">Artwork Image</h2>
+              <h2 className="font-sans text-lg text-ink">Artwork Image</h2>
               <Button
                 type="button"
                 variant="ghost"
@@ -252,7 +252,7 @@ export function ArtworkEditForm({ artwork }: ArtworkEditFormProps) {
         {/* Metadata Details */}
         <Card>
           <CardContent className="space-y-6">
-            <h2 className="font-serif text-lg text-ink">Artwork Information</h2>
+            <h2 className="font-sans text-lg text-ink">Artwork Information</h2>
 
             <Input
               label="Artwork Title *"
@@ -389,7 +389,7 @@ export function ArtworkEditForm({ artwork }: ArtworkEditFormProps) {
       {/* Danger Zone: Artwork Deletion */}
       <div className="border border-danger/30 rounded-2xl bg-danger/5 p-6 space-y-4">
         <div>
-          <h3 className="font-serif text-lg text-danger">Delete Artwork</h3>
+          <h3 className="font-sans text-lg text-danger">Delete Artwork</h3>
           <p className="text-xs text-text-muted mt-1">
             Permanently deletes this artwork record. Its private source and public derivative files will be queued and removed from storage.
           </p>

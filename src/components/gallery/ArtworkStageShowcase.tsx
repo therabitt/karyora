@@ -82,7 +82,7 @@ export function ArtworkStageShowcase({
   if (!displayArtworks || displayArtworks.length === 0) {
     return (
       <div className="w-full min-h-[60vh] flex flex-col items-center justify-center p-8 text-center border border-dashed border-border bg-surface-muted/30 rounded-xs">
-        <p className="font-serif text-2xl text-ink">Exhibition in Preparation</p>
+        <p className="font-sans text-2xl text-ink">Exhibition in Preparation</p>
         <p className="text-xs text-text-muted mt-2 max-w-sm">
           New original works will be presented here shortly.
         </p>
@@ -201,10 +201,10 @@ export function ArtworkStageShowcase({
                   />
                 ) : (
                   <div className="w-full h-full bg-linear-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center border border-border/40">
-                    <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2.5 text-accent font-serif text-base">
+                    <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2.5 text-accent font-sans text-base">
                       {itemNumber}
                     </div>
-                    <span className="font-serif text-sm md:text-base text-ink font-medium max-w-[180px] line-clamp-2">
+                    <span className="font-artwork-title text-base md:text-lg text-ink font-normal max-w-[180px] line-clamp-2">
                       {artwork.title}
                     </span>
                     <span className="text-[10px] font-mono tracking-widest text-text-muted uppercase mt-1">
@@ -230,7 +230,7 @@ export function ArtworkStageShowcase({
                       № {itemNumber}
                     </span>
                     <span
-                      className={`text-[11px] font-serif tracking-wider whitespace-nowrap [writing-mode:vertical-rl] rotate-180 truncate ${
+                      className={`text-[11px] font-artwork-title tracking-wider whitespace-nowrap [writing-mode:vertical-rl] rotate-180 truncate ${
                         imageUrl && !isFailed
                           ? "text-white/95"
                           : "text-ink group-hover:text-accent font-medium"
@@ -260,7 +260,7 @@ export function ArtworkStageShowcase({
                           <span className="text-border-strong font-normal">/</span>
                           <span>{artwork.medium.replace("-", " ")}</span>
                         </div>
-                        <h2 className="font-serif text-lg sm:text-xl md:text-2xl text-ink tracking-tight truncate font-normal">
+                        <h2 className="font-artwork-title text-xl sm:text-2xl md:text-3xl text-ink tracking-tight truncate font-normal">
                           {artwork.title}
                         </h2>
                       </div>
@@ -315,10 +315,10 @@ export function ArtworkStageShowcase({
               />
             ) : (
               <div className="w-full h-full bg-linear-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2 text-accent font-serif text-base">
+                <div className="w-10 h-10 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-2 text-accent font-sans text-base">
                   {formattedIndex}
                 </div>
-                <span className="font-serif text-lg text-ink font-medium max-w-[220px]">
+                <span className="font-artwork-title text-xl text-ink font-normal max-w-[220px]">
                   {current.title}
                 </span>
                 <span className="text-[10px] font-mono tracking-widest text-text-muted uppercase mt-1">
@@ -339,7 +339,7 @@ export function ArtworkStageShowcase({
                 <span className="text-border-strong font-normal">/</span>
                 <span>{current.medium.replace("-", " ")}</span>
               </div>
-              <h2 className="font-serif text-lg text-ink tracking-tight font-normal">
+              <h2 className="font-artwork-title text-xl text-ink tracking-tight font-normal">
                 {current.title}
               </h2>
               <div className="pt-0.5">
@@ -381,7 +381,7 @@ export function ArtworkStageShowcase({
 
         {/* Lower Viewport Editorial Bar */}
         <div className="flex items-center justify-between gap-4 border-t border-border/70 pt-3">
-          <div className="hidden sm:flex items-center gap-2 text-xs font-serif text-ink-soft">
+          <div className="hidden sm:flex items-center gap-2 text-xs font-sans text-ink-soft">
             <span className="italic font-normal">&ldquo;Where imagination finds its deliberate form.&rdquo;</span>
           </div>
 
@@ -410,7 +410,7 @@ export function ArtworkStageShowcase({
                 <span>{current.medium.replace("-", " ")}</span>
               </div>
 
-              <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-ink tracking-tight leading-[1.1]">
+              <h2 className="font-artwork-title text-3xl sm:text-4xl lg:text-5xl text-ink tracking-tight leading-[1.1]">
                 <Link
                   href={`/artworks/${current.slug}`}
                   className="hover:text-accent transition-colors"
@@ -507,7 +507,7 @@ export function ArtworkStageShowcase({
                         № {itemNumber}
                       </span>
                       <span
-                        className={`text-xs font-serif truncate block ${
+                        className={`text-sm font-artwork-title truncate block ${
                           isSelected ? "text-surface font-medium" : "text-ink group-hover:text-accent"
                         }`}
                       >

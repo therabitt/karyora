@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
+import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 
 export interface AlanMenkenShowcaseProps {
   artworks: PublicArtwork[];
@@ -43,7 +44,6 @@ export function AlanMenkenShowcase({
   });
 
   const [viewMode, setViewMode] = useState<"ribbons" | "sliced">("ribbons");
-  const [menuOpen, setMenuOpen] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
 
   const current = displayArtworks[activeIndex] || displayArtworks[0];
@@ -63,12 +63,17 @@ export function AlanMenkenShowcase({
   // Keyboard navigation (ArrowLeft / ArrowRight) with input element guard
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape" && menuOpen) {
-        setMenuOpen(false);
-        return;
-      }
-      const tag = document.activeElement?.tagName.toLowerCase();
-      if (tag === "input" || tag === "textarea" || tag === "select") return;
+      const target = document.activeElement;
+      const tag = target?.tagName.toLowerCase();
+      if (
+        e.defaultPrevented ||
+        tag === "input" ||
+        tag === "textarea" ||
+        tag === "select" ||
+        tag === "button" ||
+        tag === "a" ||
+        target?.getAttribute("contenteditable") === "true"
+      ) return;
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
@@ -80,19 +85,7 @@ export function AlanMenkenShowcase({
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleNext, handlePrev, menuOpen]);
-
-  // Lock body scroll when fullscreen menu is open
-  useEffect(() => {
-    if (menuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [menuOpen]);
+  }, [handleNext, handlePrev]);
 
   const handleImageError = (id: string) => {
     setFailedImages((prev) => ({ ...prev, [id]: true }));
@@ -101,7 +94,7 @@ export function AlanMenkenShowcase({
   if (!displayArtworks || displayArtworks.length === 0) {
     return (
       <div className="w-full h-[100dvh] flex flex-col items-center justify-center p-8 text-center bg-paper text-ink">
-        <h1 className="font-serif text-3xl italic mb-2">Karyora</h1>
+        <h1 className="font-brand text-3xl mb-2">Karyora</h1>
         <p className="text-sm text-text-muted max-w-sm mb-6">Exhibition in Preparation</p>
         <Link
           href="/gallery"
@@ -120,7 +113,7 @@ export function AlanMenkenShowcase({
   return (
     <div className="relative w-full h-[100dvh] min-h-[640px] bg-paper text-ink overflow-hidden flex flex-col justify-between select-none">
       {/* ─── Top Bar ─── */}
-      <header className="relative z-30 w-full h-16 sm:h-20 px-4 sm:px-8 lg:px-12 flex items-center justify-between">
+      <header className="relative z-[101] w-full h-16 sm:h-20 px-4 sm:px-8 lg:px-12 flex items-center justify-between">
         {/* Left: Availability Status Pill ("other stuff maybe?") */}
         <div className="flex items-center">
           <Link
@@ -155,25 +148,15 @@ export function AlanMenkenShowcase({
           <Link
             href="/"
             aria-label="Karyora Studio Homepage"
-            className="font-serif italic text-3xl sm:text-4xl lg:text-[44px] tracking-tight text-ink hover:text-accent transition-colors"
+            className="font-brand text-3xl sm:text-4xl lg:text-[44px] tracking-tight text-ink hover:text-accent transition-colors"
           >
             Karyora
           </Link>
         </div>
 
-        {/* Right: Minimal Navbar Trigger ("navbar") */}
+        {/* Shared hamburger navigation */}
         <div className="flex items-center">
-          <button
-            type="button"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Open Navigation Menu"
-            aria-expanded={menuOpen}
-            className="p-2 sm:p-2.5 text-ink hover:text-accent transition-colors flex items-center justify-center gap-1 cursor-pointer focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent"
-          >
-            <span className="w-[1.5px] h-5 sm:h-6 bg-current transition-transform duration-200" />
-            <span className="w-[1.5px] h-5 sm:h-6 bg-current transition-transform duration-200" />
-            <span className="w-[1.5px] h-5 sm:h-6 bg-current transition-transform duration-200" />
-          </button>
+          <PublicNavigationMenu buttonClassName="p-2 sm:p-2.5 text-ink hover:text-accent" />
         </div>
       </header>
 
@@ -225,14 +208,14 @@ export function AlanMenkenShowcase({
                       />
                     ) : (
                       <div className="w-full h-full bg-surface-muted flex flex-col items-center justify-center p-2 text-center">
-                        <span className="font-serif text-xs text-ink">{artwork.title}</span>
+                        <span className="font-artwork-title text-xs text-ink">{artwork.title}</span>
                       </div>
                     )}
 
                     {/* Inactive vertical label strip */}
                     {!isActive && (
                       <div className="absolute inset-0 flex flex-col justify-end p-2 pointer-events-none bg-linear-to-t from-ink/70 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
-                        <span className="text-[10px] font-serif text-white whitespace-nowrap [writing-mode:vertical-rl] rotate-180 truncate">
+                        <span className="text-[10px] font-artwork-title text-white whitespace-nowrap [writing-mode:vertical-rl] rotate-180 truncate">
                           {artwork.title}
                         </span>
                       </div>
@@ -244,10 +227,10 @@ export function AlanMenkenShowcase({
 
             {/* Below Stage: Centered Title & Metadata (Alan Menken Reference) */}
             <div className="text-center space-y-1 max-w-xl mx-auto px-4 animate-fade-in">
-              <span className="text-xs sm:text-sm font-serif italic text-ink-soft block">
+              <span className="text-xs sm:text-sm font-sans italic text-ink-soft block">
                 Explore Artwork &amp; Extra Material
               </span>
-              <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-ink tracking-tight leading-tight">
+              <h2 className="font-artwork-title text-2xl sm:text-3xl md:text-4xl lg:text-5xl text-ink tracking-tight leading-tight">
                 <Link
                   href={`/artworks/${current.slug}`}
                   className="hover:text-accent transition-colors"
@@ -273,10 +256,10 @@ export function AlanMenkenShowcase({
                 aria-label={`Previous artwork: ${prevArtwork.title}`}
                 className="hidden md:flex flex-col items-start gap-1 p-3 text-text-muted hover:text-ink transition-colors cursor-pointer mr-4 lg:mr-8 group"
               >
-                <span className="text-lg font-serif transition-transform group-hover:-translate-x-1">
+                <span className="text-lg font-sans transition-transform group-hover:-translate-x-1">
                   ←
                 </span>
-                <span className="text-[11px] font-serif max-w-[110px] truncate text-left">
+                <span className="text-[11px] font-artwork-title max-w-[110px] truncate text-left">
                   {prevArtwork.title}
                 </span>
               </button>
@@ -337,7 +320,7 @@ export function AlanMenkenShowcase({
 
                 {/* Right Slat: Vertical Title Plate (Exact Alan Menken Layout from Image 3) */}
                 <div className="hidden lg:flex flex-col items-center justify-center pl-4 pr-2 space-y-4">
-                  <div className="[writing-mode:vertical-rl] rotate-180 font-serif text-3xl xl:text-4xl text-ink tracking-tight leading-tight">
+                  <div className="[writing-mode:vertical-rl] rotate-180 font-artwork-title text-3xl xl:text-4xl text-ink tracking-tight leading-tight">
                     <Link
                       href={`/artworks/${current.slug}`}
                       className="hover:text-accent transition-colors"
@@ -348,7 +331,7 @@ export function AlanMenkenShowcase({
                   <span className="w-4 h-[1px] bg-border-strong my-2" />
                   <Link
                     href={`/artworks/${current.slug}`}
-                    className="text-[10px] font-serif italic text-text-muted hover:text-accent transition-colors [writing-mode:vertical-rl] rotate-180 tracking-wider"
+                    className="text-[10px] font-sans italic text-text-muted hover:text-accent transition-colors [writing-mode:vertical-rl] rotate-180 tracking-wider"
                   >
                     Explore Case Study
                   </Link>
@@ -362,10 +345,10 @@ export function AlanMenkenShowcase({
                 aria-label={`Next artwork: ${nextArtwork.title}`}
                 className="hidden md:flex flex-col items-end gap-1 p-3 text-text-muted hover:text-ink transition-colors cursor-pointer ml-4 lg:mr-8 group"
               >
-                <span className="text-lg font-serif transition-transform group-hover:translate-x-1">
+                <span className="text-lg font-sans transition-transform group-hover:translate-x-1">
                   →
                 </span>
-                <span className="text-[11px] font-serif max-w-[110px] truncate text-right">
+                <span className="text-[11px] font-artwork-title max-w-[110px] truncate text-right">
                   {nextArtwork.title}
                 </span>
               </button>
@@ -382,7 +365,7 @@ export function AlanMenkenShowcase({
               </button>
               <Link
                 href={`/artworks/${current.slug}`}
-                className="text-xs font-serif italic text-accent font-medium truncate max-w-[160px]"
+                className="text-sm font-artwork-title text-accent font-medium truncate max-w-[160px]"
               >
                 {current.title}
               </Link>
@@ -508,96 +491,7 @@ export function AlanMenkenShowcase({
         </div>
       </footer>
 
-      {/* ─── Slide-Down Fullscreen Menu Overlay (Image 4 Reference) ─── */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Site Navigation Menu"
-        className={`fixed inset-0 z-50 bg-[#121110] text-[#FAF8F3] flex flex-col justify-between p-6 sm:p-10 lg:p-14 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          menuOpen
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-6 pointer-events-none"
-        }`}
-      >
-        {/* Overlay Top Bar */}
-        <div className="w-full flex items-center justify-between">
-          <span className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#78716C]">
-            Karyora Studio · Archive
-          </span>
 
-          <span className="font-serif italic text-3xl sm:text-4xl text-[#FAF8F3]">
-            Karyora
-          </span>
-
-          <button
-            type="button"
-            onClick={() => setMenuOpen(false)}
-            aria-label="Close Navigation Menu"
-            className="p-2 text-[#FAF8F3] hover:text-accent transition-colors flex items-center justify-center gap-1 cursor-pointer"
-          >
-            <span className="w-[1.5px] h-6 bg-current" />
-            <span className="w-[1.5px] h-6 bg-current" />
-            <span className="w-[1.5px] h-6 bg-current" />
-          </button>
-        </div>
-
-        {/* Overlay Center: Grand Serif Menu Links (Exact Layout from Image 4) */}
-        <nav
-          aria-label="Overlay Navigation"
-          className="flex flex-wrap items-center justify-center gap-8 sm:gap-14 lg:gap-20 py-8"
-        >
-          <Link
-            href="/"
-            onClick={() => setMenuOpen(false)}
-            className="font-serif italic text-3xl sm:text-5xl lg:text-6xl text-accent hover:text-white transition-colors relative"
-          >
-            Home
-            <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-accent" />
-          </Link>
-
-          <Link
-            href="/gallery"
-            onClick={() => setMenuOpen(false)}
-            className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F3]/80 hover:text-accent transition-colors"
-          >
-            Gallery
-          </Link>
-
-          <Link
-            href="/commission"
-            onClick={() => setMenuOpen(false)}
-            className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F3]/80 hover:text-accent transition-colors"
-          >
-            Commissions
-          </Link>
-
-          <Link
-            href="/contact"
-            onClick={() => setMenuOpen(false)}
-            className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F3]/80 hover:text-accent transition-colors"
-          >
-            Contact
-          </Link>
-
-          <Link
-            href="/login"
-            onClick={() => setMenuOpen(false)}
-            className="font-serif text-3xl sm:text-5xl lg:text-6xl text-[#FAF8F3]/40 hover:text-accent transition-colors"
-          >
-            Admin
-          </Link>
-        </nav>
-
-        {/* Overlay Bottom Bar */}
-        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-[#78716C] border-t border-white/10 pt-4">
-          <p className="font-serif italic text-sm text-[#FAF8F3]/70">
-            &ldquo;Where imagination finds its deliberate form.&rdquo;
-          </p>
-          <p className="uppercase tracking-widest text-[10px]">
-            © {new Date().getFullYear()} Karyora. All rights reserved.
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

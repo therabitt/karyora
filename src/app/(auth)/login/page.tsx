@@ -15,7 +15,7 @@ export default function LoginPage() {
           <span className="text-xs uppercase tracking-widest text-text-muted font-semibold">
             Restricted Studio Access
           </span>
-          <h1 className="font-serif text-3xl text-ink">Artist Sign In</h1>
+          <h1 className="font-sans text-3xl text-ink">Artist Sign In</h1>
           <p className="text-xs text-text-muted">
             Authorized administrator session required.
           </p>

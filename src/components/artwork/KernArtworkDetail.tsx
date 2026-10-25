@@ -10,6 +10,7 @@ import React, {
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
+import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 
 interface KernArtworkDetailProps {
   initialArtwork: PublicArtwork;
@@ -681,22 +682,12 @@ export function KernArtworkDetail({
         onWheel={handleWheel}
         className="relative w-full min-h-screen lg:h-screen lg:max-h-screen flex flex-col bg-paper text-ink select-none overflow-x-hidden overflow-y-auto lg:overflow-hidden"
       >
-        {/* ─── 1. Top Navigation Bar ─── */}
-        <header className="w-full shrink-0 z-30 px-6 sm:px-10 lg:px-14 pt-5 sm:pt-7 pb-2 flex items-center justify-end">
-          <nav
-            aria-label="Exhibition navigation"
-            className="flex items-center gap-5 sm:gap-8 text-[11px] font-mono uppercase tracking-[0.22em] text-ink-soft"
-          >
-            <Link href="/gallery" className="hover:text-accent transition-colors hidden sm:inline-block">Gallery</Link>
-            <Link href="/commission" className="hover:text-accent transition-colors hidden sm:inline-block">Commissions</Link>
-            <Link href="/contact" className="hover:text-accent transition-colors hidden md:inline-block">Contact</Link>
-            <Link
-              href={`/commission?ref=${encodeURIComponent(currentArtwork.slug)}`}
-              className="text-accent font-semibold hover:text-accent-hover transition-colors"
-            >
-              Inquire
-            </Link>
-          </nav>
+        {/* ─── 1. Shared hamburger navigation ─── */}
+        <header className="relative z-[101] w-full shrink-0 px-6 sm:px-10 lg:px-14 pt-5 sm:pt-7 pb-2 flex items-center justify-end">
+          <PublicNavigationMenu
+            commissionHref={"/commission?ref=" + encodeURIComponent(currentArtwork.slug)}
+            buttonClassName="text-ink hover:text-accent"
+          />
         </header>
 
         {/* ─── 2. Main Three-Column Exhibition Stage ─── */}
@@ -705,7 +696,7 @@ export function KernArtworkDetail({
           {/* ── MOBILE: Title shown at top ── */}
           <div className="lg:hidden w-full text-center">
             <h1
-              className="font-serif text-xl sm:text-3xl text-ink font-normal tracking-tight leading-tight"
+              className="font-artwork-title text-2xl sm:text-4xl text-ink font-normal tracking-tight leading-tight"
               style={metaStyle}
             >
               {currentArtwork.title}
@@ -715,7 +706,7 @@ export function KernArtworkDetail({
           {/* ══ LEFT COLUMN: Karyora Editorial Wordmark ══ */}
           <div className="hidden lg:flex flex-col items-start justify-center pl-0">
             <span
-              className="font-serif text-5xl xl:text-7xl text-ink font-normal tracking-tight leading-none select-none pointer-events-none"
+              className="font-brand text-5xl xl:text-7xl text-ink font-normal tracking-tight leading-none select-none pointer-events-none"
               aria-hidden="true"
             >
               Karyora
@@ -817,10 +808,10 @@ export function KernArtworkDetail({
                     />
                   ) : (
                     <div className="w-[260px] h-[360px] bg-gradient-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center select-none">
-                      <div className="w-12 h-12 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-3 text-accent font-serif text-lg font-semibold">
+                      <div className="w-12 h-12 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-3 text-accent font-sans text-lg font-semibold">
                         {itemNumber}
                       </div>
-                      <span className="font-serif text-lg text-ink font-medium max-w-[200px]">
+                      <span className="font-artwork-title text-lg text-ink font-normal max-w-[200px]">
                         {currentArtwork.title}
                       </span>
                     </div>
@@ -849,7 +840,7 @@ export function KernArtworkDetail({
               style={metaStyle}
             >
               {/* Artwork title */}
-              <h1 className="font-serif text-2xl xl:text-3xl text-ink font-normal leading-tight tracking-tight">
+              <h1 className="font-artwork-title text-3xl xl:text-4xl text-ink font-normal leading-tight tracking-tight">
                 {currentArtwork.title}
               </h1>
 
@@ -873,7 +864,7 @@ export function KernArtworkDetail({
 
               {/* Description */}
               {currentArtwork.description ? (
-                <p className="text-[12px] text-ink-soft leading-relaxed font-normal line-clamp-4 max-w-[260px] xl:max-w-[300px]">
+                <p className="font-handwritten text-lg xl:text-xl font-medium text-ink-soft leading-snug line-clamp-4 max-w-[260px] xl:max-w-[300px]">
                   {currentArtwork.description}
                 </p>
               ) : null}
@@ -901,7 +892,7 @@ export function KernArtworkDetail({
                 <span>{currentArtwork.category.replace(/-/g, " ")}</span>
               </p>
               {currentArtwork.description && (
-                <p className="text-xs text-ink-soft leading-relaxed line-clamp-2 max-w-xs px-2">
+                <p className="font-handwritten text-base sm:text-lg font-medium text-ink-soft leading-snug line-clamp-2 max-w-xs px-2">
                   {currentArtwork.description}
                 </p>
               )}
@@ -1020,7 +1011,7 @@ export function KernArtworkDetail({
                       )}
                     </span>
                     <span className="font-mono text-xs sm:text-sm tracking-wider font-semibold">{num}</span>
-                    <span className={`text-xs sm:text-sm font-serif max-w-[140px] truncate hidden md:inline-block ${isSelected ? "text-surface" : "text-ink group-hover:text-accent"}`}>
+                    <span className={`text-xs sm:text-sm font-artwork-title max-w-[140px] truncate hidden md:inline-block ${isSelected ? "text-surface" : "text-ink group-hover:text-accent"}`}>
                       {artwork.title}
                     </span>
                     {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-accent ml-0.5 shrink-0" />}
@@ -1047,7 +1038,7 @@ export function KernArtworkDetail({
                   № {itemNumber} of {totalFormatted}
                 </span>
                 <span className="text-white/40">/</span>
-                <span className="font-serif text-base text-white">{currentArtwork.title}</span>
+                <span className="font-artwork-title text-xl text-white">{currentArtwork.title}</span>
               </div>
               <button
                 type="button"
