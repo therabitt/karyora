@@ -74,16 +74,13 @@ The current public homepage and showcase are implemented in:
 - `src/app/(public)/artworks/[slug]/page.tsx`
 - `src/app/globals.css`
 
-The current homepage has an editorial index/status bar, a centered headline and bio with two CTAs, a separately labeled spotlight section, the interactive artwork stage, and a commission CTA.
+The homepage is now built around a full-width, viewport-focused artwork stage. The selected artwork is presented with its original aspect ratio, and a separate information block beneath it holds the title, description when available, and medium/category metadata. The bottom action bar provides archive access, the mode switch, and a contextual commission link.
 
-The showcase currently:
-- requests up to eight featured published artworks;
-- gives the active panel a wider flex ratio, and renders the other artworks as narrow vertical strips on desktop;
-- dims and desaturates inactive strips, with vertical title labels;
-- shows a single portrait-oriented slide and previous/next buttons on mobile;
-- shows title/category/medium and a detail link under the stage;
-- adds a second selection dock with thumbnails and another previous/next control;
-- also places a detail link over the active desktop panel.
+The active homepage has two distinct, retained viewport modes:
+- **Ribbons:** a selected image with subdued, intentionally cropped neighboring artwork previews. The selected image itself is never cropped.
+- **Sliced:** five staggered vertical strips from one aspect-ratio-correct image canvas. Each strip changes its visible height and vertical position without independently stretching its image pixels.
+
+The number and width of neighboring panels adapt to available viewport width. Preview gaps are bounded, all supplied homepage artworks remain reachable via circular selection, and the title block remains outside the artwork viewport.
 
 The existing design tokens in `src/app/globals.css` are a useful starting point:
 

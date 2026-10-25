@@ -176,8 +176,12 @@ export function AlanMenkenShowcase({
   const stageWindow = getArtworkWindow(total, activeIndex, 9);
   const ribbonGap = Math.max(5, Math.min(10, stageWidth * 0.006));
   const previewPanelCount = Math.max(0, visiblePanelCount - 1);
-  const preferredActiveWidth = stageWidth < 640 ? stageWidth * 0.54 : stageWidth * 0.36;
   const activeDimensions = getDimensions(current);
+  const activeAspectRatio = activeDimensions.width / activeDimensions.height;
+  const preferredActiveWidth =
+    stageWidth < 640
+      ? stageWidth * (activeAspectRatio >= 1.2 ? 0.76 : 0.54)
+      : stageWidth * (activeAspectRatio >= 1.3 ? 0.54 : activeAspectRatio >= 0.85 ? 0.42 : 0.36);
   const activeSize = fitArtworkWithinBounds(
     activeDimensions.width,
     activeDimensions.height,
@@ -193,7 +197,7 @@ export function AlanMenkenShowcase({
     ? stageWidth * 0.15
     : 140;
   const previewWidth = previewPanelCount > 0
-    ? Math.max(38, Math.min(maxPreviewWidth, availablePreviewWidth))
+    ? Math.max(18, Math.min(maxPreviewWidth, availablePreviewWidth))
     : 0;
 
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
@@ -268,13 +272,9 @@ export function AlanMenkenShowcase({
 
                   if (isActive) {
                     return (
-                      <button
+                      <div
                         key={artwork.id}
-                        type="button"
-                        onClick={() => setRawActiveIndex(index)}
-                        aria-label={"Selected artwork: " + artwork.title + ". Open artwork details below."}
-                        aria-pressed="true"
-                        className="relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                        className="relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none"
                         style={{
                           width: activeSize.width + "px",
                           height: activeSize.height + "px",
@@ -284,7 +284,7 @@ export function AlanMenkenShowcase({
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={imageUrl}
-                            alt=""
+                            alt={artwork.alt_text || artwork.title}
                             onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                             onError={() => handleImageError(artwork.id)}
                             className="h-full w-full object-contain"
@@ -294,7 +294,7 @@ export function AlanMenkenShowcase({
                             <span className="font-artwork-title text-xl text-ink">{artwork.title}</span>
                           </div>
                         )}
-                      </button>
+                      </div>
                     );
                   }
 
