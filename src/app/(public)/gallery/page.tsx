@@ -50,17 +50,17 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   const endItem = Math.min(currentPage * pageSize, total);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-12 w-full space-y-8 sm:space-y-10">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 sm:pt-4 pb-12 w-full space-y-4 sm:space-y-5">
       {/* ─── Editorial Living Index Masthead ─── */}
-      <section className="border-b border-border pb-5 sm:pb-6 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="space-y-1 max-w-2xl">
+      <section className="border-b border-border pb-3 sm:pb-3.5 space-y-2">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
+          <div className="space-y-0.5 max-w-2xl">
             <div className="flex items-center gap-2.5 text-[11px] font-mono uppercase tracking-[0.2em] text-accent font-semibold">
               <span>Archive & Catalog</span>
               <span className="text-border-strong font-normal">/</span>
               <span className="text-text-muted">Living Index</span>
             </div>
-            <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl text-ink tracking-tight leading-[1.08]">
+            <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl text-ink tracking-tight leading-[1.08]">
               The Living Index
             </h1>
           </div>
@@ -81,8 +81,8 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
       </section>
 
       {/* ─── Refined Editorial Discovery Bar (Underline Tabs, Understated Search) ─── */}
-      <section className="space-y-3.5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border pb-3">
+      <section className="space-y-2.5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-border pb-2.5">
           {/* Category Filter Underline Strip */}
           <nav
             aria-label="Filter works by category"

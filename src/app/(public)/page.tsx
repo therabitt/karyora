@@ -4,7 +4,15 @@ import { ArtworkStageShowcase } from "@/components/gallery/ArtworkStageShowcase"
 import { getPublicProfile } from "@/lib/data/profile";
 import { getFeaturedPublishedArtworks } from "@/lib/data/artworks";
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams?: Promise<{
+    item?: string;
+  }>;
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const params = await searchParams;
+  const initialIndex = params?.item ? Math.max(0, Number(params.item) - 1) : 0;
   const profile = await getPublicProfile();
   // Fetch up to 5 featured published artworks for the exhibition stage
   const featuredArtworks = await getFeaturedPublishedArtworks(5);
@@ -49,7 +57,7 @@ export default async function HomePage() {
         </div>
 
         {/* Featured Artwork Stage Showcase */}
-        <ArtworkStageShowcase artworks={featuredArtworks} />
+        <ArtworkStageShowcase artworks={featuredArtworks} initialIndex={initialIndex} />
       </section>
 
       {/* ─── Commission Consideration (Art-Led Editorial Invitation) ─── */}

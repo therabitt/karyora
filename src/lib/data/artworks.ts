@@ -208,6 +208,32 @@ export async function getPublishedArtworkBySlug(slug: string): Promise<PublicArt
 }
 
 /**
+ * Retrieves all published artworks in chronological publication order for interactive
+ * exhibition showcases, catalogs, and the detail-view dock.
+ */
+export async function getAllPublishedArtworks(): Promise<PublicArtwork[]> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("public_artworks")
+      .select("*")
+      .order("published_at", { ascending: false });
+
+    if (error || !data || data.length === 0) {
+      return DEFAULT_ARTWORKS;
+    }
+
+    return data;
+  } catch (err) {
+    if (isNextInternalBailout(err)) {
+      throw err;
+    }
+    console.warn("Could not fetch all published artworks, using fallback:", err);
+    return DEFAULT_ARTWORKS;
+  }
+}
+
+/**
  * Retrieves all artworks (Draft and Published) for the administrator dashboard.
  */
 export async function getAdminArtworks(statusFilter?: "draft" | "published"): Promise<AdminArtwork[]> {
