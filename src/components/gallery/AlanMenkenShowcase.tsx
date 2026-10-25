@@ -79,7 +79,7 @@ export function AlanMenkenShowcase({
 
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [total > 0]);
+  }, [total]);
 
   const handleNext = useCallback(() => {
     if (total <= 1) return;
@@ -173,7 +173,7 @@ export function AlanMenkenShowcase({
   const stageWidth = stageSize.width || 1440;
   const stageHeight = stageSize.height || 520;
   const visiblePanelCount = getResponsivePanelCount(stageWidth, total);
-  const stageWindow = getArtworkWindow(total, activeIndex, 9);
+  const stageWindow = getArtworkWindow(total, activeIndex, visiblePanelCount);
   const ribbonGap = Math.max(5, Math.min(10, stageWidth * 0.006));
   const previewPanelCount = Math.max(0, visiblePanelCount - 1);
   const activeDimensions = getDimensions(current);
@@ -451,7 +451,7 @@ export function AlanMenkenShowcase({
           </Link>
         </div>
 
-        <div className="flex items-center gap-1 rounded-full border border-border bg-surface p-1" aria-label="Choose artwork viewport mode">
+        <div role="group" className="flex items-center gap-1 rounded-full border border-border bg-surface p-1" aria-label="Choose artwork viewport mode">
           <button
             type="button"
             aria-label="Ribbon artwork view"
