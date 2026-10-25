@@ -89,7 +89,7 @@ export function OfferingEditForm({ offering }: OfferingEditFormProps) {
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
-                <h2 className="font-serif text-lg text-ink">Offering Details</h2>
+                <h2 className="font-sans text-lg text-ink">Offering Details</h2>
                 <p className="text-xs text-text-muted mt-0.5">
                   ID: <span className="font-mono">{offering.id}</span>
                 </p>
@@ -221,7 +221,7 @@ export function OfferingEditForm({ offering }: OfferingEditFormProps) {
       {/* Danger Zone: Offering Deletion */}
       <div className="border border-danger/30 rounded-2xl bg-danger/5 p-6 space-y-4">
         <div>
-          <h3 className="font-serif text-lg text-danger">Delete Offering</h3>
+          <h3 className="font-sans text-lg text-danger">Delete Offering</h3>
           <p className="text-xs text-text-muted mt-1">
             Offerings that have associated client inquiries cannot be deleted to preserve inquiry history. In that case, deactivate the offering instead.
           </p>

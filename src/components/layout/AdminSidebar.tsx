@@ -55,7 +55,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="p-6 border-b border-white/[0.08]">
         <Link href="/dashboard" className="block group" onClick={onNavigate}>
           <div className="flex items-center justify-between">
-            <span className="font-serif text-2xl tracking-tight text-surface group-hover:text-accent transition-colors">
+            <span className="font-brand text-3xl tracking-tight text-surface group-hover:text-accent transition-colors">
               Karyora
             </span>
             <span className="w-2 h-2 rounded-full bg-accent" />
@@ -117,7 +117,7 @@ export function AdminSidebar() {
       {/* ─── Mobile Top Bar ─── */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-ink text-surface flex items-center justify-between px-4 border-b border-white/10">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="font-serif text-lg tracking-tight text-surface">Karyora</span>
+          <span className="font-brand text-2xl tracking-tight text-surface">Karyora</span>
           <span className="text-[10px] uppercase tracking-wider text-surface/40">Admin</span>
         </Link>
         <button

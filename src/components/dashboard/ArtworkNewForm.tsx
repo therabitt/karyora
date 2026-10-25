@@ -58,7 +58,7 @@ export function ArtworkNewForm() {
       {/* 1. Staged Source Image Upload */}
       <Card>
         <CardContent className="space-y-4">
-          <h2 className="font-serif text-lg text-ink">Exhibition Media</h2>
+          <h2 className="font-sans text-lg text-ink">Exhibition Media</h2>
           <ImageUploader disabled={isPending} />
           {state?.fieldErrors?.image && (
             <p className="text-xs text-danger font-medium">
@@ -71,7 +71,7 @@ export function ArtworkNewForm() {
       {/* 2. Artwork Metadata */}
       <Card>
         <CardContent className="space-y-6">
-          <h2 className="font-serif text-lg text-ink">Artwork Details</h2>
+          <h2 className="font-sans text-lg text-ink">Artwork Details</h2>
 
           <Input
             label="Artwork Title *"
@@ -175,7 +175,7 @@ export function ArtworkNewForm() {
       {/* 3. Publication & Visibility Settings */}
       <Card>
         <CardContent className="space-y-6">
-          <h2 className="font-serif text-lg text-ink">Publication State</h2>
+          <h2 className="font-sans text-lg text-ink">Publication State</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors">

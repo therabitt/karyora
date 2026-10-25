@@ -51,7 +51,7 @@ export function ProfileSettingsForm({ profile }: ProfileSettingsFormProps) {
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between border-b border-border pb-4">
             <div>
-              <h2 className="font-serif text-lg text-ink">Commission Availability</h2>
+              <h2 className="font-sans text-lg text-ink">Commission Availability</h2>
               <p className="text-xs text-text-muted mt-0.5">
                 Controls inquiry intake mode on the public commission page.
               </p>
@@ -145,7 +145,7 @@ export function ProfileSettingsForm({ profile }: ProfileSettingsFormProps) {
       <Card>
         <CardContent className="space-y-6">
           <div className="border-b border-border pb-4">
-            <h2 className="font-serif text-lg text-ink">Public Artist Profile</h2>
+            <h2 className="font-sans text-lg text-ink">Public Artist Profile</h2>
             <p className="text-xs text-text-muted mt-0.5">
               Exhibited on the public home, about, and contact pages.
             </p>
