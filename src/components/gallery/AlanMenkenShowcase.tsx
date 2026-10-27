@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
@@ -37,7 +37,41 @@ type ArtworkTransitionSnapshot = {
   artwork: PublicArtwork;
   direction: "next" | "previous";
   sequence: number;
+  releaseVelocity: number;
 };
+
+type ArtworkPointerGesture = {
+  pointerId: number;
+  pointerType: string;
+  startX: number;
+  startY: number;
+  lastX: number;
+  lastAt: number;
+  velocityX: number;
+  dragging: boolean;
+};
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function resetArtworkDragStyles(stage: HTMLElement, animateReturn: boolean): void {
+  stage.style.setProperty("--artwork-visual-x", "0px");
+  stage.style.setProperty("--artwork-track-x", "0px");
+  stage.style.setProperty("--artwork-preview-x", "0px");
+  stage.style.setProperty("--artwork-tilt", "0deg");
+  stage.style.setProperty("--artwork-composition-tilt", "0deg");
+  stage.style.setProperty("--artwork-drag-scale", "1");
+  stage.removeAttribute("data-dragging");
+
+  stage.querySelectorAll<HTMLElement>("[data-artwork-slice]").forEach((slice) => {
+    slice.style.setProperty("--slice-parallax-x", "0px");
+    slice.style.setProperty("--slice-parallax-y", "0px");
+  });
+
+  if (animateReturn) stage.dataset.dragReturning = "true";
+  else delete stage.dataset.dragReturning;
+}
 
 function getPanelVisibilityClass(offset: number): string {
   const distance = Math.abs(offset);
@@ -74,7 +108,8 @@ export function AlanMenkenShowcase({
   const wheelLockedRef = useRef(false);
   const lastWheelEventAtRef = useRef(0);
   const wheelUnlockTimerRef = useRef<number | null>(null);
-  const pointerStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
+  const pointerStartRef = useRef<ArtworkPointerGesture | null>(null);
+  const dragResetTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const element = stageRef.current;
@@ -103,7 +138,11 @@ export function AlanMenkenShowcase({
     return () => window.removeEventListener("resize", measure);
   }, [total]);
 
-  const selectArtwork = useCallback((targetIndex: number, direction: "next" | "previous") => {
+  const selectArtwork = useCallback((
+    targetIndex: number,
+    direction: "next" | "previous",
+    releaseVelocity = 0,
+  ) => {
     if (total <= 1) return;
 
     const normalizedIndex = ((targetIndex % total) + total) % total;
@@ -116,6 +155,7 @@ export function AlanMenkenShowcase({
         artwork: outgoingArtwork,
         direction,
         sequence: ++transitionSequenceRef.current,
+        releaseVelocity: clamp(Math.abs(releaseVelocity), 0, 1.6),
       });
     }
     activeIndexRef.current = normalizedIndex;
@@ -221,8 +261,20 @@ export function AlanMenkenShowcase({
     else handlePrev();
   }, [handleNext, handlePrev, isNavigationOpen, total]);
 
+  const clearDragResetTimer = useCallback(() => {
+    if (dragResetTimerRef.current !== null) {
+      window.clearTimeout(dragResetTimerRef.current);
+      dragResetTimerRef.current = null;
+    }
+  }, []);
+
   const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (event.pointerType !== "touch" || isNavigationOpen || total <= 1) {
+    if (
+      (event.pointerType !== "mouse" && event.pointerType !== "touch") ||
+      (event.pointerType === "mouse" && event.button !== 0) ||
+      isNavigationOpen ||
+      total <= 1
+    ) {
       pointerStartRef.current = null;
       return;
     }
@@ -232,37 +284,152 @@ export function AlanMenkenShowcase({
       target instanceof Element &&
       target.closest("button, a, input, textarea, select, [contenteditable='true']")
     ) {
-      // Keep taps and native activation on explicit controls predictable.
+      // Preserve native activation for controls. Direct manipulation starts on the artwork surface.
       pointerStartRef.current = null;
       return;
     }
 
+    clearDragResetTimer();
     pointerStartRef.current = {
       pointerId: event.pointerId,
-      x: event.clientX,
-      y: event.clientY,
+      pointerType: event.pointerType,
+      startX: event.clientX,
+      startY: event.clientY,
+      lastX: event.clientX,
+      lastAt: performance.now(),
+      velocityX: 0,
+      dragging: false,
     };
-  }, [isNavigationOpen, total]);
+  }, [clearDragResetTimer, isNavigationOpen, total]);
+
+  const handleStagePointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const gesture = pointerStartRef.current;
+    const stage = stageRef.current;
+    if (!gesture || !stage || gesture.pointerId !== event.pointerId || isNavigationOpen) return;
+
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const horizontal = Math.abs(deltaX);
+    const vertical = Math.abs(deltaY);
+    const now = performance.now();
+
+    if (!gesture.dragging) {
+      if (horizontal < 7 && vertical < 7) return;
+
+      // Keep vertical gestures native. The gallery only captures intentional horizontal movement.
+      if (vertical > horizontal * 1.12) {
+        pointerStartRef.current = null;
+        return;
+      }
+      if (horizontal < 7) return;
+
+      gesture.dragging = true;
+      stage.dataset.dragging = "true";
+      stage.querySelectorAll(".artwork-selection-enter, .artwork-composition-enter, .artwork-slice-enter")
+        .forEach((element) => element.classList.remove(
+          "artwork-selection-enter", "artwork-composition-enter", "artwork-slice-enter"
+        ));
+      try {
+        stage.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture is best-effort; normal pointer events still work within the viewport.
+      }
+    }
+
+    const elapsed = Math.max(1, now - gesture.lastAt);
+    const instantaneousVelocity = (event.clientX - gesture.lastX) / elapsed;
+    gesture.velocityX = gesture.velocityX * 0.58 + instantaneousVelocity * 0.42;
+    gesture.lastX = event.clientX;
+    gesture.lastAt = now;
+
+    // The artwork follows the pointer with slight resistance; surrounding panels lag behind.
+    const visualX = clamp(deltaX * 0.74, -112, 112);
+    const normalizedDistance = Math.min(1, horizontal / 150);
+    const tilt = clamp(-deltaX * 0.012, -1.7, 1.7);
+    const compositionTilt = clamp(-deltaX * 0.006, -0.85, 0.85);
+    const dragScale = 1 - normalizedDistance * 0.018;
+
+    stage.style.setProperty("--artwork-visual-x", String(visualX) + "px");
+    stage.style.setProperty("--artwork-track-x", String(clamp(deltaX * 0.12, -18, 18)) + "px");
+    stage.style.setProperty("--artwork-preview-x", String(clamp(deltaX * 0.045, -8, 8)) + "px");
+    stage.style.setProperty("--artwork-tilt", String(tilt) + "deg");
+    stage.style.setProperty("--artwork-composition-tilt", String(compositionTilt) + "deg");
+    stage.style.setProperty("--artwork-drag-scale", String(dragScale));
+
+    const slices = stage.querySelectorAll<HTMLElement>("[data-artwork-slice]");
+    slices.forEach((slice, index) => {
+      const relativeIndex = index - (slices.length - 1) / 2;
+      const parallaxX = clamp(-deltaX * relativeIndex * 0.035, -10, 10);
+      const parallaxY = clamp(Math.abs(deltaX) * Math.abs(relativeIndex) * 0.012, 0, 4);
+      slice.style.setProperty("--slice-parallax-x", String(parallaxX) + "px");
+      slice.style.setProperty("--slice-parallax-y", String(parallaxY) + "px");
+    });
+
+    if (event.cancelable) event.preventDefault();
+  }, [isNavigationOpen]);
 
   const handleStagePointerUp = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    const start = pointerStartRef.current;
+    const gesture = pointerStartRef.current;
+    const stage = stageRef.current;
     pointerStartRef.current = null;
-    if (!start || start.pointerId !== event.pointerId || isNavigationOpen) return;
+    if (!gesture || gesture.pointerId !== event.pointerId || !stage) return;
 
-    const direction = getSwipeDirection(start.x, start.y, event.clientX, event.clientY);
+    const deltaX = event.clientX - gesture.startX;
+    const deltaY = event.clientY - gesture.startY;
+    const horizontal = Math.abs(deltaX);
+    const vertical = Math.abs(deltaY);
+
+    if (gesture.dragging) {
+      const direction = deltaX < 0 ? "next" : "previous";
+      const fling = horizontal >= 30 && Math.abs(gesture.velocityX) >= 0.42;
+      const shouldNavigate = horizontal >= vertical * 1.12 && (horizontal >= 58 || fling);
+      resetArtworkDragStyles(stage, !shouldNavigate);
+
+      if (shouldNavigate) {
+        selectArtwork(
+          direction === "next"
+            ? (activeIndexRef.current + 1) % total
+            : (activeIndexRef.current - 1 + total) % total,
+          direction,
+          gesture.velocityX,
+        );
+      } else {
+        clearDragResetTimer();
+        dragResetTimerRef.current = window.setTimeout(() => {
+          if (stageRef.current) delete stageRef.current.dataset.dragReturning;
+          dragResetTimerRef.current = null;
+        }, 280);
+      }
+      return;
+    }
+
+    // Keep the established swipe threshold for short gestures that never entered drag mode.
+    const direction = getSwipeDirection(gesture.startX, gesture.startY, event.clientX, event.clientY);
     if (direction === "next") handleNext();
     else if (direction === "previous") handlePrev();
-  }, [handleNext, handlePrev, isNavigationOpen]);
+  }, [clearDragResetTimer, handleNext, handlePrev, selectArtwork, total]);
 
   const handleStagePointerCancel = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (pointerStartRef.current?.pointerId === event.pointerId) {
-      pointerStartRef.current = null;
+    const gesture = pointerStartRef.current;
+    if (gesture?.pointerId !== event.pointerId) return;
+    pointerStartRef.current = null;
+
+    if (gesture.dragging && stageRef.current) {
+      resetArtworkDragStyles(stageRef.current, true);
+      clearDragResetTimer();
+      dragResetTimerRef.current = window.setTimeout(() => {
+        if (stageRef.current) delete stageRef.current.dataset.dragReturning;
+        dragResetTimerRef.current = null;
+      }, 280);
     }
-  }, []);
+  }, [clearDragResetTimer]);
 
   useEffect(() => () => {
     if (wheelUnlockTimerRef.current !== null) {
       window.clearTimeout(wheelUnlockTimerRef.current);
+    }
+    if (dragResetTimerRef.current !== null) {
+      window.clearTimeout(dragResetTimerRef.current);
     }
   }, []);
 
@@ -417,18 +584,19 @@ export function AlanMenkenShowcase({
         <section
           ref={stageRef}
           data-transition-direction={transitionDirection}
-          aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
+          aria-label="Artwork viewport. Use left and right arrow keys, scroll, drag, or swipe to change artwork."
           tabIndex={0}
           onWheel={handleStageWheel}
           onPointerDown={handleStagePointerDown}
+          onPointerMove={handleStagePointerMove}
           onPointerUp={handleStagePointerUp}
           onPointerCancel={handleStagePointerCancel}
-          className="relative min-h-0 w-full flex-1 overflow-hidden touch-pan-y focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+          className="artwork-stage relative min-h-0 w-full flex-1 overflow-hidden touch-pan-y focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
         >
           {viewMode === "ribbons" ? (
             <div className="absolute inset-0 flex items-center overflow-hidden">
               <div
-                className="flex h-full w-max min-w-full items-center justify-center"
+                className="artwork-ribbon-track flex h-full w-max min-w-full items-center justify-center"
                 style={{ gap: ribbonGap + "px" }}
                 role="group"
                 aria-label="Select an artwork"
@@ -485,11 +653,11 @@ export function AlanMenkenShowcase({
                       }}
                       aria-label={"Select artwork: " + artwork.title}
                       aria-pressed="false"
-                      className={"group relative shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + visibility}
+                      className={"artwork-ribbon-preview group relative shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + visibility}
                       style={{
                         width: previewWidth + "px",
                         height: previewHeight + "px",
-                        transform: "translateY(" + staggerOffset + "px)",
+                        transform: "translate3d(var(--artwork-preview-x, 0px), " + staggerOffset + "px, 0)",
                       }}
                     >
                       {imageUrl && !failed ? (
@@ -550,7 +718,8 @@ export function AlanMenkenShowcase({
                   return (
                     <div
                       key={`${current.id}-${sliceIndex}`}
-                      className="artwork-slice-enter absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg transition-[top,height] duration-500 ease-out motion-reduce:transition-none"
+                      data-artwork-slice={sliceIndex}
+                      className="artwork-slice-enter absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg transition-[top,height,transform] duration-500 ease-out motion-reduce:transition-none"
                       style={{
                         left: left + "px",
                         top: panelTop + "px",
@@ -602,6 +771,10 @@ export function AlanMenkenShowcase({
               key={transitionSnapshot.sequence}
               aria-hidden="true"
               className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+              style={{
+                "--artwork-exit-shift": (transitionSnapshot.direction === "next" ? -1 : 1) *
+                  (20 + Math.min(56, transitionSnapshot.releaseVelocity * 35)) + "px",
+              } as CSSProperties}
             >
               <div
                 className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl"
