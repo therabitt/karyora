@@ -227,6 +227,17 @@ body {
   transition: none;
 }
 
+.artwork-stage .artwork-ribbon-track {
+  transition: transform 360ms cubic-bezier(0.2, 0.78, 0.25, 1);
+}
+
+.artwork-stage .artwork-ribbon-preview {
+  transition:
+    transform 280ms cubic-bezier(0.2, 0.78, 0.25, 1),
+    opacity 220ms ease-out,
+    filter 220ms ease-out;
+}
+
 .artwork-stage[data-dragging="true"] .artwork-ribbon-track {
   transform: translate3d(var(--artwork-track-x, 0px), 0, 0);
   transition: transform 120ms cubic-bezier(0.18, 0.67, 0.24, 1);
