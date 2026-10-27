@@ -48,7 +48,8 @@ assert.equal(getWheelDirection(Number.POSITIVE_INFINITY), null);
 assert.equal(getWheelDirection(60, -1), null);
 
 
-// Keyboard navigation works from page load without stage focus.
+// Keyboard navigation works immediately from the page body, with no
+// click or focus action required on the artwork stage.
 const keyboardContext = {
   key: "ArrowRight",
   defaultPrevented: false,
@@ -60,6 +61,13 @@ const keyboardContext = {
   interactiveTargetWithinStage: false,
 };
 assert.equal(shouldHandleArtworkKeyboardNavigation(keyboardContext), true);
+
+// A plain link or button outside a composite widget does not disable global
+// arrow navigation because those controls have no native left/right semantics.
+assert.equal(
+  shouldHandleArtworkKeyboardNavigation({ ...keyboardContext, interactiveTarget: false }),
+  true,
+);
 assert.equal(
   shouldHandleArtworkKeyboardNavigation({ ...keyboardContext, key: "ArrowLeft" }),
   true,
