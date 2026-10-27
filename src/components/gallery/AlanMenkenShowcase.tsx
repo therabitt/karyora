@@ -1040,7 +1040,7 @@ export function AlanMenkenShowcase({
 
               <div
                 key={current.id}
-                className="artwork-composition-enter relative z-20 shrink-0"
+                className="relative z-20 shrink-0"
                 role="img"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
@@ -1057,17 +1057,25 @@ export function AlanMenkenShowcase({
                     verticalOffset;
                   const left = sliceIndex * (slicePanelWidth + sliceGap);
                   const failed = failedImages[current.id];
+                  const staggerIndex = transitionDirection === "next"
+                    ? sliceIndex
+                    : SLICE_COUNT - 1 - sliceIndex;
+                  const enterY = (sliceIndex % 2 === 0 ? -1 : 1) *
+                    (transitionDirection === "next" ? 64 : -64);
 
                   return (
                     <div
                       key={`${current.id}-${sliceIndex}`}
                       data-artwork-slice={sliceIndex}
-                      className="absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
+                      className="artwork-slice-enter-panel absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
                       style={{
                         left: left + "px",
                         top: panelTop + "px",
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
+                        animationDelay: (staggerIndex * 26 + 32) + "ms",
+                        "--slice-enter-x": (transitionDirection === "next" ? 6 : -6) + "px",
+                        "--slice-enter-y": -enterY + "px",
                       }}
                     >
                       {currentImageUrl && !failed ? (
@@ -1113,7 +1121,7 @@ export function AlanMenkenShowcase({
             <div
               key={transitionSnapshot.sequence}
               aria-hidden="true"
-              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-10 flex items-center justify-center`}
+              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
             >
               {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
                 <div
@@ -1132,16 +1140,25 @@ export function AlanMenkenShowcase({
                       verticalOffset;
                     const left = sliceIndex * (outgoingSlicePanelWidth + sliceGap);
                     const failed = failedImages[outgoingArtwork.id];
+                    const staggerIndex = transitionSnapshot.direction === "next"
+                      ? sliceIndex
+                      : SLICE_COUNT - 1 - sliceIndex;
+                    const exitY = (sliceIndex % 2 === 0 ? -1 : 1) *
+                      (transitionSnapshot.direction === "next" ? 64 : -64);
 
                     return (
                       <div
                         key={`outgoing-${transitionSnapshot.sequence}-${sliceIndex}`}
-                        className="absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
+                        data-artwork-slice={sliceIndex}
+                        className="artwork-slice-exit-panel absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
                         style={{
                           left: left + "px",
                           top: panelTop + "px",
                           width: outgoingSlicePanelWidth + "px",
                           height: panelHeight + "px",
+                          animationDelay: (staggerIndex * 26) + "ms",
+                          "--slice-exit-x": (transitionSnapshot.direction === "next" ? -6 : 6) + "px",
+                          "--slice-exit-y": exitY + "px",
                         }}
                       >
                         {outgoingImageUrl && !failed ? (
