@@ -36,6 +36,7 @@ type ViewMode = "ribbons" | "sliced";
 type ArtworkTransitionSnapshot = {
   artwork: PublicArtwork;
   direction: "next" | "previous";
+  viewMode: ViewMode;
   sequence: number;
   releaseVelocity: number;
 };
@@ -154,6 +155,7 @@ export function AlanMenkenShowcase({
       setTransitionSnapshot({
         artwork: outgoingArtwork,
         direction,
+        viewMode,
         sequence: ++transitionSequenceRef.current,
         releaseVelocity: clamp(Math.abs(releaseVelocity), 0, 1.6),
       });
@@ -161,7 +163,7 @@ export function AlanMenkenShowcase({
     activeIndexRef.current = normalizedIndex;
     setTransitionDirection(direction);
     setRawActiveIndex(normalizedIndex);
-  }, [displayArtworks, total]);
+  }, [displayArtworks, total, viewMode]);
 
   const handleNext = useCallback(() => {
     if (total <= 1) return;
@@ -583,6 +585,17 @@ export function AlanMenkenShowcase({
     sliceMaxWidth,
     stageHeight * 0.82
   );
+  const outgoingSliceSize = outgoingDimensions
+    ? fitArtworkWithinBounds(
+        outgoingDimensions.width,
+        outgoingDimensions.height,
+        sliceMaxWidth,
+        stageHeight * 0.82
+      )
+    : null;
+  const outgoingSlicePanelWidth = outgoingSliceSize
+    ? outgoingSliceSize.width / SLICE_COUNT
+    : 0;
   const slicePanelWidth = sliceSize.width / SLICE_COUNT;
   const scaledSliceOffsets = SLICE_OFFSETS.map((offset) =>
     Math.round(offset * Math.min(1.35, Math.max(0.65, stageHeight / 480)))
@@ -590,6 +603,12 @@ export function AlanMenkenShowcase({
   const maxSliceOffset = Math.max(...scaledSliceOffsets.map(Math.abs), 0);
   const sliceGroupWidth = sliceSize.width + sliceGap * (SLICE_COUNT - 1);
   const sliceGroupHeight = sliceSize.height + maxSliceOffset * 2;
+  const outgoingSliceGroupWidth = outgoingSliceSize
+    ? outgoingSliceSize.width + sliceGap * (SLICE_COUNT - 1)
+    : 0;
+  const outgoingSliceGroupHeight = outgoingSliceSize
+    ? outgoingSliceSize.height + maxSliceOffset * 2
+    : 0;
 
   return (
     <div className="relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink">
@@ -811,26 +830,81 @@ export function AlanMenkenShowcase({
                   (20 + Math.min(56, transitionSnapshot.releaseVelocity * 35)) + "px",
               } as CSSProperties}
             >
-              <div
-                className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl"
-                style={{
-                  width: outgoingSize.width + "px",
-                  height: outgoingSize.height + "px",
-                }}
-              >
-                {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={outgoingImageUrl}
-                    alt=""
-                    className="h-full w-full object-contain"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
-                    <span className="font-artwork-title text-xl text-ink">{outgoingArtwork.title}</span>
-                  </div>
-                )}
-              </div>
+              {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
+                <div
+                  className="relative shrink-0"
+                  style={{
+                    width: outgoingSliceGroupWidth + "px",
+                    height: outgoingSliceGroupHeight + "px",
+                  }}
+                >
+                  {Array.from({ length: SLICE_COUNT }, (_, sliceIndex) => {
+                    const panelHeight = outgoingSliceSize.height * SLICE_HEIGHTS[sliceIndex] / 100;
+                    const verticalOffset = scaledSliceOffsets[sliceIndex];
+                    const panelTop =
+                      maxSliceOffset +
+                      (outgoingSliceSize.height - panelHeight) / 2 +
+                      verticalOffset;
+                    const left = sliceIndex * (outgoingSlicePanelWidth + sliceGap);
+                    const failed = failedImages[outgoingArtwork.id];
+
+                    return (
+                      <div
+                        key={`outgoing-${transitionSnapshot.sequence}-${sliceIndex}`}
+                        className="absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
+                        style={{
+                          left: left + "px",
+                          top: panelTop + "px",
+                          width: outgoingSlicePanelWidth + "px",
+                          height: panelHeight + "px",
+                        }}
+                      >
+                        {outgoingImageUrl && !failed ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={outgoingImageUrl}
+                            alt=""
+                            className="absolute max-w-none"
+                            style={{
+                              width: outgoingSliceSize.width + "px",
+                              height: outgoingSliceSize.height + "px",
+                              left: -sliceIndex * outgoingSlicePanelWidth + "px",
+                              top: -(outgoingSliceSize.height - panelHeight) / 2 + "px",
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center p-1 text-center">
+                            <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">
+                              {outgoingArtwork.title}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl"
+                  style={{
+                    width: outgoingSize.width + "px",
+                    height: outgoingSize.height + "px",
+                  }}
+                >
+                  {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={outgoingImageUrl}
+                      alt=""
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
+                      <span className="font-artwork-title text-xl text-ink">{outgoingArtwork.title}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </section>
