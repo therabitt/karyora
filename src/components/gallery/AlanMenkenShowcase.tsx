@@ -1073,7 +1073,7 @@ export function AlanMenkenShowcase({
                         top: panelTop + "px",
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
-                        animationDelay: (staggerIndex * 26 + 32) + "ms",
+                        animationDelay: (staggerIndex * 22 + 20) + "ms",
                         "--slice-enter-x": (transitionDirection === "next" ? 6 : -6) + "px",
                         "--slice-enter-y": -enterY + "px",
                       } as CSSProperties}
@@ -1156,7 +1156,7 @@ export function AlanMenkenShowcase({
                           top: panelTop + "px",
                           width: outgoingSlicePanelWidth + "px",
                           height: panelHeight + "px",
-                          animationDelay: (staggerIndex * 26) + "ms",
+                          animationDelay: (staggerIndex * 22) + "ms",
                           "--slice-exit-x": (transitionSnapshot.direction === "next" ? -6 : 6) + "px",
                           "--slice-exit-y": exitY + "px",
                           "--slice-exit-distance": (exitY < 0 ? "-100%" : "100%"),
