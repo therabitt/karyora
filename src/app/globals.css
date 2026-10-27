@@ -197,7 +197,6 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .artwork-composition-enter,
   .artwork-slice-enter-panel,
   .artwork-slice-exit-panel,
   .artwork-exit-layer,
@@ -213,7 +212,9 @@ body {
     display: none;
   }
 
-  .artwork-ribbon-item {
+  .artwork-ribbon-item,
+  .artwork-slice-enter-panel,
+  .artwork-slice-exit-panel {
     transition: none;
     will-change: auto;
   }
