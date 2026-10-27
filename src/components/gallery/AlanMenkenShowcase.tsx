@@ -48,6 +48,18 @@ type RibbonRect = {
   offset: number;
 };
 
+type RibbonSeamExitSnapshot = {
+  artwork: PublicArtwork;
+  imageUrl: string | null;
+  failed: boolean;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  direction: "next" | "previous";
+  sequence: number;
+};
+
 type RibbonLayoutEntry = {
   index: number;
   offset: number;
@@ -98,9 +110,12 @@ export function AlanMenkenShowcase({
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
   const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
   const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
+  const [seamExitSnapshot, setSeamExitSnapshot] = useState<RibbonSeamExitSnapshot | null>(null);
   const transitionSequenceRef = useRef(0);
   const ribbonItemsRef = useRef(new Map<string, HTMLButtonElement>());
   const previousRibbonRectsRef = useRef<Map<string, RibbonRect> | null>(null);
+  const seamExitLayerRef = useRef<HTMLDivElement>(null);
+  const seamExitAnimationRef = useRef<Animation | null>(null);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
@@ -151,6 +166,56 @@ export function AlanMenkenShowcase({
 
     const outgoingArtwork = displayArtworks[outgoingIndex];
     if (viewMode === "ribbons" && typeof window !== "undefined") {
+      if (seamExitAnimationRef.current) {
+        seamExitAnimationRef.current.onfinish = null;
+        seamExitAnimationRef.current.cancel();
+        seamExitAnimationRef.current = null;
+      }
+
+      let nextSeamExit: RibbonSeamExitSnapshot | null = null;
+      const travelDistance = direction === "next"
+        ? (normalizedIndex - outgoingIndex + total) % total
+        : (outgoingIndex - normalizedIndex + total) % total;
+      const stage = stageRef.current;
+      const stageRect = stage?.getBoundingClientRect();
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // Preserve the panel that actually leaves the visible window. The incoming
+      // replacement has its own entrance; the departing edge panel must not unmount instantly.
+      if (travelDistance === 1 && stageRect && !reduceMotion) {
+        const edgeCandidates = Array.from(ribbonItemsRef.current.values())
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              element,
+              rect,
+              offset: Number(element.dataset.ribbonOffset ?? "0"),
+            };
+          })
+          .filter(({ rect, offset }) => rect.width > 0 && rect.height > 0 && offset !== 0)
+          .sort((a, b) => direction === "next" ? a.offset - b.offset : b.offset - a.offset);
+        const edge = edgeCandidates[0];
+        const edgeArtworkId = edge?.element.dataset.artworkId;
+        const edgeArtwork = edgeArtworkId
+          ? displayArtworks.find((artwork) => artwork.id === edgeArtworkId)
+          : undefined;
+
+        if (edge && edgeArtwork) {
+          nextSeamExit = {
+            artwork: edgeArtwork,
+            imageUrl: getStoragePublicUrl(edgeArtwork.public_image_path),
+            failed: Boolean(failedImages[edgeArtwork.id]),
+            left: edge.rect.left - stageRect.left,
+            top: edge.rect.top - stageRect.top,
+            width: edge.rect.width,
+            height: edge.rect.height,
+            direction,
+            sequence: ++transitionSequenceRef.current,
+          };
+        }
+      }
+
+      setSeamExitSnapshot(nextSeamExit);
       const previousRects = new Map<string, RibbonRect>();
 
       // Capture on-screen geometry before React changes the active artwork and panel positions.
@@ -189,7 +254,7 @@ export function AlanMenkenShowcase({
     activeIndexRef.current = normalizedIndex;
     setTransitionDirection(direction);
     setRawActiveIndex(normalizedIndex);
-  }, [displayArtworks, total, viewMode]);
+  }, [displayArtworks, failedImages, total, viewMode]);
 
   const handleNext = useCallback(() => {
     if (total <= 1) return;
@@ -212,6 +277,55 @@ export function AlanMenkenShowcase({
 
     return () => window.clearTimeout(timeoutId);
   }, [transitionSnapshot]);
+
+  useIsomorphicLayoutEffect(() => {
+    const snapshot = seamExitSnapshot;
+    const element = seamExitLayerRef.current;
+    const stage = stageRef.current;
+    if (!snapshot || !element || !stage) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setSeamExitSnapshot((current) =>
+        current?.sequence === snapshot.sequence ? null : current
+      );
+      return;
+    }
+
+    const exitDistance = snapshot.direction === "next"
+      ? -(snapshot.left + snapshot.width + 28)
+      : stage.clientWidth - snapshot.left + 28;
+    const animation = element.animate(
+      [
+        { transform: "translate3d(0, 0, 0)" },
+        { transform: "translate3d(" + exitDistance + "px, 0, 0)" },
+      ],
+      {
+        duration: 420,
+        easing: "cubic-bezier(0.2, 0.78, 0.22, 1)",
+        fill: "both",
+      },
+    );
+    seamExitAnimationRef.current = animation;
+
+    animation.onfinish = () => {
+      animation.cancel();
+      if (seamExitAnimationRef.current === animation) {
+        seamExitAnimationRef.current = null;
+      }
+      setSeamExitSnapshot((current) =>
+        current?.sequence === snapshot.sequence ? null : current
+      );
+    };
+
+    return () => {
+      animation.onfinish = null;
+      animation.cancel();
+      if (seamExitAnimationRef.current === animation) {
+        seamExitAnimationRef.current = null;
+      }
+    };
+  }, [seamExitSnapshot]);
 
   useIsomorphicLayoutEffect(() => {
     const previousRects = previousRibbonRectsRef.current;
@@ -667,6 +781,36 @@ export function AlanMenkenShowcase({
         >
           {viewMode === "ribbons" ? (
             <div className="absolute inset-0 overflow-hidden">
+              {seamExitSnapshot && (
+                <div
+                  ref={seamExitLayerRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute overflow-hidden border border-border/70 bg-surface-muted opacity-45 grayscale"
+                  style={{
+                    left: seamExitSnapshot.left + "px",
+                    top: seamExitSnapshot.top + "px",
+                    width: seamExitSnapshot.width + "px",
+                    height: seamExitSnapshot.height + "px",
+                    zIndex: 0,
+                  }}
+                >
+                  {seamExitSnapshot.imageUrl && !seamExitSnapshot.failed ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      draggable={false}
+                      src={seamExitSnapshot.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center p-1 text-center">
+                      <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">
+                        {seamExitSnapshot.artwork.title}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               <div
                 className="artwork-ribbon-track absolute inset-0"
                 role="group"
@@ -688,7 +832,7 @@ export function AlanMenkenShowcase({
                   } = entry;
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
                   const itemClassName = isActive
-                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden rounded-xs bg-surface focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
 
                   return (
