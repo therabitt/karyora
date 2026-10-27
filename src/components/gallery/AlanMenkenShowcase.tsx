@@ -257,9 +257,12 @@ export function AlanMenkenShowcase({
           : currentOffset < first.offset;
 
         if (crossedLoopSeam) {
-          const entryX = transitionDirection === "next" ? 36 : -36;
-          // Re-enter at its destination size. Only its position moves, avoiding an
-          // artificial scale on an artwork that is wrapping around the ribbon.
+          const stageRect = element.parentElement?.getBoundingClientRect();
+          const entryX = transitionDirection === "next"
+            ? (stageRect ? stageRect.right - last.left + 24 : last.width + 48)
+            : (stageRect ? stageRect.left - last.right - 24 : -last.width - 48);
+          // Enter from beyond the clipped stage edge, not from beside the destination
+          // thumbnail. This avoids the wrapped artwork visibly popping over its neighbor.
           fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
         } else {
           if (
@@ -278,8 +281,11 @@ export function AlanMenkenShowcase({
           fromHeight = first.height;
         }
       } else {
-        // A newly visible panel enters just inside its destination edge at normal size.
-        const entryX = transitionDirection === "next" ? 28 : -28;
+        // Newly mounted panels enter from just beyond the appropriate stage edge.
+        const stageRect = element.parentElement?.getBoundingClientRect();
+        const entryX = transitionDirection === "next"
+          ? (stageRect ? stageRect.right - last.left + 24 : last.width + 48)
+          : (stageRect ? stageRect.left - last.right - 24 : -last.width - 48);
         fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
       }
 
@@ -682,7 +688,7 @@ export function AlanMenkenShowcase({
                   } = entry;
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
                   const itemClassName = isActive
-                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden rounded-xs bg-surface shadow-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden rounded-xs bg-surface focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
 
                   return (
