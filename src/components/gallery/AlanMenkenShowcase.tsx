@@ -597,7 +597,7 @@ export function AlanMenkenShowcase({
             </div>
           )}
 
-          {transitionSnapshot && outgoingSize && (
+          {transitionSnapshot && outgoingArtwork && outgoingSize && (
             <div
               key={transitionSnapshot.sequence}
               aria-hidden="true"
@@ -610,7 +610,7 @@ export function AlanMenkenShowcase({
                   height: outgoingSize.height + "px",
                 }}
               >
-                {outgoingImageUrl && !failedImages[outgoingArtwork!.id] ? (
+                {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={outgoingImageUrl}
@@ -619,7 +619,7 @@ export function AlanMenkenShowcase({
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
-                    <span className="font-artwork-title text-xl text-ink">{outgoingArtwork!.title}</span>
+                    <span className="font-artwork-title text-xl text-ink">{outgoingArtwork.title}</span>
                   </div>
                 )}
               </div>
@@ -633,7 +633,11 @@ export function AlanMenkenShowcase({
           aria-atomic="true"
           className="flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
         >
-          <div key={current.id} className="artwork-caption-enter flex flex-col items-center">
+          <div
+            key={current.id}
+            className="artwork-caption-enter flex flex-col items-center"
+            style={{ animationDelay: "80ms" }}
+          >
             <h1 className="font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
             <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
               {current.title}
