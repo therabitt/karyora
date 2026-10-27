@@ -67,6 +67,11 @@ type ArtworkSwipeStart = {
   y: number;
 };
 
+// Use layout effects in the browser to avoid a first-frame layout jump, while keeping
+// server rendering free of useLayoutEffect warnings.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
 function getPanelVisibilityClass(offset: number): string {
   const distance = Math.abs(offset);
   if (distance <= 1) return "flex";
@@ -106,7 +111,7 @@ export function AlanMenkenShowcase({
   const wheelUnlockTimerRef = useRef<number | null>(null);
   const pointerStartRef = useRef<ArtworkSwipeStart | null>(null);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const element = stageRef.current;
     if (!element) return;
 
@@ -206,7 +211,7 @@ export function AlanMenkenShowcase({
     return () => window.clearTimeout(timeoutId);
   }, [transitionSnapshot]);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const previousRects = previousRibbonRectsRef.current;
     if (!previousRects) return;
 
