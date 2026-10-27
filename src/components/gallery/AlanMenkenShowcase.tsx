@@ -1405,7 +1405,11 @@ export function AlanMenkenShowcase({
             aria-label="Ribbon artwork view"
             aria-pressed={viewMode === "ribbons"}
             onClick={() => {
-              setIsRibbonEntranceActive(false);
+              // Reuse the entrance sequence when returning from Sliced to Ribbon.
+              // Clicking the already-active Ribbon control should not restart it.
+              if (viewMode === "sliced") {
+                setIsRibbonEntranceActive(true);
+              }
               setDelayedSliceArtworkId(null);
               setTransitionSnapshot(null);
               setViewMode("ribbons");
