@@ -227,7 +227,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .artwork-ribbon-enter,
+  .artwork-ribbon-enter {
+    animation: none;
+  }
+
   .artwork-slice-enter-panel,
   .artwork-slice-exit-panel,
   .artwork-exit-layer,
