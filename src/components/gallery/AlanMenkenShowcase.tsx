@@ -215,6 +215,8 @@ export function AlanMenkenShowcase({
       if (last.width <= 0 || last.height <= 0) return;
 
       const first = previousRects.get(id);
+      const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
+      const targetTransform = "translate3d(0px, " + staggerY + "px, 0) scale(1, 1)";
       let fromTransform: string;
 
       if (first) {
@@ -233,16 +235,16 @@ export function AlanMenkenShowcase({
           return;
         }
 
-        fromTransform = "translate3d(" + dx + "px, " + dy + "px, 0) scale(" + scaleX + ", " + scaleY + ")";
+        fromTransform = "translate3d(" + dx + "px, " + (dy + staggerY) + "px, 0) scale(" + scaleX + ", " + scaleY + ")";
       } else {
         const entryX = transitionDirection === "next" ? 30 : -30;
-        fromTransform = "translate3d(" + entryX + "px, 0, 0) scale(0.88, 0.88)";
+        fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0) scale(0.76, 0.76)";
       }
 
       const animation = element.animate(
         [
           { transform: fromTransform },
-          { transform: "translate3d(0, 0, 0) scale(1, 1)" },
+          { transform: targetTransform },
         ],
         {
           duration: id === activeId ? 760 : 680,
@@ -602,7 +604,7 @@ export function AlanMenkenShowcase({
                       style={{
                         width: (isActive ? activeSize.width : previewWidth) + "px",
                         height: (isActive ? activeSize.height : previewHeight) + "px",
-                        "--ribbon-stagger-y": (isActive ? 0 : staggerOffset) + "px",
+                        transform: "translate3d(0px, " + (isActive ? 0 : staggerOffset) + "px, 0)",
                       } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
@@ -645,9 +647,8 @@ export function AlanMenkenShowcase({
 
               <div
                 key={current.id}
-                className="artwork-composition-enter relative shrink-0"
+                className="artwork-composition-enter relative z-20 shrink-0"
                 role="img"
-                data-drag-surface="active"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
                   width: sliceGroupWidth + "px",
@@ -668,13 +669,12 @@ export function AlanMenkenShowcase({
                     <div
                       key={`${current.id}-${sliceIndex}`}
                       data-artwork-slice={sliceIndex}
-                      className="artwork-slice-enter absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg transition-[top,height,transform] duration-500 ease-out motion-reduce:transition-none"
+                      className="absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
                       style={{
                         left: left + "px",
                         top: panelTop + "px",
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
-                        animationDelay: `${(transitionDirection === "next" ? sliceIndex : SLICE_COUNT - sliceIndex - 1) * 32}ms`,
                       }}
                     >
                       {currentImageUrl && !failed ? (
@@ -720,7 +720,7 @@ export function AlanMenkenShowcase({
             <div
               key={transitionSnapshot.sequence}
               aria-hidden="true"
-              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-10 flex items-center justify-center`}
             >
               {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
                 <div
