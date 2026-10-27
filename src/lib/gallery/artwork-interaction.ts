@@ -51,3 +51,44 @@ export function getWheelDirection(
   if (accumulatedDeltaY === 0) return null;
   return accumulatedDeltaY > 0 ? "next" : "previous";
 }
+
+export interface ArtworkKeyboardNavigationContext {
+  key: string;
+  defaultPrevented: boolean;
+  modifierPressed: boolean;
+  navigationOpen: boolean;
+  artworkCount: number;
+  editableTarget: boolean;
+  interactiveTarget: boolean;
+  interactiveTargetWithinStage: boolean;
+}
+
+/**
+ * Global arrow navigation is available while browsing the page, without requiring
+ * the artwork stage to be focused first. Editable controls and unrelated
+ * interactive elements retain their native keyboard behavior.
+ */
+export function shouldHandleArtworkKeyboardNavigation(
+  context: ArtworkKeyboardNavigationContext,
+): boolean {
+  if (
+    context.defaultPrevented ||
+    context.modifierPressed ||
+    context.navigationOpen ||
+    context.artworkCount <= 1 ||
+    context.editableTarget
+  ) {
+    return false;
+  }
+
+  if (context.key !== "ArrowLeft" && context.key !== "ArrowRight") {
+    return false;
+  }
+
+  if (context.interactiveTarget && !context.interactiveTargetWithinStage) {
+    return false;
+  }
+
+  return true;
+}
+
