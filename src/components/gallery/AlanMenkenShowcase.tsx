@@ -106,7 +106,7 @@ export function AlanMenkenShowcase({
   const wheelUnlockTimerRef = useRef<number | null>(null);
   const pointerStartRef = useRef<ArtworkSwipeStart | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = stageRef.current;
     if (!element) return;
 
