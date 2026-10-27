@@ -47,6 +47,20 @@ type RibbonRect = {
   height: number;
 };
 
+type RibbonLayoutEntry = {
+  index: number;
+  offset: number;
+  artwork: PublicArtwork;
+  isActive: boolean;
+  imageUrl: string | null;
+  failed: boolean;
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+  staggerOffset: number;
+};
+
 type ArtworkSwipeStart = {
   pointerId: number;
   x: number;
@@ -484,6 +498,64 @@ export function AlanMenkenShowcase({
     ? Math.max(18, Math.min(maxPreviewWidth, availablePreviewWidth))
     : 0;
 
+  // Every ribbon tile keeps the artwork's true aspect ratio. FLIP can then use
+  // nearly uniform scaling as a work moves between the hero and preview roles.
+  const ribbonEntries: RibbonLayoutEntry[] = stageWindow.map(({ index, offset }) => {
+    const artwork = displayArtworks[index];
+    const isActive = index === activeIndex;
+    const dimensions = getDimensions(artwork);
+    const patternIndex =
+      ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
+      STAGGER_HEIGHTS_RIBBONS.length;
+    const heightPercent = STAGGER_HEIGHTS_RIBBONS[patternIndex];
+    const staggerOffset = Math.round(
+      STAGGER_OFFSETS_RIBBONS[patternIndex] *
+      Math.min(1.2, Math.max(0.6, stageHeight / 480))
+    );
+    const previewHeightLimit = Math.max(1, Math.round(stageHeight * heightPercent / 100));
+    const previewSize = fitArtworkWithinBounds(
+      dimensions.width,
+      dimensions.height,
+      Math.max(1, previewWidth),
+      previewHeightLimit
+    );
+
+    return {
+      index,
+      offset,
+      artwork,
+      isActive,
+      imageUrl: getStoragePublicUrl(artwork.public_image_path),
+      failed: Boolean(failedImages[artwork.id]),
+      width: isActive ? activeSize.width : previewSize.width,
+      height: isActive ? activeSize.height : previewSize.height,
+      left: 0,
+      top: 0,
+      staggerOffset: isActive ? 0 : staggerOffset,
+    };
+  });
+
+  const activeRibbonPosition = ribbonEntries.findIndex((entry) => entry.isActive);
+  if (activeRibbonPosition >= 0) {
+    const activeEntry = ribbonEntries[activeRibbonPosition];
+    activeEntry.left = (stageWidth - activeEntry.width) / 2;
+    activeEntry.top = (stageHeight - activeEntry.height) / 2;
+
+    for (let index = activeRibbonPosition - 1; index >= 0; index -= 1) {
+      const entry = ribbonEntries[index];
+      const rightEntry = ribbonEntries[index + 1];
+      entry.left = rightEntry.left - ribbonGap - entry.width;
+      entry.top = (stageHeight - entry.height) / 2 + entry.staggerOffset;
+    }
+
+    for (let index = activeRibbonPosition + 1; index < ribbonEntries.length; index += 1) {
+      const entry = ribbonEntries[index];
+      const leftEntry = ribbonEntries[index - 1];
+      entry.left = leftEntry.left + leftEntry.width + ribbonGap;
+      entry.top = (stageHeight - entry.height) / 2 + entry.staggerOffset;
+    }
+  }
+
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
   const sliceMaxWidth = Math.max(
@@ -559,24 +631,26 @@ export function AlanMenkenShowcase({
           className="artwork-stage relative min-h-0 w-full flex-1 overflow-hidden touch-pan-y focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
         >
           {viewMode === "ribbons" ? (
-            <div className="absolute inset-0 flex items-center overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden">
               <div
-                className="artwork-ribbon-track flex h-full w-max min-w-full items-center justify-center"
-                style={{ gap: ribbonGap + "px" }}
+                className="artwork-ribbon-track absolute inset-0"
                 role="group"
                 aria-label="Select an artwork"
               >
-                {stageWindow.map(({ index, offset }) => {
-                  const artwork = displayArtworks[index];
-                  const isActive = index === activeIndex;
-                  const imageUrl = getStoragePublicUrl(artwork.public_image_path);
-                  const failed = failedImages[artwork.id];
-                  const patternIndex = ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) % STAGGER_HEIGHTS_RIBBONS.length;
-                  const heightPercent = STAGGER_HEIGHTS_RIBBONS[patternIndex];
-                  const staggerOffset = Math.round(
-                    STAGGER_OFFSETS_RIBBONS[patternIndex] * Math.min(1.2, Math.max(0.6, stageHeight / 480))
-                  );
-                  const previewHeight = Math.round(stageHeight * heightPercent / 100);
+                {ribbonEntries.map((entry) => {
+                  const {
+                    index,
+                    offset,
+                    artwork,
+                    isActive,
+                    imageUrl,
+                    failed,
+                    width,
+                    height,
+                    left,
+                    top,
+                    staggerOffset,
+                  } = entry;
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
 
                   return (
@@ -588,7 +662,7 @@ export function AlanMenkenShowcase({
                       }}
                       type="button"
                       data-artwork-id={artwork.id}
-                      data-ribbon-stagger-y={isActive ? 0 : staggerOffset}
+                      data-ribbon-stagger-y={staggerOffset}
                       aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
                       aria-pressed={isActive}
                       onClick={() => {
@@ -598,18 +672,20 @@ export function AlanMenkenShowcase({
                         selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
                       }}
                       className={
-                        "artwork-ribbon-item group relative shrink-0 overflow-hidden rounded-xs " +
+                        "artwork-ribbon-item group absolute shrink-0 overflow-hidden rounded-xs " +
                         "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " +
                         (isActive
-                          ? "z-20 flex border-2 border-accent bg-surface shadow-xl"
+                          ? "z-20 border-2 border-accent bg-surface shadow-xl"
                           : "border border-border/70 bg-surface-muted shadow-sm hover:border-border-strong ") +
                         visibility
                       }
                       style={{
-                        width: (isActive ? activeSize.width : previewWidth) + "px",
-                        height: (isActive ? activeSize.height : previewHeight) + "px",
-                        transform: "translate3d(0px, " + (isActive ? 0 : staggerOffset) + "px, 0)",
-                      } as CSSProperties}
+                        left: left + "px",
+                        top: top + "px",
+                        width: width + "px",
+                        height: height + "px",
+                        transform: "translate3d(0px, " + staggerOffset + "px, 0)",
+                      }}
                     >
                       {imageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
