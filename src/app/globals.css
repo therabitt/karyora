@@ -201,6 +201,10 @@ body {
     transform: none;
   }
 
+  .artwork-exit-layer {
+    display: none;
+  }
+
   .artwork-ribbon-item {
     transition: none;
     will-change: auto;
