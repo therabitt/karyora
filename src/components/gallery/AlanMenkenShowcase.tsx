@@ -868,6 +868,14 @@ export function AlanMenkenShowcase({
   const outgoingSliceGroupHeight = outgoingSliceSize
     ? outgoingSliceSize.height + maxSliceOffset * 2
     : 0;
+  const sliceLayoutWidthDifference = outgoingSliceGroupWidth > 0
+    ? Math.abs(sliceGroupWidth - outgoingSliceGroupWidth) /
+      Math.max(sliceGroupWidth, outgoingSliceGroupWidth)
+    : 0;
+  // When the panel group widths differ substantially (e.g. landscape -> portrait),
+  // sequence the old group out before letting the new group enter.
+  const isSliceLayoutChange =
+    transitionSnapshot?.viewMode === "sliced" && sliceLayoutWidthDifference > 0.18;
 
   return (
     <div className="relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink">
@@ -1041,6 +1049,7 @@ export function AlanMenkenShowcase({
               <div
                 key={current.id}
                 className="relative z-20 shrink-0"
+                data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
                 role="img"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
@@ -1078,7 +1087,9 @@ export function AlanMenkenShowcase({
                         top: panelTop + "px",
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
-                        animationDelay: (staggerIndex * 22 + 20) + "ms",
+                        animationDelay: (
+                          (isSliceLayoutChange ? 620 : 20) + staggerIndex * 22
+                        ) + "ms",
                         "--slice-enter-y": enterY + "px",
                       } as CSSProperties}
                     >
@@ -1126,6 +1137,7 @@ export function AlanMenkenShowcase({
               key={transitionSnapshot.sequence}
               aria-hidden="true"
               className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+              data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
             >
               {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
                 <div
