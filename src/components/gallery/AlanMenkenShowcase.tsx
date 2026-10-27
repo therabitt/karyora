@@ -47,6 +47,8 @@ type RibbonRect = {
   height: number;
   offset: number;
   isActive: boolean;
+  opacity: number;
+  filter: string;
   cropOpacity: number;
   fitOpacity: number;
 };
@@ -225,6 +227,7 @@ export function AlanMenkenShowcase({
       ribbonItemsRef.current.forEach((element, id) => {
         const rect = element.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
+          const computedStyle = window.getComputedStyle(element);
           const cropLayer = element.querySelector<HTMLElement>("[data-artwork-image-crop]");
           const fitLayer = element.querySelector<HTMLElement>("[data-artwork-image-fit]");
           previousRects.set(id, {
@@ -234,6 +237,8 @@ export function AlanMenkenShowcase({
             height: rect.height,
             offset: Number(element.dataset.ribbonOffset ?? "0"),
             isActive: element.dataset.artworkActive === "true",
+            opacity: Number(computedStyle.opacity),
+            filter: computedStyle.filter,
             cropOpacity: cropLayer ? Number(window.getComputedStyle(cropLayer).opacity) : 1,
             fitOpacity: fitLayer ? Number(window.getComputedStyle(fitLayer).opacity) : 0,
           });
@@ -414,17 +419,24 @@ export function AlanMenkenShowcase({
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
       const duration = id === activeId ? 760 : 680;
+      const targetStyle = window.getComputedStyle(element);
+      const targetOpacity = Number(targetStyle.opacity);
+      const targetFilter = targetStyle.filter;
       const animation = element.animate(
         [
           {
             transform: fromTransform,
             width: fromWidth + "px",
             height: fromHeight + "px",
+            opacity: first?.opacity ?? targetOpacity,
+            filter: first?.filter ?? targetFilter,
           },
           {
             transform: targetTransform,
             width: last.width + "px",
             height: last.height + "px",
+            opacity: targetOpacity,
+            filter: targetFilter,
           },
         ],
         {
