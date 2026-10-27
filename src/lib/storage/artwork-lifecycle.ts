@@ -126,7 +126,7 @@ export async function publishArtwork({
     const sourceBuffer = await downloadPrivateSource(artwork.private_image_path);
 
     // 3. Generate derivative and upload with rollback intent
-    const { derivativePath } = await generateAndUploadArtworkDerivative(
+    const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
       artwork.id,
       sourceBuffer
     );
@@ -150,6 +150,8 @@ export async function publishArtwork({
       status: "published",
       published_at: now,
       public_image_path: derivativePath,
+      image_width: derivative.width,
+      image_height: derivative.height,
       updated_at: now,
     };
     if (paletteMetadata) {
@@ -164,8 +166,27 @@ export async function publishArtwork({
 
     // Graceful fallback if database column migration is pending in remote schema cache
     if (updateError && updateError.code === "PGRST204" && paletteMetadata) {
-      console.warn("palette_metadata column not yet in schema cache, committing status without metadata");
+      console.warn("palette_metadata column not yet in schema cache, retrying publication without palette metadata");
       delete updatePayload.palette_metadata;
+      const retryResult = await supabase
+        .from("artworks")
+        .update(updatePayload)
+        .eq("id", artwork.id)
+        .eq("status", "draft");
+      updateError = retryResult.error;
+    }
+
+    // The dimensions migration is required before deployment. This final fallback only
+    // preserves publication if the database schema cache is briefly stale after migration;
+    // image dimensions will then be measured by the browser on first display.
+    if (
+      updateError &&
+      updateError.code === "PGRST204" &&
+      ("image_width" in updatePayload || "image_height" in updatePayload)
+    ) {
+      console.warn("Artwork dimension columns not yet in schema cache; publishing without stored dimensions");
+      delete updatePayload.image_width;
+      delete updatePayload.image_height;
       const retryResult = await supabase
         .from("artworks")
         .update(updatePayload)
