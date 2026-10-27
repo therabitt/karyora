@@ -157,7 +157,7 @@ body {
 }
 
 /* The focused artwork uses the same 1100 ms settling time as Ribbon's FLIP transition. */
-.artwork-ribbon-enter[data-artwork-active="true"] {
+.artwork-ribbon-enter-active {
   animation-duration: 1100ms;
 }
 
