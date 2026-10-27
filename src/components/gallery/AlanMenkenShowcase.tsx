@@ -305,7 +305,7 @@ export function AlanMenkenShowcase({
 
   const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (
-      (event.pointerType !== "mouse" && event.pointerType !== "touch") ||
+      (event.pointerType !== "mouse" && event.pointerType !== "touch" && event.pointerType !== "pen") ||
       (event.pointerType === "mouse" && event.button !== 0) ||
       isNavigationOpen ||
       total <= 1
@@ -325,6 +325,14 @@ export function AlanMenkenShowcase({
     }
 
     clearDragResetTimer();
+    if (wheelUnlockTimerRef.current !== null) {
+      window.clearTimeout(wheelUnlockTimerRef.current);
+      wheelUnlockTimerRef.current = null;
+    }
+    wheelLockedRef.current = false;
+    wheelAccumulatorRef.current = 0;
+    delete event.currentTarget.dataset.wheelActive;
+
     pointerStartRef.current = {
       pointerId: event.pointerId,
       pointerType: event.pointerType,
