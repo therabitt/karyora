@@ -28,7 +28,7 @@ assert.equal(getSwipeDirection(100, 100, 180, 104), "previous");
 // Ignore taps, small motion, and predominantly vertical gestures.
 assert.equal(getSwipeDirection(10, 10, 45, 11), null);
 assert.equal(getSwipeDirection(10, 10, 110, 100), null);
-assert.equal(getSwipeDirection(10, 10, 110, 40), "next");
+assert.equal(getSwipeDirection(10, 10, 110, 40), "previous");
 
 // Invalid values and invalid thresholds fail closed.
 assert.equal(getSwipeDirection(Number.NaN, 0, 100, 0), null);
