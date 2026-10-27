@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 
 type PublicNavigationMenuProps = {
   commissionHref?: string;
@@ -29,6 +29,12 @@ export function PublicNavigationMenu({
     { key: "terms", href: "/terms", label: "Terms" },
     { key: "admin", href: "/login", label: "Admin" },
   ];
+
+  // Memoized state changer to satisfy exhaustive‑deps lint rule
+  const changeMenuState = useCallback((nextOpen: boolean) => {
+    setIsOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }, [onOpenChange]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -69,12 +75,7 @@ export function PublicNavigationMenu({
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isOpen]);
-
-  function changeMenuState(nextOpen: boolean) {
-    setIsOpen(nextOpen);
-    onOpenChange?.(nextOpen);
-  }
+  }, [isOpen, changeMenuState]);
 
   function closeMenu() {
     changeMenuState(false);
@@ -161,7 +162,7 @@ export function PublicNavigationMenu({
             </button>
           </div>
 
-          {/* Linear, side-by-side navigation using the handwritten Caveat font. */}
+          {/* Linear, side‑by‑side navigation using the handwritten Caveat font. */}
           <nav
             aria-label="Main navigation"
             className="flex min-h-0 flex-1 flex-wrap items-center justify-center gap-x-5 gap-y-1 px-4 pb-5 pt-2 sm:flex-nowrap sm:gap-x-6 sm:px-7 lg:gap-x-12"

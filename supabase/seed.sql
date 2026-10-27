@@ -1,6 +1,19 @@
 -- Seed Data for Karyora Local / Development Environment
 -- Blueprint Section 5.11.2
 
+-- Create a placeholder Auth user for local development only.
+-- This user is not a production account and has no usable password.
+INSERT INTO auth.users (
+  id,
+  email,
+  raw_user_meta_data
+) VALUES (
+  '00000000-0000-0000-0000-000000000000',
+  'artist@karyora.internal',
+  '{"display_name": "Karyora Artist"}'::jsonb
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- 1. Create administrator profile
 -- In production, the id is the real Supabase Auth user ID
 INSERT INTO public.profiles (
