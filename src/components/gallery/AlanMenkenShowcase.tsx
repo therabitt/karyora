@@ -585,6 +585,7 @@ export function AlanMenkenShowcase({
                       }}
                       type="button"
                       data-artwork-id={artwork.id}
+                      data-ribbon-stagger-y={isActive ? 0 : staggerOffset}
                       aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
                       aria-pressed={isActive}
                       onClick={() => {
