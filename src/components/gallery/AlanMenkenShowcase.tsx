@@ -164,6 +164,9 @@ export function AlanMenkenShowcase({
   activeIndexRef.current = activeIndex;
 
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
+  // Start Ribbon's entrance only on the page's initial presentation. Any user
+  // interaction hands control back to the existing FLIP/navigation animations.
+  const [isRibbonEntranceActive, setIsRibbonEntranceActive] = useState(true);
   const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
   const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
   // Persists for the incoming artwork's lifetime so its delayed animation doesn't
@@ -213,6 +216,20 @@ export function AlanMenkenShowcase({
     return () => window.removeEventListener("resize", measure);
   }, [total]);
 
+  useEffect(() => {
+    if (total <= 0 || !isRibbonEntranceActive) return;
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsRibbonEntranceActive(false);
+      return;
+    }
+
+    // The most distant Ribbon panels start first; the central artwork arrives last.
+    // Leave a small buffer after the longest staggered 760 ms entrance.
+    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1120);
+    return () => window.clearTimeout(timeoutId);
+  }, [isRibbonEntranceActive, total]);
+
   const selectArtwork = useCallback((
     targetIndex: number,
     direction: "next" | "previous",
@@ -223,6 +240,7 @@ export function AlanMenkenShowcase({
     const outgoingIndex = activeIndexRef.current;
     if (normalizedIndex === outgoingIndex) return;
 
+    setIsRibbonEntranceActive(false);
     const outgoingArtwork = displayArtworks[outgoingIndex];
     const incomingArtwork = displayArtworks[normalizedIndex];
     let shouldSequenceSliceHandoff = false;
@@ -917,6 +935,11 @@ export function AlanMenkenShowcase({
     }
   }
 
+  const maxRibbonOffset = Math.max(
+    ...ribbonEntries.map((entry) => Math.abs(entry.offset)),
+    0
+  );
+
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
   const sliceMaxWidth = Math.max(
@@ -1053,6 +1076,12 @@ export function AlanMenkenShowcase({
                     staggerOffset,
                   } = entry;
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
+                  const ribbonPatternIndex =
+                    ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
+                    STAGGER_HEIGHTS_RIBBONS.length;
+                  const entranceDelay =
+                    (maxRibbonOffset - Math.abs(offset)) * 42 + (offset > 0 ? 10 : 0);
+                  const entranceOffset = ribbonPatternIndex % 2 === 0 ? "-120vh" : "120vh";
                   const itemClassName = isActive
                     ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale hover:opacity-90 hover:grayscale-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
@@ -1078,14 +1107,17 @@ export function AlanMenkenShowcase({
                         const backwardDistance = (activeIndexRef.current - index + total) % total;
                         selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
                       }}
-                      className={itemClassName + " " + visibility}
+                      className={itemClassName + " " + visibility + (isRibbonEntranceActive ? " artwork-ribbon-enter" : "")}
                       style={{
                         left: left + "px",
                         top: top + "px",
                         width: width + "px",
                         height: height + "px",
                         transform: "translate3d(0px, " + staggerOffset + "px, 0)",
-                      }}
+                        animationDelay: entranceDelay + "ms",
+                        "--ribbon-enter-y": entranceOffset,
+                        "--ribbon-stagger-y": staggerOffset + "px",
+                      } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1373,6 +1405,7 @@ export function AlanMenkenShowcase({
             aria-label="Ribbon artwork view"
             aria-pressed={viewMode === "ribbons"}
             onClick={() => {
+              setIsRibbonEntranceActive(false);
               setDelayedSliceArtworkId(null);
               setTransitionSnapshot(null);
               setViewMode("ribbons");
@@ -1392,6 +1425,7 @@ export function AlanMenkenShowcase({
             aria-label="Sliced artwork view"
             aria-pressed={viewMode === "sliced"}
             onClick={() => {
+              setIsRibbonEntranceActive(false);
               setDelayedSliceArtworkId(null);
               setTransitionSnapshot(null);
               setViewMode("sliced");
