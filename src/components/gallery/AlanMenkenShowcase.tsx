@@ -187,7 +187,17 @@ export function AlanMenkenShowcase({
   const wheelLockedRef = useRef(false);
   const lastWheelEventAtRef = useRef(0);
   const wheelUnlockTimerRef = useRef<number | null>(null);
+  const slicedNavigationLockedRef = useRef(false);
+  const slicedNavigationUnlockTimerRef = useRef<number | null>(null);
   const pointerStartRef = useRef<ArtworkSwipeStart | null>(null);
+
+  const clearSlicedNavigationLock = useCallback(() => {
+    if (slicedNavigationUnlockTimerRef.current !== null) {
+      window.clearTimeout(slicedNavigationUnlockTimerRef.current);
+      slicedNavigationUnlockTimerRef.current = null;
+    }
+    slicedNavigationLockedRef.current = false;
+  }, []);
 
   useIsomorphicLayoutEffect(() => {
     const element = stageRef.current;
@@ -240,6 +250,10 @@ export function AlanMenkenShowcase({
     const normalizedIndex = ((targetIndex % total) + total) % total;
     const outgoingIndex = activeIndexRef.current;
     if (normalizedIndex === outgoingIndex) return;
+
+    // Sliced transitions are sequenced rather than FLIP-interruptible. Ignore
+    // repeated navigation until the current Sliced handoff has settled.
+    if (viewMode === "sliced" && slicedNavigationLockedRef.current) return;
 
     setIsRibbonEntranceActive(false);
     const outgoingArtwork = displayArtworks[outgoingIndex];
@@ -315,6 +329,23 @@ export function AlanMenkenShowcase({
         maximumPanelDrift > transitionSliceGap ||
         !hasReliableDimensions(outgoingArtwork) ||
         !hasReliableDimensions(incomingArtwork);
+    }
+
+    if (viewMode === "sliced") {
+      clearSlicedNavigationLock();
+      slicedNavigationLockedRef.current = true;
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const navigationCooldown = prefersReducedMotion
+        ? 250
+        : shouldSequenceSliceHandoff
+        ? 1950
+        : 950;
+
+      slicedNavigationUnlockTimerRef.current = window.setTimeout(() => {
+        slicedNavigationLockedRef.current = false;
+        slicedNavigationUnlockTimerRef.current = null;
+      }, navigationCooldown);
     }
 
     setDelayedSliceArtworkId(
@@ -421,7 +452,15 @@ export function AlanMenkenShowcase({
     activeIndexRef.current = normalizedIndex;
     setTransitionDirection(direction);
     setRawActiveIndex(normalizedIndex);
-  }, [displayArtworks, failedImages, measuredDimensions, stageSize, total, viewMode]);
+  }, [
+    clearSlicedNavigationLock,
+    displayArtworks,
+    failedImages,
+    measuredDimensions,
+    stageSize,
+    total,
+    viewMode,
+  ]);
 
   const handleNext = useCallback(() => {
     if (total <= 1) return;
@@ -769,6 +808,9 @@ export function AlanMenkenShowcase({
   useEffect(() => () => {
     if (wheelUnlockTimerRef.current !== null) {
       window.clearTimeout(wheelUnlockTimerRef.current);
+    }
+    if (slicedNavigationUnlockTimerRef.current !== null) {
+      window.clearTimeout(slicedNavigationUnlockTimerRef.current);
     }
   }, []);
 
@@ -1409,6 +1451,7 @@ export function AlanMenkenShowcase({
               // Reuse the entrance sequence when returning from Sliced to Ribbon.
               // Clicking the already-active Ribbon control should not restart it.
               if (viewMode === "sliced") {
+                clearSlicedNavigationLock();
                 setIsRibbonEntranceActive(true);
               }
               setDelayedSliceArtworkId(null);
@@ -1430,7 +1473,10 @@ export function AlanMenkenShowcase({
             aria-label="Sliced artwork view"
             aria-pressed={viewMode === "sliced"}
             onClick={() => {
-              setIsRibbonEntranceActive(false);
+              if (viewMode === "ribbons") {
+                clearSlicedNavigationLock();
+                setIsRibbonEntranceActive(false);
+              }
               setDelayedSliceArtworkId(null);
               setTransitionSnapshot(null);
               setViewMode("sliced");
