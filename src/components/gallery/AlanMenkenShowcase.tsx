@@ -241,50 +241,62 @@ export function AlanMenkenShowcase({
       const first = previousRects.get(id);
       const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
       const currentOffset = Number(element.dataset.ribbonOffset ?? "0");
-      const targetTransform = "translate3d(0px, " + staggerY + "px, 0) scale(1, 1)";
+      const targetTransform = "translate3d(0px, " + staggerY + "px, 0)";
       let fromTransform: string;
+      let fromWidth = last.width;
+      let fromHeight = last.height;
 
       if (first) {
         const dx = first.left - last.left;
         const dy = first.top - last.top;
-        const scaleX = first.width / last.width;
-        const scaleY = first.height / last.height;
 
         // In a circular archive, one artwork can change from the far-left offset to
-        // the far-right offset (or vice versa). Do not FLIP that full-width distance.
-        // Re-introduce it from just beyond its destination edge instead.
+        // the far-right offset (or vice versa). Do not animate it across the viewport.
         const crossedLoopSeam = transitionDirection === "next"
           ? currentOffset > first.offset
           : currentOffset < first.offset;
 
         if (crossedLoopSeam) {
           const entryX = transitionDirection === "next" ? 36 : -36;
-          fromTransform =
-            "translate3d(" + entryX + "px, " + staggerY + "px, 0) scale(" +
-            scaleX + ", " + scaleY + ")";
+          // Re-enter at its destination size. Only its position moves, avoiding an
+          // artificial scale on an artwork that is wrapping around the ribbon.
+          fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
         } else {
           if (
             Math.abs(dx) < 0.5 &&
             Math.abs(dy) < 0.5 &&
-            Math.abs(scaleX - 1) < 0.005 &&
-            Math.abs(scaleY - 1) < 0.005
+            Math.abs(first.width - last.width) < 0.5 &&
+            Math.abs(first.height - last.height) < 0.5
           ) {
             element.style.transformOrigin = "";
             return;
           }
 
-          fromTransform = "translate3d(" + dx + "px, " + (dy + staggerY) + "px, 0) scale(" + scaleX + ", " + scaleY + ")";
+          fromTransform =
+            "translate3d(" + dx + "px, " + (dy + staggerY) + "px, 0)";
+          fromWidth = first.width;
+          fromHeight = first.height;
         }
       } else {
-        // A newly revealed item enters just inside the edge at its normal preview size.
+        // A newly visible panel enters just inside its destination edge at normal size.
         const entryX = transitionDirection === "next" ? 28 : -28;
-        fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0) scale(1, 1)";
+        fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
       }
 
+      // Animate the layout box itself. Its image continues to use object-fit, instead
+      // of inheriting a non-uniform scaleX/scaleY transform from the whole artwork.
       const animation = element.animate(
         [
-          { transform: fromTransform },
-          { transform: targetTransform },
+          {
+            transform: fromTransform,
+            width: fromWidth + "px",
+            height: fromHeight + "px",
+          },
+          {
+            transform: targetTransform,
+            width: last.width + "px",
+            height: last.height + "px",
+          },
         ],
         {
           duration: id === activeId ? 760 : 680,
