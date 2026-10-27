@@ -616,6 +616,7 @@ export function AlanMenkenShowcase({
                     return (
                       <div
                         key={artwork.id}
+                        data-drag-surface="active"
                         className="artwork-selection-enter relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none"
                         style={{
                           width: activeSize.width + "px",
@@ -699,6 +700,7 @@ export function AlanMenkenShowcase({
                 key={current.id}
                 className="artwork-composition-enter relative shrink-0"
                 role="img"
+                data-drag-surface="active"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
                   width: sliceGroupWidth + "px",
