@@ -45,6 +45,7 @@ type RibbonRect = {
   top: number;
   width: number;
   height: number;
+  offset: number;
 };
 
 type RibbonLayoutEntry = {
@@ -161,6 +162,7 @@ export function AlanMenkenShowcase({
             top: rect.top,
             width: rect.width,
             height: rect.height,
+            offset: Number(element.dataset.ribbonOffset ?? "0"),
           });
         }
       });
@@ -238,6 +240,7 @@ export function AlanMenkenShowcase({
 
       const first = previousRects.get(id);
       const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
+      const currentOffset = Number(element.dataset.ribbonOffset ?? "0");
       const targetTransform = "translate3d(0px, " + staggerY + "px, 0) scale(1, 1)";
       let fromTransform: string;
 
@@ -247,20 +250,35 @@ export function AlanMenkenShowcase({
         const scaleX = first.width / last.width;
         const scaleY = first.height / last.height;
 
-        if (
-          Math.abs(dx) < 0.5 &&
-          Math.abs(dy) < 0.5 &&
-          Math.abs(scaleX - 1) < 0.005 &&
-          Math.abs(scaleY - 1) < 0.005
-        ) {
-          element.style.transformOrigin = "";
-          return;
-        }
+        // In a circular archive, one artwork can change from the far-left offset to
+        // the far-right offset (or vice versa). Do not FLIP that full-width distance.
+        // Re-introduce it from just beyond its destination edge instead.
+        const crossedLoopSeam = transitionDirection === "next"
+          ? currentOffset > first.offset
+          : currentOffset < first.offset;
 
-        fromTransform = "translate3d(" + dx + "px, " + (dy + staggerY) + "px, 0) scale(" + scaleX + ", " + scaleY + ")";
+        if (crossedLoopSeam) {
+          const entryX = transitionDirection === "next" ? 36 : -36;
+          fromTransform =
+            "translate3d(" + entryX + "px, " + staggerY + "px, 0) scale(" +
+            scaleX + ", " + scaleY + ")";
+        } else {
+          if (
+            Math.abs(dx) < 0.5 &&
+            Math.abs(dy) < 0.5 &&
+            Math.abs(scaleX - 1) < 0.005 &&
+            Math.abs(scaleY - 1) < 0.005
+          ) {
+            element.style.transformOrigin = "";
+            return;
+          }
+
+          fromTransform = "translate3d(" + dx + "px, " + (dy + staggerY) + "px, 0) scale(" + scaleX + ", " + scaleY + ")";
+        }
       } else {
-        const entryX = transitionDirection === "next" ? 30 : -30;
-        fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0) scale(0.76, 0.76)";
+        // A newly revealed item enters just inside the edge at its normal preview size.
+        const entryX = transitionDirection === "next" ? 28 : -28;
+        fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0) scale(1, 1)";
       }
 
       const animation = element.animate(
@@ -664,6 +682,7 @@ export function AlanMenkenShowcase({
                       }}
                       type="button"
                       data-artwork-id={artwork.id}
+                      data-ribbon-offset={offset}
                       data-ribbon-stagger-y={staggerOffset}
                       aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
                       aria-pressed={isActive}
