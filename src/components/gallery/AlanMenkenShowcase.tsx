@@ -283,8 +283,8 @@ export function AlanMenkenShowcase({
         fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
       }
 
-      // Animate the layout box itself. Its image continues to use object-fit, instead
-      // of inheriting a non-uniform scaleX/scaleY transform from the whole artwork.
+      // Animate the layout box itself. The image keeps its own object-fit rendering,
+      // rather than being stretched by separate horizontal and vertical scaling.
       const animation = element.animate(
         [
           {
