@@ -241,6 +241,15 @@ export function AlanMenkenShowcase({
       wheelLockedRef.current = false;
       wheelAccumulatorRef.current = 0;
       wheelUnlockTimerRef.current = null;
+
+      const stage = stageRef.current;
+      if (stage) {
+        // Removing the active wheel state first lets the zeroed transform spring back naturally.
+        delete stage.dataset.wheelActive;
+        stage.style.setProperty("--artwork-visual-x", "0px");
+        stage.style.setProperty("--artwork-track-x", "0px");
+        stage.style.setProperty("--artwork-preview-x", "0px");
+      }
     }, 260);
 
     if (wheelLockedRef.current) return;
@@ -252,11 +261,35 @@ export function AlanMenkenShowcase({
     lastWheelEventAtRef.current = now;
     wheelAccumulatorRef.current += normalizedDelta;
 
+    const stage = stageRef.current;
+    if (stage) {
+      stage.dataset.wheelActive = "true";
+      // The image follows the accumulated wheel/trackpad input before the navigation threshold.
+      stage.style.setProperty(
+        "--artwork-visual-x",
+        String(clamp(-wheelAccumulatorRef.current * 0.48, -42, 42)) + "px",
+      );
+      stage.style.setProperty(
+        "--artwork-track-x",
+        String(clamp(-wheelAccumulatorRef.current * 0.15, -16, 16)) + "px",
+      );
+      stage.style.setProperty(
+        "--artwork-preview-x",
+        String(clamp(-wheelAccumulatorRef.current * 0.05, -7, 7)) + "px",
+      );
+    }
+
     const direction = getWheelDirection(wheelAccumulatorRef.current, 55);
     if (!direction) return;
 
     wheelAccumulatorRef.current = 0;
     wheelLockedRef.current = true;
+    if (stage) {
+      delete stage.dataset.wheelActive;
+      stage.style.setProperty("--artwork-visual-x", "0px");
+      stage.style.setProperty("--artwork-track-x", "0px");
+      stage.style.setProperty("--artwork-preview-x", "0px");
+    }
     if (direction === "next") handleNext();
     else handlePrev();
   }, [handleNext, handlePrev, isNavigationOpen, total]);
