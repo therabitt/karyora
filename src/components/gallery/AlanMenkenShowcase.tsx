@@ -161,7 +161,10 @@ export function AlanMenkenShowcase({
   );
   const activeIndex = total > 0 ? ((rawActiveIndex % total) + total) % total : 0;
   const activeIndexRef = useRef(activeIndex);
-  activeIndexRef.current = activeIndex;
+
+  useIsomorphicLayoutEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
   // Start Ribbon's entrance only on the page's initial presentation. Any user
@@ -230,8 +233,8 @@ export function AlanMenkenShowcase({
     if (total <= 0 || !isRibbonEntranceActive) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIsRibbonEntranceActive(false);
-      return;
+      const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
 
     // Match Ribbon's FLIP timing: previews settle over 980 ms and the focused artwork
