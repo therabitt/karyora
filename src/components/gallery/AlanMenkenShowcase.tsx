@@ -265,6 +265,13 @@ export function AlanMenkenShowcase({
 
     const stage = stageRef.current;
     if (stage) {
+      if (!stage.dataset.wheelActive) {
+        // Direct input takes precedence over any unfinished entrance animation.
+        stage.querySelectorAll(".artwork-selection-enter, .artwork-composition-enter, .artwork-slice-enter")
+          .forEach((element) => element.classList.remove(
+            "artwork-selection-enter", "artwork-composition-enter", "artwork-slice-enter"
+          ));
+      }
       stage.dataset.wheelActive = "true";
       // The image follows the accumulated wheel/trackpad input before the navigation threshold.
       stage.style.setProperty(
