@@ -545,14 +545,14 @@ export function AlanMenkenShowcase({
       const entry = ribbonEntries[index];
       const rightEntry = ribbonEntries[index + 1];
       entry.left = rightEntry.left - ribbonGap - entry.width;
-      entry.top = (stageHeight - entry.height) / 2 + entry.staggerOffset;
+      entry.top = (stageHeight - entry.height) / 2;
     }
 
     for (let index = activeRibbonPosition + 1; index < ribbonEntries.length; index += 1) {
       const entry = ribbonEntries[index];
       const leftEntry = ribbonEntries[index - 1];
       entry.left = leftEntry.left + leftEntry.width + ribbonGap;
-      entry.top = (stageHeight - entry.height) / 2 + entry.staggerOffset;
+      entry.top = (stageHeight - entry.height) / 2;
     }
   }
 
