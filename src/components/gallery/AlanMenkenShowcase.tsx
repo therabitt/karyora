@@ -517,13 +517,7 @@ export function AlanMenkenShowcase({
       STAGGER_OFFSETS_RIBBONS[patternIndex] *
       Math.min(1.2, Math.max(0.6, stageHeight / 480))
     );
-    const previewHeightLimit = Math.max(1, Math.round(stageHeight * heightPercent / 100));
-    const previewSize = fitArtworkWithinBounds(
-      dimensions.width,
-      dimensions.height,
-      Math.max(1, previewWidth),
-      previewHeightLimit
-    );
+    const previewHeight = Math.max(1, Math.round(stageHeight * heightPercent / 100));
 
     return {
       index,
@@ -532,8 +526,8 @@ export function AlanMenkenShowcase({
       isActive,
       imageUrl: getStoragePublicUrl(artwork.public_image_path),
       failed: Boolean(failedImages[artwork.id]),
-      width: isActive ? activeSize.width : previewSize.width,
-      height: isActive ? activeSize.height : previewSize.height,
+      width: isActive ? activeSize.width : previewWidth,
+      height: isActive ? activeSize.height : previewHeight,
       left: 0,
       top: 0,
       staggerOffset: isActive ? 0 : staggerOffset,
@@ -657,6 +651,9 @@ export function AlanMenkenShowcase({
                     staggerOffset,
                   } = entry;
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
+                  const itemClassName = isActive
+                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                    : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
 
                   return (
                     <button
@@ -676,14 +673,7 @@ export function AlanMenkenShowcase({
                         const backwardDistance = (activeIndexRef.current - index + total) % total;
                         selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
                       }}
-                      className={
-                        "artwork-ribbon-item group absolute shrink-0 overflow-hidden rounded-xs " +
-                        "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " +
-                        (isActive
-                          ? "z-20 border-2 border-accent bg-surface shadow-xl"
-                          : "border border-border/70 bg-surface-muted shadow-sm hover:border-border-strong ") +
-                        visibility
-                      }
+                      className={itemClassName + " " + visibility}
                       style={{
                         left: left + "px",
                         top: top + "px",
@@ -700,7 +690,11 @@ export function AlanMenkenShowcase({
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className="h-full w-full object-contain"
+                          className={
+                            isActive
+                              ? "h-full w-full object-contain"
+                              : "h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+                          }
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
@@ -711,6 +705,11 @@ export function AlanMenkenShowcase({
                             {artwork.title}
                           </span>
                         </div>
+                      )}
+                      {!isActive && (
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
+                          {artwork.title}
+                        </span>
                       )}
                     </button>
                   );
