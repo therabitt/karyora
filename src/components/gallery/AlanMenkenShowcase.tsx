@@ -166,6 +166,9 @@ export function AlanMenkenShowcase({
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
   const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
   const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
+  // Persists for the incoming artwork's lifetime so its delayed animation doesn't
+  // restart when the outgoing snapshot is cleaned up.
+  const [delayedSliceArtworkId, setDelayedSliceArtworkId] = useState<string | null>(null);
   const [seamExitSnapshot, setSeamExitSnapshot] = useState<RibbonSeamExitSnapshot | null>(null);
   const transitionSequenceRef = useRef(0);
   const ribbonItemsRef = useRef(new Map<string, HTMLButtonElement>());
@@ -221,6 +224,65 @@ export function AlanMenkenShowcase({
     if (normalizedIndex === outgoingIndex) return;
 
     const outgoingArtwork = displayArtworks[outgoingIndex];
+    const incomingArtwork = displayArtworks[normalizedIndex];
+    let shouldSequenceSliceHandoff = false;
+
+    if (viewMode === "sliced" && outgoingArtwork && incomingArtwork) {
+      const transitionStageWidth = stageSize.width || 1440;
+      const transitionStageHeight = stageSize.height || 520;
+      const transitionSliceGap =
+        transitionStageWidth < 640 ? 3 : transitionStageWidth < 1024 ? 6 : 8;
+      const transitionControlsGutter = transitionStageWidth < 640
+        ? 46
+        : Math.min(112, transitionStageWidth * 0.08);
+      const transitionSliceMaxWidth = Math.max(
+        120,
+        Math.min(
+          transitionStageWidth * (transitionStageWidth < 640 ? 0.78 : 0.8),
+          transitionStageWidth -
+            2 * transitionControlsGutter -
+            transitionSliceGap * (SLICE_COUNT - 1)
+        )
+      );
+
+      const getTransitionDimensions = (artwork: PublicArtwork): ArtworkDimensions => {
+        const measured = measuredDimensions[artwork.id];
+        if (measured) return measured;
+
+        if (
+          Number.isFinite(artwork.image_width) &&
+          Number.isFinite(artwork.image_height) &&
+          (artwork.image_width ?? 0) > 0 &&
+          (artwork.image_height ?? 0) > 0
+        ) {
+          return resolveArtworkDimensions(artwork.image_width, artwork.image_height);
+        }
+
+        return resolveArtworkDimensions(null, null);
+      };
+
+      const getSliceGroupWidth = (artwork: PublicArtwork) => {
+        const dimensions = getTransitionDimensions(artwork);
+        const fittedSize = fitArtworkWithinBounds(
+          dimensions.width,
+          dimensions.height,
+          transitionSliceMaxWidth,
+          transitionStageHeight * 0.82
+        );
+        return fittedSize.width + transitionSliceGap * (SLICE_COUNT - 1);
+      };
+
+      const outgoingWidth = getSliceGroupWidth(outgoingArtwork);
+      const incomingWidth = getSliceGroupWidth(incomingArtwork);
+      const relativeWidthDifference =
+        Math.abs(outgoingWidth - incomingWidth) / Math.max(outgoingWidth, incomingWidth);
+      shouldSequenceSliceHandoff = relativeWidthDifference > 0.18;
+    }
+
+    setDelayedSliceArtworkId(
+      shouldSequenceSliceHandoff && incomingArtwork ? incomingArtwork.id : null
+    );
+
     if (viewMode === "ribbons" && typeof window !== "undefined") {
       if (seamExitAnimationRef.current) {
         seamExitAnimationRef.current.onfinish = null;
@@ -321,7 +383,7 @@ export function AlanMenkenShowcase({
     activeIndexRef.current = normalizedIndex;
     setTransitionDirection(direction);
     setRawActiveIndex(normalizedIndex);
-  }, [displayArtworks, failedImages, total, viewMode]);
+  }, [displayArtworks, failedImages, measuredDimensions, stageSize, total, viewMode]);
 
   const handleNext = useCallback(() => {
     if (total <= 1) return;
@@ -336,14 +398,21 @@ export function AlanMenkenShowcase({
   useEffect(() => {
     if (!transitionSnapshot) return;
 
+    const currentArtworkId = displayArtworks[activeIndex]?.id;
+    const hasSequentialSliceHandoff =
+      transitionSnapshot.viewMode === "sliced" &&
+      currentArtworkId !== undefined &&
+      delayedSliceArtworkId === currentArtworkId;
+    const cleanupDelay = hasSequentialSliceHandoff ? 1900 : 900;
+
     const timeoutId = window.setTimeout(() => {
       setTransitionSnapshot((currentSnapshot) =>
         currentSnapshot?.sequence === transitionSnapshot.sequence ? null : currentSnapshot
       );
-    }, 900);
+    }, cleanupDelay);
 
     return () => window.clearTimeout(timeoutId);
-  }, [transitionSnapshot]);
+  }, [activeIndex, delayedSliceArtworkId, displayArtworks, transitionSnapshot]);
 
   useIsomorphicLayoutEffect(() => {
     const snapshot = seamExitSnapshot;
@@ -875,7 +944,8 @@ export function AlanMenkenShowcase({
   // When the panel group widths differ substantially (e.g. landscape -> portrait),
   // sequence the old group out before letting the new group enter.
   const isSliceLayoutChange =
-    transitionSnapshot?.viewMode === "sliced" && sliceLayoutWidthDifference > 0.18;
+    viewMode === "sliced" && delayedSliceArtworkId === current.id;
+  const shouldDelayCurrentSliceEntrance = isSliceLayoutChange;
 
   return (
     <div className="relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink">
@@ -1088,7 +1158,7 @@ export function AlanMenkenShowcase({
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
                         animationDelay: (
-                          (isSliceLayoutChange ? 620 : 20) + staggerIndex * 22
+                          (shouldDelayCurrentSliceEntrance ? 870 : 20) + staggerIndex * 22
                         ) + "ms",
                         "--slice-enter-y": enterY + "px",
                       } as CSSProperties}
@@ -1238,6 +1308,7 @@ export function AlanMenkenShowcase({
           aria-live="polite"
           aria-atomic="true"
           data-transition-direction={transitionDirection}
+          data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
           className="flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
         >
           <div className="flex flex-col items-center">
@@ -1285,7 +1356,11 @@ export function AlanMenkenShowcase({
             type="button"
             aria-label="Ribbon artwork view"
             aria-pressed={viewMode === "ribbons"}
-            onClick={() => setViewMode("ribbons")}
+            onClick={() => {
+              setDelayedSliceArtworkId(null);
+              setTransitionSnapshot(null);
+              setViewMode("ribbons");
+            }}
             className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "ribbons" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
@@ -1300,7 +1375,11 @@ export function AlanMenkenShowcase({
             type="button"
             aria-label="Sliced artwork view"
             aria-pressed={viewMode === "sliced"}
-            onClick={() => setViewMode("sliced")}
+            onClick={() => {
+              setDelayedSliceArtworkId(null);
+              setTransitionSnapshot(null);
+              setViewMode("sliced");
+            }}
             className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "sliced" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
