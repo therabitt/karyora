@@ -94,224 +94,115 @@ body {
   background-color: var(--color-border-strong);
 }
 
-/* Direction-aware editorial motion for artwork selection. Keep the artwork crisp:
-   favor opacity and small transforms over blur or large scaling. */
-@keyframes artwork-selection-enter-next {
+/* Continuous artwork motion: prioritize physical position and scale, not opacity. */
+@keyframes artwork-composition-enter-next {
   from {
-    opacity: 0.62;
-    transform: translate3d(22px, 0, 0) scale(0.992);
+    transform: translate3d(38px, 0, 0) scale(0.94);
   }
 
   to {
-    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
-@keyframes artwork-selection-enter-previous {
+@keyframes artwork-composition-enter-previous {
   from {
-    opacity: 0.62;
-    transform: translate3d(-22px, 0, 0) scale(0.992);
+    transform: translate3d(-38px, 0, 0) scale(0.94);
   }
 
   to {
-    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
-@keyframes artwork-exit {
+@keyframes artwork-composition-exit-next {
   from {
-    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
 
   to {
-    opacity: 0;
-    transform: translate3d(var(--artwork-exit-shift, -20px), -4px, 0) scale(0.985);
+    transform: translate3d(-30%, 0, 0) scale(0.84);
   }
 }
 
-@keyframes artwork-slice-enter {
+@keyframes artwork-composition-exit-previous {
   from {
-    opacity: 0.52;
-    transform: translate3d(0, 8px, 0) scale(0.99);
-  }
-
-  to {
-    opacity: 1;
     transform: translate3d(0, 0, 0) scale(1);
   }
+
+  to {
+    transform: translate3d(30%, 0, 0) scale(0.84);
+  }
 }
 
-@keyframes artwork-caption-enter {
+@keyframes artwork-caption-settle {
   from {
-    opacity: 0.35;
-    transform: translate3d(0, 6px, 0);
+    transform: translate3d(0, 5px, 0);
   }
 
   to {
-    opacity: 1;
     transform: translate3d(0, 0, 0);
   }
 }
 
-[data-transition-direction="next"] .artwork-selection-enter,
-[data-transition-direction="next"] .artwork-composition-enter {
-  animation: artwork-selection-enter-next 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/* Each artwork keeps one stable DOM node. Web Animations API interpolates its
+   previous screen rectangle into its new rectangle, including its scale. */
+.artwork-ribbon-item {
+  box-sizing: border-box;
+  transform-origin: top left;
+  backface-visibility: hidden;
+  will-change: transform;
+  transition:
+    border-color 260ms ease,
+    box-shadow 320ms cubic-bezier(0.2, 0.78, 0.22, 1);
 }
 
-[data-transition-direction="previous"] .artwork-selection-enter,
-[data-transition-direction="previous"] .artwork-composition-enter {
-  animation: artwork-selection-enter-previous 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.artwork-exit-layer {
-  will-change: opacity, transform;
-}
-
-.artwork-exit-next,
-.artwork-exit-previous {
-  animation: artwork-exit 280ms cubic-bezier(0.32, 0.02, 0.2, 1) both;
-}
-
-.artwork-slice-enter {
-  animation: artwork-slice-enter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-.artwork-caption-enter {
-  animation: artwork-caption-enter 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* Direct manipulation: artwork follows the pointer, then settles with spring-like easing. */
-.artwork-stage {
-  --artwork-visual-x: 0px;
-  --artwork-track-x: 0px;
-  --artwork-preview-x: 0px;
-  --artwork-tilt: 0deg;
-  --artwork-composition-tilt: 0deg;
-  --artwork-drag-scale: 1;
-  cursor: grab;
-}
-
-.artwork-stage[data-dragging="true"] {
-  cursor: grabbing;
+.artwork-ribbon-item img {
+  display: block;
+  pointer-events: none;
   user-select: none;
 }
 
-.artwork-stage [data-drag-surface="active"] {
-  transform: translate3d(var(--artwork-visual-x, 0px), 0, 0)
-    rotate(var(--artwork-tilt, 0deg))
-    scale(var(--artwork-drag-scale, 1));
+.artwork-ribbon-item:focus-visible {
+  outline-offset: 4px;
+}
+
+[data-transition-direction="next"] .artwork-composition-enter {
+  animation: artwork-composition-enter-next 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+}
+
+[data-transition-direction="previous"] .artwork-composition-enter {
+  animation: artwork-composition-enter-previous 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+}
+
+.artwork-exit-layer {
+  pointer-events: none;
   transform-origin: center center;
-  box-shadow: 0 16px 36px rgba(28, 25, 23, 0.1);
-  transition:
-    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms ease-out;
   will-change: transform;
 }
 
-.artwork-stage button,
-.artwork-stage a {
-  cursor: pointer;
+.artwork-exit-next {
+  animation: artwork-composition-exit-next 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
 }
 
-.artwork-stage [data-drag-surface="active"][role="img"] {
-  transform: translate3d(var(--artwork-visual-x, 0px), 0, 0)
-    rotate(var(--artwork-composition-tilt, 0deg))
-    scale(var(--artwork-drag-scale, 1));
+.artwork-exit-previous {
+  animation: artwork-composition-exit-previous 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
 }
 
-.artwork-stage[data-dragging="true"] [data-drag-surface="active"] {
-  box-shadow: 0 26px 52px rgba(28, 25, 23, 0.2), 0 7px 14px rgba(28, 25, 23, 0.12);
-  transition: none;
-}
-
-.artwork-stage .artwork-ribbon-track {
-  transition: transform 360ms cubic-bezier(0.2, 0.78, 0.25, 1);
-}
-
-.artwork-stage .artwork-ribbon-preview {
-  transition:
-    transform 280ms cubic-bezier(0.2, 0.78, 0.25, 1),
-    opacity 220ms ease-out,
-    filter 220ms ease-out;
-}
-
-.artwork-stage[data-dragging="true"] .artwork-ribbon-track {
-  transform: translate3d(var(--artwork-track-x, 0px), 0, 0);
-  transition: transform 120ms cubic-bezier(0.18, 0.67, 0.24, 1);
-}
-
-.artwork-stage[data-dragging="true"] .artwork-ribbon-preview {
-  transition: opacity 180ms ease-out, filter 180ms ease-out;
-}
-
-/* Trackpad/mouse wheel input also nudges the image before a step is committed. */
-.artwork-stage[data-wheel-active="true"] [data-drag-surface="active"],
-.artwork-stage[data-wheel-active="true"] .artwork-ribbon-track,
-.artwork-stage[data-wheel-active="true"] .artwork-ribbon-preview {
-  transition: none;
-}
-
-.artwork-stage[data-wheel-active="true"] .artwork-ribbon-track {
-  transform: translate3d(var(--artwork-track-x, 0px), 0, 0);
-}
-
-.artwork-stage [data-artwork-slice] {
-  transform: translate3d(var(--slice-parallax-x, 0px), var(--slice-parallax-y, 0px), 0);
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.artwork-stage[data-dragging="true"] [data-artwork-slice] {
-  transition: none;
-}
-
-.artwork-stage[data-drag-returning="true"] [data-drag-surface="active"] {
-  transition: transform 360ms cubic-bezier(0.2, 0.78, 0.25, 1);
-}
-
-.artwork-stage[data-drag-returning="true"] .artwork-ribbon-track {
-  transition: transform 360ms cubic-bezier(0.2, 0.78, 0.25, 1);
-}
-
-.artwork-stage[data-drag-returning="true"] [data-artwork-slice] {
-  transition: transform 320ms cubic-bezier(0.2, 0.78, 0.25, 1);
+.artwork-caption-enter {
+  animation: artwork-caption-settle 240ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .artwork-selection-enter,
   .artwork-composition-enter,
   .artwork-exit-layer,
-  .artwork-slice-enter,
   .artwork-caption-enter {
     animation: none;
     transform: none;
-    filter: none;
   }
 
-  .artwork-stage {
-    --artwork-visual-x: 0px !important;
-    --artwork-track-x: 0px !important;
-    --artwork-preview-x: 0px !important;
-    --artwork-tilt: 0deg !important;
-    --artwork-composition-tilt: 0deg !important;
-    --artwork-drag-scale: 1 !important;
-  }
-
-  .artwork-stage [data-drag-surface="active"],
-  .artwork-stage[data-dragging="true"] [data-drag-surface="active"],
-  .artwork-stage[data-wheel-active="true"] [data-drag-surface="active"],
-  .artwork-stage [data-artwork-slice],
-  .artwork-stage[data-dragging="true"] .artwork-ribbon-track,
-  .artwork-stage[data-drag-returning="true"] .artwork-ribbon-track,
-  .artwork-stage[data-wheel-active="true"] .artwork-ribbon-track {
+  .artwork-ribbon-item {
     transition: none;
-    transform: none;
-  }
-
-  .artwork-exit-layer {
-    display: none;
+    will-change: auto;
   }
 }
-
