@@ -85,6 +85,8 @@ export function shouldHandleArtworkKeyboardNavigation(
     return false;
   }
 
+  // Preserve arrow-key semantics for accessible composite widgets outside
+  // the artwork stage (for example radio groups, tabs, sliders, and listboxes).
   if (context.interactiveTarget && !context.interactiveTargetWithinStage) {
     return false;
   }
