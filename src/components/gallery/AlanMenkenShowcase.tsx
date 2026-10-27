@@ -475,7 +475,7 @@ export function AlanMenkenShowcase({
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
-      const image = element.querySelector<HTMLElement>("[data-artwork-image]");
+      const image = element.querySelector<HTMLImageElement>("[data-artwork-image]");
       const targetImageTransform = image ? window.getComputedStyle(image).transform : "none";
       const animation = element.animate(
         [
