@@ -945,7 +945,7 @@ export function AlanMenkenShowcase({
                             onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                             onError={() => handleImageError(artwork.id)}
                             className={
-                              "absolute inset-0 h-full w-full object-cover " +
+                              "absolute inset-0 h-full w-full object-cover transition-transform duration-700 motion-reduce:transition-none " +
                               (isActive ? "opacity-0" : "opacity-100 group-hover:scale-[1.025]")
                             }
                           />
