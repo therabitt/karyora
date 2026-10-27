@@ -274,8 +274,11 @@ export function AlanMenkenShowcase({
 
       const outgoingWidth = getSliceGroupWidth(outgoingArtwork);
       const incomingWidth = getSliceGroupWidth(incomingArtwork);
-      const relativeWidthDifference =
-        Math.abs(outgoingWidth - incomingWidth) / Math.max(outgoingWidth, incomingWidth);
+      // Groups are centered independently. Across five strips, the largest
+      // horizontal shift for a matching panel is 30% of the total width delta.
+      // Once that drift exceeds the inter-panel gap, strips from neighboring
+      // indices can share the same horizontal lane and cross in opposite directions.
+      const maximumPanelDrift = Math.abs(outgoingWidth - incomingWidth) * 0.3;
       const hasReliableDimensions = (artwork: PublicArtwork) => {
         const measured = measuredDimensions[artwork.id];
         if (measured && measured.width > 0 && measured.height > 0) return true;
@@ -290,7 +293,7 @@ export function AlanMenkenShowcase({
       // If either image's true dimensions are not known yet, prefer the safe
       // sequential handoff rather than risk an unexpected overlap after load.
       shouldSequenceSliceHandoff =
-        relativeWidthDifference > 0.18 ||
+        maximumPanelDrift > transitionSliceGap ||
         !hasReliableDimensions(outgoingArtwork) ||
         !hasReliableDimensions(incomingArtwork);
     }
