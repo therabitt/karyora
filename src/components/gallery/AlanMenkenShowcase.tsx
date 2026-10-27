@@ -568,6 +568,12 @@ export function AlanMenkenShowcase({
   }, []);
 
   const getDimensions = useCallback((artwork: PublicArtwork): ArtworkDimensions => {
+    // Prefer the loaded image's natural pixel dimensions. Database dimensions may be
+    // stale or rounded; using them over the actual image ratio can leave visible blank
+    // bands around the focused artwork when object-contain sizes the image.
+    const measured = measuredDimensions[artwork.id];
+    if (measured) return measured;
+
     if (
       Number.isFinite(artwork.image_width) &&
       Number.isFinite(artwork.image_height) &&
@@ -576,9 +582,6 @@ export function AlanMenkenShowcase({
     ) {
       return resolveArtworkDimensions(artwork.image_width, artwork.image_height);
     }
-
-    const measured = measuredDimensions[artwork.id];
-    if (measured) return measured;
 
     return resolveArtworkDimensions(null, null);
   }, [measuredDimensions]);
@@ -791,7 +794,9 @@ export function AlanMenkenShowcase({
                     top: seamExitSnapshot.top + "px",
                     width: seamExitSnapshot.width + "px",
                     height: seamExitSnapshot.height + "px",
-                    zIndex: 0,
+                    // Keep the outgoing edge tile visible above the reflowed ribbon
+                    // until it has fully travelled beyond the clipped stage boundary.
+                    zIndex: 30,
                   }}
                 >
                   {seamExitSnapshot.imageUrl && !seamExitSnapshot.failed ? (
