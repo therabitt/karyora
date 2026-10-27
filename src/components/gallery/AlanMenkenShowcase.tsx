@@ -340,7 +340,7 @@ export function AlanMenkenShowcase({
       setTransitionSnapshot((currentSnapshot) =>
         currentSnapshot?.sequence === transitionSnapshot.sequence ? null : currentSnapshot
       );
-    }, 700);
+    }, 900);
 
     return () => window.clearTimeout(timeoutId);
   }, [transitionSnapshot]);
@@ -368,7 +368,7 @@ export function AlanMenkenShowcase({
         { transform: "translate3d(" + exitDistance + "px, 0, 0)" },
       ],
       {
-        duration: 600,
+        duration: 760,
         easing: "cubic-bezier(0.4, 0, 0.2, 1)",
         fill: "both",
       },
@@ -471,7 +471,7 @@ export function AlanMenkenShowcase({
 
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
-      const duration = id === activeId ? 980 : 880;
+      const duration = id === activeId ? 1100 : 980;
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
