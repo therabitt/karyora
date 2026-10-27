@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
@@ -12,6 +13,10 @@ import {
   resolveArtworkDimensions,
   type ArtworkDimensions,
 } from "@/lib/gallery/artwork-layout";
+import {
+  getSwipeDirection,
+  getWheelDirection,
+} from "@/lib/gallery/artwork-interaction";
 
 export interface AlanMenkenShowcaseProps {
   artworks: PublicArtwork[];
@@ -51,8 +56,13 @@ export function AlanMenkenShowcase({
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const wheelAccumulatorRef = useRef(0);
+  const wheelLockedRef = useRef(false);
+  const lastWheelEventAtRef = useRef(0);
+  const wheelUnlockTimerRef = useRef<number | null>(null);
+  const pointerStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
 
   useEffect(() => {
     const element = stageRef.current;
@@ -91,33 +101,116 @@ export function AlanMenkenShowcase({
     setRawActiveIndex((previous) => (previous - 1 + total) % total);
   }, [total]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (isNavigationOpen || event.defaultPrevented) return;
+  const handleStageKeyDown = useCallback((event: ReactKeyboardEvent<HTMLElement>) => {
+    if (
+      isNavigationOpen ||
+      event.defaultPrevented ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey
+    ) return;
 
-      const target = document.activeElement;
-      const tag = target?.tagName.toLowerCase();
-      if (
-        tag === "input" ||
-        tag === "textarea" ||
-        tag === "select" ||
-        tag === "button" ||
-        tag === "a" ||
-        target?.getAttribute("contenteditable") === "true"
-      ) return;
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (
+      target.isContentEditable ||
+      target.closest("input, textarea, select, [contenteditable='true']")
+    ) return;
 
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        handleNext();
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        handlePrev();
-      }
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      handleNext();
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      handlePrev();
+    }
+  }, [handleNext, handlePrev, isNavigationOpen]);
+
+  const handleStageWheel = useCallback((event: ReactWheelEvent<HTMLElement>) => {
+    if (isNavigationOpen || total <= 1 || event.ctrlKey) return;
+
+    const rawDelta = event.deltaY;
+    const normalizedDelta = event.deltaMode === 1
+      ? rawDelta * 16
+      : event.deltaMode === 2
+      ? rawDelta * window.innerHeight
+      : rawDelta;
+    if (!Number.isFinite(normalizedDelta) || normalizedDelta === 0) return;
+
+    // The viewport owns vertical wheel navigation; prevent page scrolling here only.
+    event.preventDefault();
+
+    if (wheelUnlockTimerRef.current !== null) {
+      window.clearTimeout(wheelUnlockTimerRef.current);
+    }
+    wheelUnlockTimerRef.current = window.setTimeout(() => {
+      wheelLockedRef.current = false;
+      wheelAccumulatorRef.current = 0;
+      wheelUnlockTimerRef.current = null;
+    }, 260);
+
+    if (wheelLockedRef.current) return;
+
+    const now = performance.now();
+    if (now - lastWheelEventAtRef.current > 180) {
+      wheelAccumulatorRef.current = 0;
+    }
+    lastWheelEventAtRef.current = now;
+    wheelAccumulatorRef.current += normalizedDelta;
+
+    const direction = getWheelDirection(wheelAccumulatorRef.current, 55);
+    if (!direction) return;
+
+    wheelAccumulatorRef.current = 0;
+    wheelLockedRef.current = true;
+    if (direction === "next") handleNext();
+    else handlePrev();
+  }, [handleNext, handlePrev, isNavigationOpen, total]);
+
+  const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType !== "touch" || isNavigationOpen || total <= 1) {
+      pointerStartRef.current = null;
+      return;
     }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("button, a, input, textarea, select, [contenteditable='true']")
+    ) {
+      // Keep taps and native activation on explicit controls predictable.
+      pointerStartRef.current = null;
+      return;
+    }
+
+    pointerStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }, [isNavigationOpen, total]);
+
+  const handleStagePointerUp = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const start = pointerStartRef.current;
+    pointerStartRef.current = null;
+    if (!start || start.pointerId !== event.pointerId || isNavigationOpen) return;
+
+    const direction = getSwipeDirection(start.x, start.y, event.clientX, event.clientY);
+    if (direction === "next") handleNext();
+    else if (direction === "previous") handlePrev();
   }, [handleNext, handlePrev, isNavigationOpen]);
+
+  const handleStagePointerCancel = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    if (pointerStartRef.current?.pointerId === event.pointerId) {
+      pointerStartRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => {
+    if (wheelUnlockTimerRef.current !== null) {
+      window.clearTimeout(wheelUnlockTimerRef.current);
+    }
+  }, []);
 
   const handleImageError = useCallback((id: string) => {
     setFailedImages((previous) => ({ ...previous, [id]: true }));
@@ -248,8 +341,14 @@ export function AlanMenkenShowcase({
       <main className="flex min-h-0 flex-1 flex-col">
         <section
           ref={stageRef}
-          aria-label="Artwork viewport"
-          className="relative min-h-0 w-full flex-1 overflow-hidden"
+          aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
+          tabIndex={0}
+          onKeyDown={handleStageKeyDown}
+          onWheel={handleStageWheel}
+          onPointerDown={handleStagePointerDown}
+          onPointerUp={handleStagePointerUp}
+          onPointerCancel={handleStagePointerCancel}
+          className="relative min-h-0 w-full flex-1 overflow-hidden touch-pan-y focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
         >
           {viewMode === "ribbons" ? (
             <div className="absolute inset-0 flex items-center overflow-hidden">
@@ -274,7 +373,7 @@ export function AlanMenkenShowcase({
                     return (
                       <div
                         key={artwork.id}
-                        className="relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none"
+                        className="artwork-selection-enter relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none"
                         style={{
                           width: activeSize.width + "px",
                           height: activeSize.height + "px",
@@ -350,7 +449,8 @@ export function AlanMenkenShowcase({
               </button>
 
               <div
-                className="relative shrink-0"
+                key={current.id}
+                className="artwork-selection-enter relative shrink-0"
                 role="img"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
@@ -419,8 +519,11 @@ export function AlanMenkenShowcase({
         </section>
 
         <section
+          key={current.id}
           aria-label="Selected artwork information"
-          className="flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
+          aria-live="polite"
+          aria-atomic="true"
+          className="artwork-caption-enter flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
         >
           <h1 className="font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
             <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
