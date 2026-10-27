@@ -72,6 +72,7 @@ type RibbonLayoutEntry = {
   imageUrl: string | null;
   failed: boolean;
   imageScale: number;
+  aspectRatio: number;
   width: number;
   height: number;
   left: number;
@@ -84,6 +85,56 @@ type ArtworkSwipeStart = {
   x: number;
   y: number;
 };
+
+function cubicBezierCoordinate(t: number, point1: number, point2: number): number {
+  const inverse = 1 - t;
+  return 3 * inverse * inverse * t * point1 + 3 * inverse * t * t * point2 + t * t * t;
+}
+
+function cubicBezierProgress(progress: number): number {
+  const x1 = 0.2;
+  const y1 = 0.78;
+  const x2 = 0.22;
+  const y2 = 1;
+  let low = 0;
+  let high = 1;
+
+  // Solve x(t) = progress by bisection, then evaluate y(t).
+  for (let iteration = 0; iteration < 16; iteration += 1) {
+    const midpoint = (low + high) / 2;
+    if (cubicBezierCoordinate(midpoint, x1, x2) < progress) low = midpoint;
+    else high = midpoint;
+  }
+
+  return cubicBezierCoordinate((low + high) / 2, y1, y2);
+}
+
+function getUniformScale(transform: string): number {
+  if (!transform || transform === "none") return 1;
+  const match = transform.match(/^matrix\(([^)]+)\)$/);
+
+  if (match) {
+    const values = match[1].split(",").map(Number);
+    if (values.length >= 2 && values.every(Number.isFinite)) {
+      return Math.hypot(values[0], values[1]);
+    }
+  }
+
+  return 1;
+}
+
+function getCoverScale(imageAspectRatio: number, frameAspectRatio: number): number {
+  if (
+    !Number.isFinite(imageAspectRatio) ||
+    !Number.isFinite(frameAspectRatio) ||
+    imageAspectRatio <= 0 ||
+    frameAspectRatio <= 0
+  ) {
+    return 1;
+  }
+
+  return Math.max(imageAspectRatio / frameAspectRatio, frameAspectRatio / imageAspectRatio);
+}
 
 // Use layout effects in the browser to avoid a first-frame layout jump, while keeping
 // server rendering free of useLayoutEffect warnings.
@@ -450,22 +501,41 @@ export function AlanMenkenShowcase({
         },
       );
 
-      // The same image transitions from its measured preview crop scale to its
-      // focused natural-ratio scale, synchronized to the frame's width/height motion.
-      // There is only one image node, so no duplicate artwork can appear stacked.
+      // Derive the image crop from the interpolated frame aspect ratio at each
+      // sample of the same easing curve used by FLIP. The image does not perform an
+      // independent scale tween, which made wide landscapes zoom and then shrink.
       if (first && image) {
         image.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
-        const imageAnimation = image.animate(
-          [
-            { transform: first.imageTransform },
-            { transform: targetImageTransform },
-          ],
-          {
-            duration,
-            easing,
-            fill: "both",
-          },
-        );
+
+        const naturalAspectRatio = image.naturalWidth > 0 && image.naturalHeight > 0
+          ? image.naturalWidth / image.naturalHeight
+          : Number(element.dataset.artworkAspect ?? "1");
+        const startScale = getUniformScale(first.imageTransform);
+        const imageScaleKeyframes: Keyframe[] = Array.from({ length: 25 }, (_, index) => {
+          const offset = index / 24;
+          const progress = cubicBezierProgress(offset);
+          const frameWidth = fromWidth + (last.width - fromWidth) * progress;
+          const frameHeight = fromHeight + (last.height - fromHeight) * progress;
+          const frameAspectRatio = frameHeight > 0 ? frameWidth / frameHeight : naturalAspectRatio;
+          const geometryScale = getCoverScale(naturalAspectRatio, frameAspectRatio);
+          const scale = index === 0 ? startScale : geometryScale;
+
+          return {
+            offset,
+            transform: "scale(" + scale + ")",
+          };
+        });
+
+        imageScaleKeyframes[imageScaleKeyframes.length - 1] = {
+          offset: 1,
+          transform: targetImageTransform,
+        };
+
+        const imageAnimation = image.animate(imageScaleKeyframes, {
+          duration,
+          easing: "linear",
+          fill: "both",
+        });
         imageAnimation.onfinish = () => imageAnimation.cancel();
       }
 
@@ -729,6 +799,7 @@ export function AlanMenkenShowcase({
       imageUrl: getStoragePublicUrl(artwork.public_image_path),
       failed: Boolean(failedImages[artwork.id]),
       imageScale: isActive ? 1 : coverScale,
+      aspectRatio,
       width: isActive ? activeSize.width : previewWidth,
       height: isActive ? activeSize.height : previewHeight,
       left: 0,
@@ -901,6 +972,7 @@ export function AlanMenkenShowcase({
                       type="button"
                       data-artwork-id={artwork.id}
                       data-artwork-active={isActive ? "true" : "false"}
+                      data-artwork-aspect={aspectRatio}
                       data-ribbon-offset={offset}
                       data-ribbon-stagger-y={staggerOffset}
                       aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
