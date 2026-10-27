@@ -291,6 +291,7 @@ export function AlanMenkenShowcase({
     const direction = getWheelDirection(wheelAccumulatorRef.current, 55);
     if (!direction) return;
 
+    const releaseVelocity = clamp(Math.abs(wheelAccumulatorRef.current) / 120, 0, 1.6);
     wheelAccumulatorRef.current = 0;
     wheelLockedRef.current = true;
     if (stage) {
@@ -299,9 +300,14 @@ export function AlanMenkenShowcase({
       stage.style.setProperty("--artwork-track-x", "0px");
       stage.style.setProperty("--artwork-preview-x", "0px");
     }
-    if (direction === "next") handleNext();
-    else handlePrev();
-  }, [handleNext, handlePrev, isNavigationOpen, total]);
+    selectArtwork(
+      direction === "next"
+        ? (activeIndexRef.current + 1) % total
+        : (activeIndexRef.current - 1 + total) % total,
+      direction,
+      releaseVelocity,
+    );
+  }, [isNavigationOpen, selectArtwork, total]);
 
   const clearDragResetTimer = useCallback(() => {
     if (dragResetTimerRef.current !== null) {
