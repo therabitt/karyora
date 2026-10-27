@@ -108,7 +108,9 @@ export function AlanMenkenShowcase({
       const element = target instanceof HTMLElement ? target : null;
       const stage = stageRef.current;
       const interactiveTarget = Boolean(
-        element?.closest("button, a, input, textarea, select, [role='button'], [role='link']")
+        element?.closest(
+          "[role='radio'], [role='slider'], [role='spinbutton'], [role='combobox'], [role='listbox'], [role='tab'], [role='menuitem'], [role='treeitem']"
+        )
       );
       const context = {
         key: event.key,
