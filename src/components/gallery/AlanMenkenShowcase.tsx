@@ -309,10 +309,9 @@ export function AlanMenkenShowcase({
     seamExitAnimationRef.current = animation;
 
     animation.onfinish = () => {
-      animation.cancel();
-      if (seamExitAnimationRef.current === animation) {
-        seamExitAnimationRef.current = null;
-      }
+      // Remove the snapshot from React first. Cancelling a fill:"both" animation
+      // before that commit restores its original edge position for one frame,
+      // which looks like a thumbnail flashing back into the ribbon.
       setSeamExitSnapshot((current) =>
         current?.sequence === snapshot.sequence ? null : current
       );
