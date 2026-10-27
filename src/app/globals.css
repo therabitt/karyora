@@ -94,6 +94,18 @@ body {
   background-color: var(--color-border-strong);
 }
 
+/* Ribbon arrives in a converging vertical wave: outer panels enter first, then
+   progressively reveal the artwork that anchors the center of the viewport. */
+@keyframes artwork-ribbon-enter {
+  from {
+    transform: translate3d(0, var(--ribbon-enter-y, -120vh), 0);
+  }
+
+  to {
+    transform: translate3d(0, var(--ribbon-stagger-y, 0px), 0);
+  }
+}
+
 /* Sliced mode moves each strip independently, like a vertical shutter.
    Only the panel wrapper moves; the image inside each strip keeps its shared crop. */
 @keyframes artwork-slice-enter {
@@ -138,6 +150,10 @@ body {
   transition:
     border-color 260ms ease,
     box-shadow 320ms cubic-bezier(0.2, 0.78, 0.22, 1);
+}
+
+.artwork-ribbon-enter {
+  animation: artwork-ribbon-enter 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artwork-ribbon-item img {
@@ -211,6 +227,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .artwork-ribbon-enter,
   .artwork-slice-enter-panel,
   .artwork-slice-exit-panel,
   .artwork-exit-layer,
