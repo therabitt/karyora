@@ -279,7 +279,18 @@ body {
     filter: none;
   }
 
+  .artwork-stage {
+    --artwork-visual-x: 0px !important;
+    --artwork-track-x: 0px !important;
+    --artwork-preview-x: 0px !important;
+    --artwork-tilt: 0deg !important;
+    --artwork-composition-tilt: 0deg !important;
+    --artwork-drag-scale: 1 !important;
+  }
+
   .artwork-stage [data-drag-surface="active"],
+  .artwork-stage[data-dragging="true"] [data-drag-surface="active"],
+  .artwork-stage[data-wheel-active="true"] [data-drag-surface="active"],
   .artwork-stage [data-artwork-slice],
   .artwork-stage[data-dragging="true"] .artwork-ribbon-track,
   .artwork-stage[data-drag-returning="true"] .artwork-ribbon-track,
