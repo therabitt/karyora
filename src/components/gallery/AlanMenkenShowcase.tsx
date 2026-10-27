@@ -276,7 +276,23 @@ export function AlanMenkenShowcase({
       const incomingWidth = getSliceGroupWidth(incomingArtwork);
       const relativeWidthDifference =
         Math.abs(outgoingWidth - incomingWidth) / Math.max(outgoingWidth, incomingWidth);
-      shouldSequenceSliceHandoff = relativeWidthDifference > 0.18;
+      const hasReliableDimensions = (artwork: PublicArtwork) => {
+        const measured = measuredDimensions[artwork.id];
+        if (measured && measured.width > 0 && measured.height > 0) return true;
+        return (
+          Number.isFinite(artwork.image_width) &&
+          Number.isFinite(artwork.image_height) &&
+          (artwork.image_width ?? 0) > 0 &&
+          (artwork.image_height ?? 0) > 0
+        );
+      };
+
+      // If either image's true dimensions are not known yet, prefer the safe
+      // sequential handoff rather than risk an unexpected overlap after load.
+      shouldSequenceSliceHandoff =
+        relativeWidthDifference > 0.18 ||
+        !hasReliableDimensions(outgoingArtwork) ||
+        !hasReliableDimensions(incomingArtwork);
     }
 
     setDelayedSliceArtworkId(
