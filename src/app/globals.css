@@ -93,3 +93,168 @@ body {
 .editorial-scroll::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-border-strong);
 }
+
+/* Ribbon arrives in a converging vertical wave: outer panels enter first, then
+   progressively reveal the artwork that anchors the center of the viewport. */
+@keyframes artwork-ribbon-enter {
+  from {
+    transform: translate3d(0, var(--ribbon-enter-y, -120vh), 0);
+  }
+
+  to {
+    transform: translate3d(0, var(--ribbon-stagger-y, 0px), 0);
+  }
+}
+
+/* Sliced mode moves each strip independently, like a vertical shutter.
+   Only the panel wrapper moves; the image inside each strip keeps its shared crop. */
+@keyframes artwork-slice-enter {
+  from {
+    transform: translate3d(0, var(--slice-enter-y, 64px), 0);
+  }
+
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes artwork-slice-exit {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, var(--slice-exit-y, -64px), 0);
+  }
+}
+
+@keyframes artwork-caption-enter {
+  from {
+    opacity: 0.65;
+    transform: translate3d(var(--caption-shift-x, 7px), 3px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Each artwork keeps one stable DOM node. Web Animations API interpolates its
+   previous screen rectangle into its new rectangle, including its scale. */
+.artwork-ribbon-item {
+  box-sizing: border-box;
+  transform-origin: top left;
+  backface-visibility: hidden;
+  will-change: transform;
+  transition:
+    border-color 260ms ease,
+    box-shadow 320ms cubic-bezier(0.2, 0.78, 0.22, 1);
+}
+
+.artwork-ribbon-enter {
+  animation: artwork-ribbon-enter 980ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* The focused artwork uses the same 1100 ms settling time as Ribbon's FLIP transition. */
+.artwork-ribbon-enter-active {
+  animation-duration: 1100ms;
+}
+
+.artwork-ribbon-item img {
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.artwork-ribbon-item:focus-visible {
+  outline-offset: 4px;
+}
+
+.artwork-slice-enter-panel {
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: artwork-slice-enter 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.artwork-slice-exit-panel {
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: artwork-slice-exit 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.artwork-exit-layer {
+  pointer-events: none;
+}
+
+[data-transition-direction="next"] .artwork-caption-title-enter {
+  --caption-shift-x: 9px;
+  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+[data-transition-direction="previous"] .artwork-caption-title-enter {
+  --caption-shift-x: -9px;
+  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+[data-transition-direction="next"] .artwork-caption-description-enter {
+  --caption-shift-x: 6px;
+  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
+}
+
+[data-transition-direction="previous"] .artwork-caption-description-enter {
+  --caption-shift-x: -6px;
+  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
+}
+
+[data-transition-direction="next"] .artwork-caption-meta-enter {
+  --caption-shift-x: 4px;
+  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+}
+
+[data-transition-direction="previous"] .artwork-caption-meta-enter {
+  --caption-shift-x: -4px;
+  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+}
+
+/* Keep the caption with the incoming artwork when a large aspect-ratio
+   change uses a sequential sliced handoff. */
+[data-slice-layout-change="true"] .artwork-caption-title-enter {
+  animation-delay: 900ms;
+}
+
+[data-slice-layout-change="true"] .artwork-caption-description-enter {
+  animation-delay: 960ms;
+}
+
+[data-slice-layout-change="true"] .artwork-caption-meta-enter {
+  animation-delay: 1000ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .artwork-ribbon-enter {
+    animation: none;
+  }
+
+  .artwork-slice-enter-panel,
+  .artwork-slice-exit-panel,
+  .artwork-exit-layer,
+  .artwork-caption-title-enter,
+  .artwork-caption-description-enter,
+  .artwork-caption-meta-enter {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  .artwork-exit-layer {
+    display: none;
+  }
+
+  .artwork-ribbon-item,
+  .artwork-slice-enter-panel,
+  .artwork-slice-exit-panel {
+    transition: none;
+    will-change: auto;
+  }
+}

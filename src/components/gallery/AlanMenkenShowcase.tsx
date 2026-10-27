@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
@@ -12,6 +13,11 @@ import {
   resolveArtworkDimensions,
   type ArtworkDimensions,
 } from "@/lib/gallery/artwork-layout";
+import {
+  getSwipeDirection,
+  getWheelDirection,
+  shouldHandleArtworkKeyboardNavigation,
+} from "@/lib/gallery/artwork-interaction";
 
 export interface AlanMenkenShowcaseProps {
   artworks: PublicArtwork[];
@@ -26,6 +32,114 @@ const SLICE_OFFSETS = [14, -16, 18, -10, 12];
 const SLICE_HEIGHTS = [88, 95, 100, 92, 86];
 
 type ViewMode = "ribbons" | "sliced";
+
+type ArtworkTransitionSnapshot = {
+  artwork: PublicArtwork;
+  direction: "next" | "previous";
+  viewMode: ViewMode;
+  sequence: number;
+};
+
+type RibbonRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  offset: number;
+  isActive: boolean;
+  opacity: number;
+  filter: string;
+  imageTransform: string;
+};
+
+type RibbonSeamExitSnapshot = {
+  artwork: PublicArtwork;
+  imageUrl: string | null;
+  failed: boolean;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  direction: "next" | "previous";
+  sequence: number;
+};
+
+type RibbonLayoutEntry = {
+  index: number;
+  offset: number;
+  artwork: PublicArtwork;
+  isActive: boolean;
+  imageUrl: string | null;
+  failed: boolean;
+  imageScale: number;
+  aspectRatio: number;
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+  staggerOffset: number;
+};
+
+type ArtworkSwipeStart = {
+  pointerId: number;
+  x: number;
+  y: number;
+};
+
+function cubicBezierCoordinate(t: number, point1: number, point2: number): number {
+  const inverse = 1 - t;
+  return 3 * inverse * inverse * t * point1 + 3 * inverse * t * t * point2 + t * t * t;
+}
+
+function cubicBezierProgress(progress: number): number {
+  const x1 = 0.4;
+  const y1 = 0;
+  const x2 = 0.2;
+  const y2 = 1;
+  let low = 0;
+  let high = 1;
+
+  // Solve x(t) = progress by bisection, then evaluate y(t).
+  for (let iteration = 0; iteration < 16; iteration += 1) {
+    const midpoint = (low + high) / 2;
+    if (cubicBezierCoordinate(midpoint, x1, x2) < progress) low = midpoint;
+    else high = midpoint;
+  }
+
+  return cubicBezierCoordinate((low + high) / 2, y1, y2);
+}
+
+function getUniformScale(transform: string): number {
+  if (!transform || transform === "none") return 1;
+  const match = transform.match(/^matrix\(([^)]+)\)$/);
+
+  if (match) {
+    const values = match[1].split(",").map(Number);
+    if (values.length >= 2 && values.every(Number.isFinite)) {
+      return Math.hypot(values[0], values[1]);
+    }
+  }
+
+  return 1;
+}
+
+function getCoverScale(imageAspectRatio: number, frameAspectRatio: number): number {
+  if (
+    !Number.isFinite(imageAspectRatio) ||
+    !Number.isFinite(frameAspectRatio) ||
+    imageAspectRatio <= 0 ||
+    frameAspectRatio <= 0
+  ) {
+    return 1;
+  }
+
+  return Math.max(imageAspectRatio / frameAspectRatio, frameAspectRatio / imageAspectRatio);
+}
+
+// Use layout effects in the browser to avoid a first-frame layout jump, while keeping
+// server rendering free of useLayoutEffect warnings.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 function getPanelVisibilityClass(offset: number): string {
   const distance = Math.abs(offset);
@@ -46,15 +160,49 @@ export function AlanMenkenShowcase({
     initialIndex >= 0 && initialIndex < total ? initialIndex : 0
   );
   const activeIndex = total > 0 ? ((rawActiveIndex % total) + total) % total : 0;
+  const activeIndexRef = useRef(activeIndex);
+
+  useIsomorphicLayoutEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
+  // Start Ribbon's entrance only on the page's initial presentation. Any user
+  // interaction hands control back to the existing FLIP/navigation animations.
+  const [isRibbonEntranceActive, setIsRibbonEntranceActive] = useState(true);
+  const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
+  const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
+  // Persists for the incoming artwork's lifetime so its delayed animation doesn't
+  // restart when the outgoing snapshot is cleaned up.
+  const [delayedSliceArtworkId, setDelayedSliceArtworkId] = useState<string | null>(null);
+  const [seamExitSnapshot, setSeamExitSnapshot] = useState<RibbonSeamExitSnapshot | null>(null);
+  const transitionSequenceRef = useRef(0);
+  const ribbonItemsRef = useRef(new Map<string, HTMLButtonElement>());
+  const previousRibbonRectsRef = useRef<Map<string, RibbonRect> | null>(null);
+  const seamExitLayerRef = useRef<HTMLDivElement>(null);
+  const seamExitAnimationRef = useRef<Animation | null>(null);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
-  const stageRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
   const [stageSize, setStageSize] = useState({ width: 0, height: 0 });
+  const wheelAccumulatorRef = useRef(0);
+  const wheelLockedRef = useRef(false);
+  const lastWheelEventAtRef = useRef(0);
+  const wheelUnlockTimerRef = useRef<number | null>(null);
+  const slicedNavigationLockedRef = useRef(false);
+  const slicedNavigationUnlockTimerRef = useRef<number | null>(null);
+  const pointerStartRef = useRef<ArtworkSwipeStart | null>(null);
 
-  useEffect(() => {
+  const clearSlicedNavigationLock = useCallback(() => {
+    if (slicedNavigationUnlockTimerRef.current !== null) {
+      window.clearTimeout(slicedNavigationUnlockTimerRef.current);
+      slicedNavigationUnlockTimerRef.current = null;
+    }
+    slicedNavigationLockedRef.current = false;
+  }, []);
+
+  useIsomorphicLayoutEffect(() => {
     const element = stageRef.current;
     if (!element) return;
 
@@ -81,43 +229,593 @@ export function AlanMenkenShowcase({
     return () => window.removeEventListener("resize", measure);
   }, [total]);
 
-  const handleNext = useCallback(() => {
-    if (total <= 1) return;
-    setRawActiveIndex((previous) => (previous + 1) % total);
-  }, [total]);
-
-  const handlePrev = useCallback(() => {
-    if (total <= 1) return;
-    setRawActiveIndex((previous) => (previous - 1 + total) % total);
-  }, [total]);
-
   useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (isNavigationOpen || event.defaultPrevented) return;
+    if (total <= 0 || !isRibbonEntranceActive) return;
 
-      const target = document.activeElement;
-      const tag = target?.tagName.toLowerCase();
-      if (
-        tag === "input" ||
-        tag === "textarea" ||
-        tag === "select" ||
-        tag === "button" ||
-        tag === "a" ||
-        target?.getAttribute("contenteditable") === "true"
-      ) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 0);
+      return () => window.clearTimeout(timeoutId);
+    }
 
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        handleNext();
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        handlePrev();
+    // Match Ribbon's FLIP timing: previews settle over 980 ms and the focused artwork
+    // over 1100 ms. Its center-first stagger adds at most 168 ms before the focus arrives.
+    // Clear the entrance class only after every panel has reached its resting position.
+    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1350);
+    return () => window.clearTimeout(timeoutId);
+  }, [isRibbonEntranceActive, total]);
+
+  const selectArtwork = useCallback((
+    targetIndex: number,
+    direction: "next" | "previous",
+  ) => {
+    if (total <= 1) return;
+
+    const normalizedIndex = ((targetIndex % total) + total) % total;
+    const outgoingIndex = activeIndexRef.current;
+    if (normalizedIndex === outgoingIndex) return;
+
+    // Sliced transitions are sequenced rather than FLIP-interruptible. Ignore
+    // repeated navigation until the current Sliced handoff has settled.
+    if (viewMode === "sliced" && slicedNavigationLockedRef.current) return;
+
+    setIsRibbonEntranceActive(false);
+    const outgoingArtwork = displayArtworks[outgoingIndex];
+    const incomingArtwork = displayArtworks[normalizedIndex];
+    let shouldSequenceSliceHandoff = false;
+
+    if (viewMode === "sliced" && outgoingArtwork && incomingArtwork) {
+      const transitionStageWidth = stageSize.width || 1440;
+      const transitionStageHeight = stageSize.height || 520;
+      const transitionSliceGap =
+        transitionStageWidth < 640 ? 3 : transitionStageWidth < 1024 ? 6 : 8;
+      const transitionControlsGutter = transitionStageWidth < 640
+        ? 46
+        : Math.min(112, transitionStageWidth * 0.08);
+      const transitionSliceMaxWidth = Math.max(
+        120,
+        Math.min(
+          transitionStageWidth * (transitionStageWidth < 640 ? 0.78 : 0.8),
+          transitionStageWidth -
+            2 * transitionControlsGutter -
+            transitionSliceGap * (SLICE_COUNT - 1)
+        )
+      );
+
+      const getTransitionDimensions = (artwork: PublicArtwork): ArtworkDimensions => {
+        const measured = measuredDimensions[artwork.id];
+        if (measured) return measured;
+
+        if (
+          Number.isFinite(artwork.image_width) &&
+          Number.isFinite(artwork.image_height) &&
+          (artwork.image_width ?? 0) > 0 &&
+          (artwork.image_height ?? 0) > 0
+        ) {
+          return resolveArtworkDimensions(artwork.image_width, artwork.image_height);
+        }
+
+        return resolveArtworkDimensions(null, null);
+      };
+
+      const getSliceGroupWidth = (artwork: PublicArtwork) => {
+        const dimensions = getTransitionDimensions(artwork);
+        const fittedSize = fitArtworkWithinBounds(
+          dimensions.width,
+          dimensions.height,
+          transitionSliceMaxWidth,
+          transitionStageHeight * 0.82
+        );
+        return fittedSize.width + transitionSliceGap * (SLICE_COUNT - 1);
+      };
+
+      const outgoingWidth = getSliceGroupWidth(outgoingArtwork);
+      const incomingWidth = getSliceGroupWidth(incomingArtwork);
+      // Groups are centered independently. Across five strips, the largest
+      // horizontal shift for a matching panel is 30% of the total width delta.
+      // Once that drift exceeds the inter-panel gap, strips from neighboring
+      // indices can share the same horizontal lane and cross in opposite directions.
+      const maximumPanelDrift = Math.abs(outgoingWidth - incomingWidth) * 0.3;
+      const hasReliableDimensions = (artwork: PublicArtwork) => {
+        const measured = measuredDimensions[artwork.id];
+        if (measured && measured.width > 0 && measured.height > 0) return true;
+        return (
+          Number.isFinite(artwork.image_width) &&
+          Number.isFinite(artwork.image_height) &&
+          (artwork.image_width ?? 0) > 0 &&
+          (artwork.image_height ?? 0) > 0
+        );
+      };
+
+      // If either image's true dimensions are not known yet, prefer the safe
+      // sequential handoff rather than risk an unexpected overlap after load.
+      shouldSequenceSliceHandoff =
+        maximumPanelDrift > transitionSliceGap ||
+        !hasReliableDimensions(outgoingArtwork) ||
+        !hasReliableDimensions(incomingArtwork);
+    }
+
+    if (viewMode === "sliced") {
+      clearSlicedNavigationLock();
+      slicedNavigationLockedRef.current = true;
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const navigationCooldown = prefersReducedMotion
+        ? 250
+        : shouldSequenceSliceHandoff
+        ? 1950
+        : 950;
+
+      slicedNavigationUnlockTimerRef.current = window.setTimeout(() => {
+        slicedNavigationLockedRef.current = false;
+        slicedNavigationUnlockTimerRef.current = null;
+      }, navigationCooldown);
+    }
+
+    setDelayedSliceArtworkId(
+      shouldSequenceSliceHandoff && incomingArtwork ? incomingArtwork.id : null
+    );
+
+    if (viewMode === "ribbons" && typeof window !== "undefined") {
+      if (seamExitAnimationRef.current) {
+        seamExitAnimationRef.current.onfinish = null;
+        seamExitAnimationRef.current.cancel();
+        seamExitAnimationRef.current = null;
+      }
+
+      let nextSeamExit: RibbonSeamExitSnapshot | null = null;
+      const travelDistance = direction === "next"
+        ? (normalizedIndex - outgoingIndex + total) % total
+        : (outgoingIndex - normalizedIndex + total) % total;
+      const stage = stageRef.current;
+      const stageRect = stage?.getBoundingClientRect();
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // Preserve the panel that actually leaves the visible window. The incoming
+      // replacement has its own entrance; the departing edge panel must not unmount instantly.
+      if (travelDistance === 1 && stageRect && !reduceMotion) {
+        const edgeCandidates = Array.from(ribbonItemsRef.current.values())
+          .map((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              element,
+              rect,
+              offset: Number(element.dataset.ribbonOffset ?? "0"),
+            };
+          })
+          .filter(({ rect, offset }) => rect.width > 0 && rect.height > 0 && offset !== 0)
+          .sort((a, b) => direction === "next" ? a.offset - b.offset : b.offset - a.offset);
+        const edge = edgeCandidates[0];
+        const edgeArtworkId = edge?.element.dataset.artworkId;
+        const edgeArtwork = edgeArtworkId
+          ? displayArtworks.find((artwork) => artwork.id === edgeArtworkId)
+          : undefined;
+
+        if (edge && edgeArtwork) {
+          nextSeamExit = {
+            artwork: edgeArtwork,
+            imageUrl: getStoragePublicUrl(edgeArtwork.public_image_path),
+            failed: Boolean(failedImages[edgeArtwork.id]),
+            left: edge.rect.left - stageRect.left,
+            top: edge.rect.top - stageRect.top,
+            width: edge.rect.width,
+            height: edge.rect.height,
+            direction,
+            sequence: ++transitionSequenceRef.current,
+          };
+        }
+      }
+
+      setSeamExitSnapshot(nextSeamExit);
+      const previousRects = new Map<string, RibbonRect>();
+
+      // Capture on-screen geometry before React changes the active artwork and panel positions.
+      ribbonItemsRef.current.forEach((element, id) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          const computedStyle = window.getComputedStyle(element);
+          const image = element.querySelector<HTMLElement>("[data-artwork-image]");
+          const imageStyle = image ? window.getComputedStyle(image) : null;
+          previousRects.set(id, {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+            offset: Number(element.dataset.ribbonOffset ?? "0"),
+            isActive: element.dataset.artworkActive === "true",
+            opacity: Number(computedStyle.opacity),
+            filter: computedStyle.filter,
+            imageTransform: imageStyle?.transform ?? "none",
+          });
+        }
+      });
+
+      // Preserve the current visual position and image crop when another selection
+      // interrupts an animation. The next FLIP begins from those measured states.
+      ribbonItemsRef.current.forEach((element) => {
+        element.getAnimations().forEach((animation) => animation.cancel());
+        element.querySelectorAll<HTMLElement>("[data-artwork-image]").forEach((image) => {
+          image.getAnimations().forEach((animation) => animation.cancel());
+        });
+        element.style.transformOrigin = "top left";
+      });
+      previousRibbonRectsRef.current = previousRects;
+      setTransitionSnapshot(null);
+    } else {
+      previousRibbonRectsRef.current = null;
+      if (outgoingArtwork) {
+        setTransitionSnapshot({
+          artwork: outgoingArtwork,
+          direction,
+          viewMode,
+          sequence: ++transitionSequenceRef.current,
+        });
       }
     }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    activeIndexRef.current = normalizedIndex;
+    setTransitionDirection(direction);
+    setRawActiveIndex(normalizedIndex);
+  }, [
+    clearSlicedNavigationLock,
+    displayArtworks,
+    failedImages,
+    measuredDimensions,
+    stageSize,
+    total,
+    viewMode,
+  ]);
+
+  const handleNext = useCallback(() => {
+    if (total <= 1) return;
+    selectArtwork((activeIndexRef.current + 1) % total, "next");
+  }, [selectArtwork, total]);
+
+  const handlePrev = useCallback(() => {
+    if (total <= 1) return;
+    selectArtwork((activeIndexRef.current - 1 + total) % total, "previous");
+  }, [selectArtwork, total]);
+
+  useEffect(() => {
+    if (!transitionSnapshot) return;
+
+    const currentArtworkId = displayArtworks[activeIndex]?.id;
+    const hasSequentialSliceHandoff =
+      transitionSnapshot.viewMode === "sliced" &&
+      currentArtworkId !== undefined &&
+      delayedSliceArtworkId === currentArtworkId;
+    const cleanupDelay = hasSequentialSliceHandoff ? 1900 : 900;
+
+    const timeoutId = window.setTimeout(() => {
+      setTransitionSnapshot((currentSnapshot) =>
+        currentSnapshot?.sequence === transitionSnapshot.sequence ? null : currentSnapshot
+      );
+    }, cleanupDelay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeIndex, delayedSliceArtworkId, displayArtworks, transitionSnapshot]);
+
+  useIsomorphicLayoutEffect(() => {
+    const snapshot = seamExitSnapshot;
+    const element = seamExitLayerRef.current;
+    const stage = stageRef.current;
+    if (!snapshot || !element || !stage) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      setSeamExitSnapshot((current) =>
+        current?.sequence === snapshot.sequence ? null : current
+      );
+      return;
+    }
+
+    const exitDistance = snapshot.direction === "next"
+      ? -(snapshot.left + snapshot.width + 28)
+      : stage.clientWidth - snapshot.left + 28;
+    const animation = element.animate(
+      [
+        { transform: "translate3d(0, 0, 0)" },
+        { transform: "translate3d(" + exitDistance + "px, 0, 0)" },
+      ],
+      {
+        duration: 760,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        fill: "both",
+      },
+    );
+    seamExitAnimationRef.current = animation;
+
+    animation.onfinish = () => {
+      // Remove the snapshot from React first. Cancelling a fill:"both" animation
+      // before that commit restores its original edge position for one frame,
+      // which looks like a thumbnail flashing back into the ribbon.
+      setSeamExitSnapshot((current) =>
+        current?.sequence === snapshot.sequence ? null : current
+      );
+    };
+
+    return () => {
+      animation.onfinish = null;
+      animation.cancel();
+      if (seamExitAnimationRef.current === animation) {
+        seamExitAnimationRef.current = null;
+      }
+    };
+  }, [seamExitSnapshot]);
+
+  useIsomorphicLayoutEffect(() => {
+    const previousRects = previousRibbonRectsRef.current;
+    if (!previousRects) return;
+
+    previousRibbonRectsRef.current = null;
+    if (viewMode !== "ribbons") return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      ribbonItemsRef.current.forEach((element) => {
+        element.style.transformOrigin = "";
+      });
+      return;
+    }
+
+    const activeId = displayArtworks[activeIndex]?.id;
+    const easing = "cubic-bezier(0.4, 0, 0.2, 1)";
+
+    ribbonItemsRef.current.forEach((element, id) => {
+      const last = element.getBoundingClientRect();
+      if (last.width <= 0 || last.height <= 0) {
+        element.style.transformOrigin = "";
+        return;
+      }
+
+      const first = previousRects.get(id);
+      const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
+      const currentOffset = Number(element.dataset.ribbonOffset ?? "0");
+      const targetTransform = "translate3d(0px, " + staggerY + "px, 0)";
+      let fromTransform: string;
+      let fromWidth = last.width;
+      let fromHeight = last.height;
+
+      if (first) {
+        const dx = first.left - last.left;
+        const dy = first.top - last.top;
+
+        // In a circular archive, one artwork can change from the far-left offset to
+        // the far-right offset (or vice versa). Do not animate it across the viewport.
+        const crossedLoopSeam = transitionDirection === "next"
+          ? currentOffset > first.offset
+          : currentOffset < first.offset;
+
+        if (crossedLoopSeam) {
+          const stageRect = element.parentElement?.getBoundingClientRect();
+          const entryX = transitionDirection === "next"
+            ? (stageRect ? stageRect.right - last.left + 24 : last.width + 48)
+            : (stageRect ? stageRect.left - last.right - 24 : -last.width - 48);
+          // Enter from beyond the clipped stage edge, not from beside the destination
+          // thumbnail. This avoids the wrapped artwork visibly popping over its neighbor.
+          fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
+        } else {
+          if (
+            Math.abs(dx) < 0.5 &&
+            Math.abs(dy) < 0.5 &&
+            Math.abs(first.width - last.width) < 0.5 &&
+            Math.abs(first.height - last.height) < 0.5
+          ) {
+            element.style.transformOrigin = "";
+            return;
+          }
+
+          fromTransform =
+            "translate3d(" + dx + "px, " + (dy + staggerY) + "px, 0)";
+          fromWidth = first.width;
+          fromHeight = first.height;
+        }
+      } else {
+        // Newly mounted panels enter from just beyond the appropriate stage edge.
+        const stageRect = element.parentElement?.getBoundingClientRect();
+        const entryX = transitionDirection === "next"
+          ? (stageRect ? stageRect.right - last.left + 24 : last.width + 48)
+          : (stageRect ? stageRect.left - last.right - 24 : -last.width - 48);
+        fromTransform = "translate3d(" + entryX + "px, " + staggerY + "px, 0)";
+      }
+
+      // Animate the layout box itself. The image keeps its own object-fit rendering,
+      // rather than being stretched by separate horizontal and vertical scaling.
+      const duration = id === activeId ? 1100 : 980;
+      const targetStyle = window.getComputedStyle(element);
+      const targetOpacity = Number(targetStyle.opacity);
+      const targetFilter = targetStyle.filter;
+      const image = element.querySelector<HTMLImageElement>("[data-artwork-image]");
+      const targetImageTransform = image ? window.getComputedStyle(image).transform : "none";
+      const animation = element.animate(
+        [
+          {
+            transform: fromTransform,
+            width: fromWidth + "px",
+            height: fromHeight + "px",
+            opacity: first?.opacity ?? targetOpacity,
+            filter: first?.filter ?? targetFilter,
+          },
+          {
+            transform: targetTransform,
+            width: last.width + "px",
+            height: last.height + "px",
+            opacity: targetOpacity,
+            filter: targetFilter,
+          },
+        ],
+        {
+          duration,
+          easing,
+          fill: "both",
+        },
+      );
+
+      // Derive the image crop from the interpolated frame aspect ratio at each
+      // sample of the same easing curve used by FLIP. The image does not perform an
+      // independent scale tween, which made wide landscapes zoom and then shrink.
+      if (first && image) {
+        image.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
+
+        const naturalAspectRatio = image.naturalWidth > 0 && image.naturalHeight > 0
+          ? image.naturalWidth / image.naturalHeight
+          : Number(element.dataset.artworkAspect ?? "1");
+        const startScale = getUniformScale(first.imageTransform);
+        const imageScaleKeyframes: Keyframe[] = Array.from({ length: 33 }, (_, index) => {
+          const offset = index / 32;
+          const progress = cubicBezierProgress(offset);
+          const frameWidth = fromWidth + (last.width - fromWidth) * progress;
+          const frameHeight = fromHeight + (last.height - fromHeight) * progress;
+          const frameAspectRatio = frameHeight > 0 ? frameWidth / frameHeight : naturalAspectRatio;
+          const geometryScale = getCoverScale(naturalAspectRatio, frameAspectRatio);
+          const scale = index === 0 ? startScale : geometryScale;
+
+          return {
+            offset,
+            transform: "scale(" + scale + ")",
+          };
+        });
+
+        imageScaleKeyframes[imageScaleKeyframes.length - 1] = {
+          offset: 1,
+          transform: targetImageTransform,
+        };
+
+        const imageAnimation = image.animate(imageScaleKeyframes, {
+          duration,
+          easing: "linear",
+          fill: "both",
+        });
+        imageAnimation.onfinish = () => imageAnimation.cancel();
+      }
+
+      animation.onfinish = () => {
+        animation.cancel();
+        element.style.transformOrigin = "";
+      };
+    });
+  }, [activeIndex, displayArtworks, transitionDirection, viewMode]);
+
+  useEffect(() => {
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      const target = event.target;
+      const element = target instanceof HTMLElement ? target : null;
+      const stage = stageRef.current;
+      const interactiveTarget = Boolean(
+        element?.closest(
+          "[role='radio'], [role='slider'], [role='spinbutton'], [role='combobox'], [role='listbox'], [role='tab'], [role='menuitem'], [role='treeitem']"
+        )
+      );
+      const context = {
+        key: event.key,
+        defaultPrevented: event.defaultPrevented,
+        modifierPressed: event.altKey || event.ctrlKey || event.metaKey,
+        navigationOpen: isNavigationOpen,
+        artworkCount: total,
+        editableTarget: Boolean(
+          element?.isContentEditable ||
+          element?.closest("input, textarea, select, [contenteditable='true']")
+        ),
+        interactiveTarget,
+        interactiveTargetWithinStage: Boolean(stage && element && stage.contains(element)),
+      };
+
+      if (!shouldHandleArtworkKeyboardNavigation(context)) return;
+
+      event.preventDefault();
+      if (event.key === "ArrowRight") handleNext();
+      else handlePrev();
+    }
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleNext, handlePrev, isNavigationOpen, total]);
+
+  const handleStageWheel = useCallback((event: ReactWheelEvent<HTMLElement>) => {
+    if (isNavigationOpen || total <= 1 || event.ctrlKey) return;
+
+    const rawDelta = event.deltaY;
+    const normalizedDelta = event.deltaMode === 1
+      ? rawDelta * 16
+      : event.deltaMode === 2
+      ? rawDelta * window.innerHeight
+      : rawDelta;
+    if (!Number.isFinite(normalizedDelta) || normalizedDelta === 0) return;
+
+    event.preventDefault();
+
+    if (wheelUnlockTimerRef.current !== null) {
+      window.clearTimeout(wheelUnlockTimerRef.current);
+    }
+    wheelUnlockTimerRef.current = window.setTimeout(() => {
+      wheelLockedRef.current = false;
+      wheelAccumulatorRef.current = 0;
+      wheelUnlockTimerRef.current = null;
+    }, 260);
+
+    if (wheelLockedRef.current) return;
+
+    const now = performance.now();
+    if (now - lastWheelEventAtRef.current > 180) {
+      wheelAccumulatorRef.current = 0;
+    }
+    lastWheelEventAtRef.current = now;
+    wheelAccumulatorRef.current += normalizedDelta;
+
+    const direction = getWheelDirection(wheelAccumulatorRef.current, 55);
+    if (!direction) return;
+
+    wheelAccumulatorRef.current = 0;
+    wheelLockedRef.current = true;
+    if (direction === "next") handleNext();
+    else handlePrev();
+  }, [handleNext, handlePrev, isNavigationOpen, total]);
+
+  const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    if (event.pointerType !== "touch" || isNavigationOpen || total <= 1) {
+      pointerStartRef.current = null;
+      return;
+    }
+
+    const target = event.target;
+    if (
+      target instanceof Element &&
+      target.closest("button, a, input, textarea, select, [contenteditable='true']")
+    ) {
+      pointerStartRef.current = null;
+      return;
+    }
+
+    pointerStartRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  }, [isNavigationOpen, total]);
+
+  const handleStagePointerUp = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const start = pointerStartRef.current;
+    pointerStartRef.current = null;
+    if (!start || start.pointerId !== event.pointerId || isNavigationOpen) return;
+
+    const direction = getSwipeDirection(start.x, start.y, event.clientX, event.clientY);
+    if (direction === "next") handleNext();
+    else if (direction === "previous") handlePrev();
   }, [handleNext, handlePrev, isNavigationOpen]);
+
+  const handleStagePointerCancel = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    if (pointerStartRef.current?.pointerId === event.pointerId) {
+      pointerStartRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => () => {
+    if (wheelUnlockTimerRef.current !== null) {
+      window.clearTimeout(wheelUnlockTimerRef.current);
+    }
+    if (slicedNavigationUnlockTimerRef.current !== null) {
+      window.clearTimeout(slicedNavigationUnlockTimerRef.current);
+    }
+  }, []);
 
   const handleImageError = useCallback((id: string) => {
     setFailedImages((previous) => ({ ...previous, [id]: true }));
@@ -136,6 +834,12 @@ export function AlanMenkenShowcase({
   }, []);
 
   const getDimensions = useCallback((artwork: PublicArtwork): ArtworkDimensions => {
+    // Prefer the loaded image's natural pixel dimensions. Database dimensions may be
+    // stale or rounded; using them over the actual image ratio can leave visible blank
+    // bands around the focused artwork when object-contain sizes the image.
+    const measured = measuredDimensions[artwork.id];
+    if (measured) return measured;
+
     if (
       Number.isFinite(artwork.image_width) &&
       Number.isFinite(artwork.image_height) &&
@@ -144,9 +848,6 @@ export function AlanMenkenShowcase({
     ) {
       return resolveArtworkDimensions(artwork.image_width, artwork.image_height);
     }
-
-    const measured = measuredDimensions[artwork.id];
-    if (measured) return measured;
 
     return resolveArtworkDimensions(null, null);
   }, [measuredDimensions]);
@@ -188,6 +889,27 @@ export function AlanMenkenShowcase({
     preferredActiveWidth,
     stageHeight * 0.86
   );
+  const outgoingArtwork = transitionSnapshot?.artwork ?? null;
+  const outgoingDimensions = outgoingArtwork ? getDimensions(outgoingArtwork) : null;
+  const outgoingAspectRatio = outgoingDimensions
+    ? outgoingDimensions.width / outgoingDimensions.height
+    : 1;
+  const outgoingPreferredWidth = stageWidth < 640
+    ? stageWidth * (outgoingAspectRatio >= 1.2 ? 0.76 : 0.54)
+    : stageWidth * (
+        outgoingAspectRatio >= 1.3 ? 0.54 : outgoingAspectRatio >= 0.85 ? 0.42 : 0.36
+      );
+  const outgoingSize = outgoingDimensions
+    ? fitArtworkWithinBounds(
+        outgoingDimensions.width,
+        outgoingDimensions.height,
+        outgoingPreferredWidth,
+        stageHeight * 0.86
+      )
+    : null;
+  const outgoingImageUrl = outgoingArtwork
+    ? getStoragePublicUrl(outgoingArtwork.public_image_path)
+    : null;
   const availablePreviewWidth = previewPanelCount > 0
     ? (stageWidth - activeSize.width - previewPanelCount * ribbonGap - 12) / previewPanelCount
     : 0;
@@ -199,6 +921,70 @@ export function AlanMenkenShowcase({
   const previewWidth = previewPanelCount > 0
     ? Math.max(18, Math.min(maxPreviewWidth, availablePreviewWidth))
     : 0;
+
+  // Every ribbon tile keeps the artwork's true aspect ratio. FLIP can then use
+  // nearly uniform scaling as a work moves between the hero and preview roles.
+  const ribbonEntries: RibbonLayoutEntry[] = stageWindow.map(({ index, offset }) => {
+    const artwork = displayArtworks[index];
+    const isActive = index === activeIndex;
+    const dimensions = getDimensions(artwork);
+    const aspectRatio = dimensions.width / dimensions.height;
+    const patternIndex =
+      ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
+      STAGGER_HEIGHTS_RIBBONS.length;
+    const heightPercent = STAGGER_HEIGHTS_RIBBONS[patternIndex];
+    const staggerOffset = Math.round(
+      STAGGER_OFFSETS_RIBBONS[patternIndex] *
+      Math.min(1.2, Math.max(0.6, stageHeight / 480))
+    );
+    const previewHeight = Math.max(1, Math.round(stageHeight * heightPercent / 100));
+    const frameAspectRatio = previewWidth > 0 && previewHeight > 0
+      ? previewWidth / previewHeight
+      : aspectRatio;
+    const coverScale = Math.max(aspectRatio / frameAspectRatio, frameAspectRatio / aspectRatio);
+
+    return {
+      index,
+      offset,
+      artwork,
+      isActive,
+      imageUrl: getStoragePublicUrl(artwork.public_image_path),
+      failed: Boolean(failedImages[artwork.id]),
+      imageScale: isActive ? 1 : coverScale,
+      aspectRatio,
+      width: isActive ? activeSize.width : previewWidth,
+      height: isActive ? activeSize.height : previewHeight,
+      left: 0,
+      top: 0,
+      staggerOffset: isActive ? 0 : staggerOffset,
+    };
+  });
+
+  const activeRibbonPosition = ribbonEntries.findIndex((entry) => entry.isActive);
+  if (activeRibbonPosition >= 0) {
+    const activeEntry = ribbonEntries[activeRibbonPosition];
+    activeEntry.left = (stageWidth - activeEntry.width) / 2;
+    activeEntry.top = (stageHeight - activeEntry.height) / 2;
+
+    for (let index = activeRibbonPosition - 1; index >= 0; index -= 1) {
+      const entry = ribbonEntries[index];
+      const rightEntry = ribbonEntries[index + 1];
+      entry.left = rightEntry.left - ribbonGap - entry.width;
+      entry.top = (stageHeight - entry.height) / 2;
+    }
+
+    for (let index = activeRibbonPosition + 1; index < ribbonEntries.length; index += 1) {
+      const entry = ribbonEntries[index];
+      const leftEntry = ribbonEntries[index - 1];
+      entry.left = leftEntry.left + leftEntry.width + ribbonGap;
+      entry.top = (stageHeight - entry.height) / 2;
+    }
+  }
+
+  const maxRibbonOffset = Math.max(
+    ...ribbonEntries.map((entry) => Math.abs(entry.offset)),
+    0
+  );
 
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
@@ -215,6 +1001,17 @@ export function AlanMenkenShowcase({
     sliceMaxWidth,
     stageHeight * 0.82
   );
+  const outgoingSliceSize = outgoingDimensions
+    ? fitArtworkWithinBounds(
+        outgoingDimensions.width,
+        outgoingDimensions.height,
+        sliceMaxWidth,
+        stageHeight * 0.82
+      )
+    : null;
+  const outgoingSlicePanelWidth = outgoingSliceSize
+    ? outgoingSliceSize.width / SLICE_COUNT
+    : 0;
   const slicePanelWidth = sliceSize.width / SLICE_COUNT;
   const scaledSliceOffsets = SLICE_OFFSETS.map((offset) =>
     Math.round(offset * Math.min(1.35, Math.max(0.65, stageHeight / 480)))
@@ -222,6 +1019,18 @@ export function AlanMenkenShowcase({
   const maxSliceOffset = Math.max(...scaledSliceOffsets.map(Math.abs), 0);
   const sliceGroupWidth = sliceSize.width + sliceGap * (SLICE_COUNT - 1);
   const sliceGroupHeight = sliceSize.height + maxSliceOffset * 2;
+  const outgoingSliceGroupWidth = outgoingSliceSize
+    ? outgoingSliceSize.width + sliceGap * (SLICE_COUNT - 1)
+    : 0;
+  const outgoingSliceGroupHeight = outgoingSliceSize
+    ? outgoingSliceSize.height + maxSliceOffset * 2
+    : 0;
+  // When the group widths differ substantially (e.g. landscape -> portrait),
+  // sequence the old group out before letting the new group enter. Keep the marker
+  // attached to the incoming artwork so the delayed animation is not restarted.
+  const isSliceLayoutChange =
+    viewMode === "sliced" && delayedSliceArtworkId === current.id;
+  const shouldDelayCurrentSliceEntrance = isSliceLayoutChange;
 
   return (
     <div className="relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink">
@@ -248,89 +1057,141 @@ export function AlanMenkenShowcase({
       <main className="flex min-h-0 flex-1 flex-col">
         <section
           ref={stageRef}
-          aria-label="Artwork viewport"
-          className="relative min-h-0 w-full flex-1 overflow-hidden"
+          data-transition-direction={transitionDirection}
+          aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
+          tabIndex={0}
+          onWheel={handleStageWheel}
+          onPointerDown={handleStagePointerDown}
+          onPointerUp={handleStagePointerUp}
+          onPointerCancel={handleStagePointerCancel}
+          className="artwork-stage relative min-h-0 w-full flex-1 overflow-hidden touch-pan-y focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
         >
           {viewMode === "ribbons" ? (
-            <div className="absolute inset-0 flex items-center overflow-hidden">
+            <div className="absolute inset-0 overflow-hidden">
+              {seamExitSnapshot && (
+                <div
+                  ref={seamExitLayerRef}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute overflow-hidden border border-border/70 bg-surface-muted opacity-45 grayscale"
+                  style={{
+                    left: seamExitSnapshot.left + "px",
+                    top: seamExitSnapshot.top + "px",
+                    width: seamExitSnapshot.width + "px",
+                    height: seamExitSnapshot.height + "px",
+                    // Keep the outgoing edge tile visible above the reflowed ribbon
+                    // until it has fully travelled beyond the clipped stage boundary.
+                    zIndex: 30,
+                  }}
+                >
+                  {seamExitSnapshot.imageUrl && !seamExitSnapshot.failed ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      draggable={false}
+                      src={seamExitSnapshot.imageUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center p-1 text-center">
+                      <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">
+                        {seamExitSnapshot.artwork.title}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
               <div
-                className="flex h-full w-max min-w-full items-center justify-center"
-                style={{ gap: ribbonGap + "px" }}
+                className="artwork-ribbon-track absolute inset-0"
                 role="group"
                 aria-label="Select an artwork"
               >
-                {stageWindow.map(({ index, offset }) => {
-                  const artwork = displayArtworks[index];
-                  const isActive = index === activeIndex;
-                  const imageUrl = getStoragePublicUrl(artwork.public_image_path);
-                  const failed = failedImages[artwork.id];
-                  const patternIndex = ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) % STAGGER_HEIGHTS_RIBBONS.length;
-                  const heightPercent = STAGGER_HEIGHTS_RIBBONS[patternIndex];
-                  const staggerOffset = Math.round(
-                    STAGGER_OFFSETS_RIBBONS[patternIndex] * Math.min(1.2, Math.max(0.6, stageHeight / 480))
-                  );
+                {ribbonEntries.map((entry) => {
+                  const {
+                    index,
+                    offset,
+                    artwork,
+                    isActive,
+                    imageUrl,
+                    failed,
+                    imageScale,
+                    aspectRatio,
+                    width,
+                    height,
+                    left,
+                    top,
+                    staggerOffset,
+                  } = entry;
+                  const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
+                  const ribbonPatternIndex =
+                    ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
+                    STAGGER_HEIGHTS_RIBBONS.length;
+                  const entranceDelay =
+                    (maxRibbonOffset - Math.abs(offset)) * 42 + (offset > 0 ? 10 : 0);
+                  const entranceOffset = ribbonPatternIndex % 2 === 0 ? "-120vh" : "120vh";
+                  const itemClassName = isActive
+                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                    : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale hover:opacity-90 hover:grayscale-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
 
-                  if (isActive) {
-                    return (
-                      <div
-                        key={artwork.id}
-                        className="relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none"
-                        style={{
-                          width: activeSize.width + "px",
-                          height: activeSize.height + "px",
-                        }}
-                      >
-                        {imageUrl && !failed ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={imageUrl}
-                            alt={artwork.alt_text || artwork.title}
-                            onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
-                            onError={() => handleImageError(artwork.id)}
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
-                            <span className="font-artwork-title text-xl text-ink">{artwork.title}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  const visibility = getPanelVisibilityClass(offset);
-                  const previewHeight = Math.round(stageHeight * heightPercent / 100);
                   return (
                     <button
                       key={artwork.id}
-                      type="button"
-                      onClick={() => setRawActiveIndex(index)}
-                      aria-label={"Select artwork: " + artwork.title}
-                      aria-pressed="false"
-                      className={"group relative shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + visibility}
-                      style={{
-                        width: previewWidth + "px",
-                        height: previewHeight + "px",
-                        transform: "translateY(" + staggerOffset + "px)",
+                      ref={(element) => {
+                        if (element) ribbonItemsRef.current.set(artwork.id, element);
+                        else ribbonItemsRef.current.delete(artwork.id);
                       }}
+                      type="button"
+                      data-artwork-id={artwork.id}
+                      data-artwork-active={isActive ? "true" : "false"}
+                      data-artwork-aspect={aspectRatio}
+                      data-ribbon-offset={offset}
+                      data-ribbon-stagger-y={staggerOffset}
+                      aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
+                      aria-pressed={isActive}
+                      onClick={() => {
+                        if (isActive) return;
+                        const forwardDistance = (index - activeIndexRef.current + total) % total;
+                        const backwardDistance = (activeIndexRef.current - index + total) % total;
+                        selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
+                      }}
+                      className={itemClassName + " " + visibility + (isRibbonEntranceActive ? " artwork-ribbon-enter" + (isActive ? " artwork-ribbon-enter-active" : "") : "")}
+                      style={{
+                        left: left + "px",
+                        top: top + "px",
+                        width: width + "px",
+                        height: height + "px",
+                        transform: "translate3d(0px, " + staggerOffset + "px, 0)",
+                        animationDelay: entranceDelay + "ms",
+                        "--ribbon-enter-y": entranceOffset,
+                        "--ribbon-stagger-y": staggerOffset + "px",
+                      } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
+                          data-artwork-image
+                          draggable={false}
                           src={imageUrl}
-                          alt=""
+                          alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+                          className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
+                          style={{ transform: "scale(" + imageScale + ")" }}
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center p-1 text-center">
-                          <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">{artwork.title}</span>
+                        <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
+                          <span className={isActive
+                            ? "font-artwork-title text-xl text-ink"
+                            : "font-artwork-title text-xs text-ink [writing-mode:vertical-rl]"
+                          }>
+                            {artwork.title}
+                          </span>
                         </div>
                       )}
-                      <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
-                        {artwork.title}
-                      </span>
+                      {!isActive && (
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
+                          {artwork.title}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -350,7 +1211,9 @@ export function AlanMenkenShowcase({
               </button>
 
               <div
-                className="relative shrink-0"
+                key={current.id}
+                className="relative z-20 shrink-0"
+                data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
                 role="img"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
@@ -367,21 +1230,37 @@ export function AlanMenkenShowcase({
                     verticalOffset;
                   const left = sliceIndex * (slicePanelWidth + sliceGap);
                   const failed = failedImages[current.id];
+                  const staggerIndex = transitionDirection === "next"
+                    ? sliceIndex
+                    : SLICE_COUNT - 1 - sliceIndex;
+                  const centeredGroupTop = (stageHeight - sliceGroupHeight) / 2;
+                  // Odd-numbered panels (1, 3, 5) begin fully above the stage
+                  // and travel down into focus. Even-numbered panels (2, 4)
+                  // begin below the stage and travel up into focus.
+                  const enterY = sliceIndex % 2 === 0
+                    ? -(centeredGroupTop + panelTop + panelHeight + 24)
+                    : stageHeight - (centeredGroupTop + panelTop) + 24;
 
                   return (
                     <div
-                      key={sliceIndex}
-                      className="absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg transition-[top,height] duration-500 ease-out motion-reduce:transition-none"
+                      key={`${current.id}-${sliceIndex}`}
+                      data-artwork-slice={sliceIndex}
+                      className="artwork-slice-enter-panel absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
                       style={{
                         left: left + "px",
                         top: panelTop + "px",
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
-                      }}
+                        animationDelay: (
+                          (shouldDelayCurrentSliceEntrance ? 870 : 20) + staggerIndex * 22
+                        ) + "ms",
+                        "--slice-enter-y": enterY + "px",
+                      } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
+                          draggable={false}
                           src={currentImageUrl}
                           alt=""
                           onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
@@ -416,26 +1295,141 @@ export function AlanMenkenShowcase({
               </button>
             </div>
           )}
+
+          {transitionSnapshot && viewMode === "sliced" && outgoingArtwork && outgoingSize && (
+            <div
+              key={transitionSnapshot.sequence}
+              aria-hidden="true"
+              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+              data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
+            >
+              {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
+                <div
+                  className="relative shrink-0"
+                  style={{
+                    width: outgoingSliceGroupWidth + "px",
+                    height: outgoingSliceGroupHeight + "px",
+                  }}
+                >
+                  {Array.from({ length: SLICE_COUNT }, (_, sliceIndex) => {
+                    const panelHeight = outgoingSliceSize.height * SLICE_HEIGHTS[sliceIndex] / 100;
+                    const verticalOffset = scaledSliceOffsets[sliceIndex];
+                    const panelTop =
+                      maxSliceOffset +
+                      (outgoingSliceSize.height - panelHeight) / 2 +
+                      verticalOffset;
+                    const left = sliceIndex * (outgoingSlicePanelWidth + sliceGap);
+                    const failed = failedImages[outgoingArtwork.id];
+                    const staggerIndex = transitionSnapshot.direction === "next"
+                      ? sliceIndex
+                      : SLICE_COUNT - 1 - sliceIndex;
+                    const centeredOutgoingGroupTop =
+                      (stageHeight - outgoingSliceGroupHeight) / 2;
+                    // Continue each panel's entrance direction on exit, travelling
+                    // far enough for its entire rectangle to clear the clipped stage.
+                    const exitY = sliceIndex % 2 === 0
+                      ? stageHeight - (centeredOutgoingGroupTop + panelTop) + panelHeight + 24
+                      : -(centeredOutgoingGroupTop + panelTop + panelHeight + 24);
+
+                    return (
+                      <div
+                        key={`outgoing-${transitionSnapshot.sequence}-${sliceIndex}`}
+                        data-artwork-slice={sliceIndex}
+                        className="artwork-slice-exit-panel absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg"
+                        style={{
+                          left: left + "px",
+                          top: panelTop + "px",
+                          width: outgoingSlicePanelWidth + "px",
+                          height: panelHeight + "px",
+                          animationDelay: (staggerIndex * 22) + "ms",
+                          "--slice-exit-y": exitY + "px",
+                        } as CSSProperties}
+                      >
+                        {outgoingImageUrl && !failed ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                          draggable={false}
+                            src={outgoingImageUrl}
+                            alt=""
+                            className="absolute max-w-none"
+                            style={{
+                              width: outgoingSliceSize.width + "px",
+                              height: outgoingSliceSize.height + "px",
+                              left: -sliceIndex * outgoingSlicePanelWidth + "px",
+                              top: -(outgoingSliceSize.height - panelHeight) / 2 + "px",
+                            }}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center p-1 text-center">
+                            <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">
+                              {outgoingArtwork.title}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs bg-surface shadow-xl"
+                  style={{
+                    width: outgoingSize.width + "px",
+                    height: outgoingSize.height + "px",
+                  }}
+                >
+                  {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                          draggable={false}
+                      src={outgoingImageUrl}
+                      alt=""
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
+                      <span className="font-artwork-title text-xl text-ink">{outgoingArtwork.title}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <section
           aria-label="Selected artwork information"
+          aria-live="polite"
+          aria-atomic="true"
+          data-transition-direction={transitionDirection}
+          data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
           className="flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
         >
-          <h1 className="font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
-            <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
-              {current.title}
-            </Link>
-          </h1>
-          {current.description && (
-            <p className="mt-1 line-clamp-2 max-w-2xl font-sans text-xs leading-relaxed text-ink-soft sm:text-sm">
-              {current.description}
-            </p>
-          )}
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-accent sm:text-[11px]">
-            <span>{current.medium.replace(/-/g, " ")}</span>
-            <span aria-hidden="true" className="text-border-strong">·</span>
-            <span>{current.category.replace(/-/g, " ")}</span>
+          <div className="flex flex-col items-center">
+            <h1
+              key={`title-${current.id}`}
+              className="artwork-caption-title-enter font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl"
+            >
+              <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
+                {current.title}
+              </Link>
+            </h1>
+            {current.description && (
+              <p
+                key={`description-${current.id}`}
+                className="artwork-caption-description-enter mt-1 line-clamp-2 max-w-2xl font-sans text-xs leading-relaxed text-ink-soft sm:text-sm"
+              >
+                {current.description}
+              </p>
+            )}
+            <div
+              key={`metadata-${current.id}`}
+              className="artwork-caption-meta-enter mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-accent sm:text-[11px]"
+            >
+              <span>{current.medium.replace(/-/g, " ")}</span>
+              <span aria-hidden="true" className="text-border-strong">·</span>
+              <span>{current.category.replace(/-/g, " ")}</span>
+            </div>
           </div>
         </section>
       </main>
@@ -456,7 +1450,17 @@ export function AlanMenkenShowcase({
             type="button"
             aria-label="Ribbon artwork view"
             aria-pressed={viewMode === "ribbons"}
-            onClick={() => setViewMode("ribbons")}
+            onClick={() => {
+              // Reuse the entrance sequence when returning from Sliced to Ribbon.
+              // Clicking the already-active Ribbon control should not restart it.
+              if (viewMode === "sliced") {
+                clearSlicedNavigationLock();
+                setIsRibbonEntranceActive(true);
+              }
+              setDelayedSliceArtworkId(null);
+              setTransitionSnapshot(null);
+              setViewMode("ribbons");
+            }}
             className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "ribbons" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
@@ -471,7 +1475,15 @@ export function AlanMenkenShowcase({
             type="button"
             aria-label="Sliced artwork view"
             aria-pressed={viewMode === "sliced"}
-            onClick={() => setViewMode("sliced")}
+            onClick={() => {
+              if (viewMode === "ribbons") {
+                clearSlicedNavigationLock();
+                setIsRibbonEntranceActive(false);
+              }
+              setDelayedSliceArtworkId(null);
+              setTransitionSnapshot(null);
+              setViewMode("sliced");
+            }}
             className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "sliced" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
