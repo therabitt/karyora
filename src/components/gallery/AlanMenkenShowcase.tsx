@@ -699,6 +699,7 @@ export function AlanMenkenShowcase({
                         {imageUrl && !failed ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
+                          draggable={false}
                             src={imageUrl}
                             alt={artwork.alt_text || artwork.title}
                             onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
@@ -737,6 +738,7 @@ export function AlanMenkenShowcase({
                       {imageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
+                          draggable={false}
                           src={imageUrl}
                           alt=""
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
@@ -806,6 +808,7 @@ export function AlanMenkenShowcase({
                       {currentImageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
+                          draggable={false}
                           src={currentImageUrl}
                           alt=""
                           onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
@@ -883,6 +886,7 @@ export function AlanMenkenShowcase({
                         {outgoingImageUrl && !failed ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
+                          draggable={false}
                             src={outgoingImageUrl}
                             alt=""
                             className="absolute max-w-none"
@@ -915,6 +919,7 @@ export function AlanMenkenShowcase({
                   {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
+                          draggable={false}
                       src={outgoingImageUrl}
                       alt=""
                       className="h-full w-full object-contain"
