@@ -112,7 +112,7 @@ body {
   }
 
   to {
-    transform: translate3d(var(--slice-exit-x, -6px), var(--slice-exit-y, -64px), 0);
+    transform: translate3d(var(--slice-exit-x, -6px), calc(var(--slice-exit-y, -64px) + var(--slice-exit-distance, 100%)), 0);
   }
 }
 
