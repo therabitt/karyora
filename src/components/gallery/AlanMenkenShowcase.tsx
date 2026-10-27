@@ -58,6 +58,8 @@ export function AlanMenkenShowcase({
     initialIndex >= 0 && initialIndex < total ? initialIndex : 0
   );
   const activeIndex = total > 0 ? ((rawActiveIndex % total) + total) % total : 0;
+  const activeIndexRef = useRef(activeIndex);
+  activeIndexRef.current = activeIndex;
 
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
   const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
@@ -105,9 +107,10 @@ export function AlanMenkenShowcase({
     if (total <= 1) return;
 
     const normalizedIndex = ((targetIndex % total) + total) % total;
-    if (normalizedIndex === activeIndex) return;
+    const outgoingIndex = activeIndexRef.current;
+    if (normalizedIndex === outgoingIndex) return;
 
-    const outgoingArtwork = displayArtworks[activeIndex];
+    const outgoingArtwork = displayArtworks[outgoingIndex];
     if (outgoingArtwork) {
       setTransitionSnapshot({
         artwork: outgoingArtwork,
@@ -115,19 +118,20 @@ export function AlanMenkenShowcase({
         sequence: ++transitionSequenceRef.current,
       });
     }
+    activeIndexRef.current = normalizedIndex;
     setTransitionDirection(direction);
     setRawActiveIndex(normalizedIndex);
-  }, [activeIndex, displayArtworks, total]);
+  }, [displayArtworks, total]);
 
   const handleNext = useCallback(() => {
     if (total <= 1) return;
-    selectArtwork((activeIndex + 1) % total, "next");
-  }, [activeIndex, selectArtwork, total]);
+    selectArtwork((activeIndexRef.current + 1) % total, "next");
+  }, [selectArtwork, total]);
 
   const handlePrev = useCallback(() => {
     if (total <= 1) return;
-    selectArtwork((activeIndex - 1 + total) % total, "previous");
-  }, [activeIndex, selectArtwork, total]);
+    selectArtwork((activeIndexRef.current - 1 + total) % total, "previous");
+  }, [selectArtwork, total]);
 
   useEffect(() => {
     if (!transitionSnapshot) return;
@@ -475,8 +479,8 @@ export function AlanMenkenShowcase({
                       key={artwork.id}
                       type="button"
                       onClick={() => {
-                        const forwardDistance = (index - activeIndex + total) % total;
-                        const backwardDistance = (activeIndex - index + total) % total;
+                        const forwardDistance = (index - activeIndexRef.current + total) % total;
+                        const backwardDistance = (activeIndexRef.current - index + total) % total;
                         selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
                       }}
                       aria-label={"Select artwork: " + artwork.title}
