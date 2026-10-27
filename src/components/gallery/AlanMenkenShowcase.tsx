@@ -519,13 +519,13 @@ export function AlanMenkenShowcase({
         </section>
 
         <section
-          key={current.id}
           aria-label="Selected artwork information"
           aria-live="polite"
           aria-atomic="true"
-          className="artwork-caption-enter flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
+          className="flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
         >
-          <h1 className="font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
+          <div key={current.id} className="artwork-caption-enter flex flex-col items-center">
+            <h1 className="font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
             <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
               {current.title}
             </Link>
@@ -539,6 +539,7 @@ export function AlanMenkenShowcase({
             <span>{current.medium.replace(/-/g, " ")}</span>
             <span aria-hidden="true" className="text-border-strong">·</span>
             <span>{current.category.replace(/-/g, " ")}</span>
+          </div>
           </div>
         </section>
       </main>
