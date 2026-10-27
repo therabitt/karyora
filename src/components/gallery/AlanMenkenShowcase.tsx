@@ -46,6 +46,9 @@ type RibbonRect = {
   width: number;
   height: number;
   offset: number;
+  isActive: boolean;
+  cropOpacity: number;
+  fitOpacity: number;
 };
 
 type RibbonSeamExitSnapshot = {
@@ -222,12 +225,17 @@ export function AlanMenkenShowcase({
       ribbonItemsRef.current.forEach((element, id) => {
         const rect = element.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
+          const cropLayer = element.querySelector<HTMLElement>("[data-artwork-image-crop]");
+          const fitLayer = element.querySelector<HTMLElement>("[data-artwork-image-fit]");
           previousRects.set(id, {
             left: rect.left,
             top: rect.top,
             width: rect.width,
             height: rect.height,
             offset: Number(element.dataset.ribbonOffset ?? "0"),
+            isActive: element.dataset.artworkActive === "true",
+            cropOpacity: cropLayer ? Number(window.getComputedStyle(cropLayer).opacity) : 1,
+            fitOpacity: fitLayer ? Number(window.getComputedStyle(fitLayer).opacity) : 0,
           });
         }
       });
@@ -353,6 +361,7 @@ export function AlanMenkenShowcase({
 
       const first = previousRects.get(id);
       const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
+      const isActiveNow = id === activeId;
       const currentOffset = Number(element.dataset.ribbonOffset ?? "0");
       const targetTransform = "translate3d(0px, " + staggerY + "px, 0)";
       let fromTransform: string;
@@ -404,6 +413,7 @@ export function AlanMenkenShowcase({
 
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
+      const duration = id === activeId ? 760 : 680;
       const animation = element.animate(
         [
           {
@@ -418,11 +428,52 @@ export function AlanMenkenShowcase({
           },
         ],
         {
-          duration: id === activeId ? 760 : 680,
+          duration,
           easing,
           fill: "both",
         },
       );
+
+      // Keep the preview crop and the focused full image as separate layers. Blend
+      // between them during the geometry change so landscapes reveal naturally rather
+      // than snapping from a tall crop to a wide full-image presentation.
+      const cropLayer = element.querySelector<HTMLElement>("[data-artwork-image-crop]");
+      const fitLayer = element.querySelector<HTMLElement>("[data-artwork-image-fit]");
+      if (first && cropLayer && fitLayer) {
+        const previousCropOpacity = first.cropOpacity;
+        const previousFitOpacity = first.fitOpacity;
+        const targetCropOpacity = isActiveNow ? 0 : 1;
+        const targetFitOpacity = isActiveNow ? 1 : 0;
+
+        cropLayer.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
+        fitLayer.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
+
+        if (
+          Math.abs(previousCropOpacity - targetCropOpacity) > 0.01 ||
+          Math.abs(previousFitOpacity - targetFitOpacity) > 0.01
+        ) {
+          const imageBlendDuration = 420;
+          const imageBlendDelay = 170;
+          cropLayer.animate(
+            [{ opacity: previousCropOpacity }, { opacity: targetCropOpacity }],
+            {
+              duration: imageBlendDuration,
+              delay: imageBlendDelay,
+              easing: "cubic-bezier(0.2, 0.78, 0.22, 1)",
+              fill: "both",
+            },
+          );
+          fitLayer.animate(
+            [{ opacity: previousFitOpacity }, { opacity: targetFitOpacity }],
+            {
+              duration: imageBlendDuration,
+              delay: imageBlendDelay,
+              easing: "cubic-bezier(0.2, 0.78, 0.22, 1)",
+              fill: "both",
+            },
+          );
+        }
+      }
 
       animation.onfinish = () => {
         animation.cancel();
@@ -848,6 +899,7 @@ export function AlanMenkenShowcase({
                       }}
                       type="button"
                       data-artwork-id={artwork.id}
+                      data-artwork-active={isActive ? "true" : "false"}
                       data-ribbon-offset={offset}
                       data-ribbon-stagger-y={staggerOffset}
                       aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
@@ -868,15 +920,38 @@ export function AlanMenkenShowcase({
                       }}
                     >
                       {imageUrl && !failed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          draggable={false}
-                          src={imageUrl}
-                          alt={isActive ? (artwork.alt_text || artwork.title) : ""}
-                          onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
-                          onError={() => handleImageError(artwork.id)}
-                          className="h-full w-full object-cover"
-                        />
+                        <>
+                          {/* Keep both presentations mounted so the image appearance
+                              can transition in sync with the frame's position and size. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            data-artwork-image-crop
+                            draggable={false}
+                            src={imageUrl}
+                            alt=""
+                            aria-hidden="true"
+                            onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
+                            onError={() => handleImageError(artwork.id)}
+                            className={
+                              "absolute inset-0 h-full w-full object-cover " +
+                              (isActive ? "opacity-0" : "opacity-100 group-hover:scale-[1.025]")
+                            }
+                          />
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            data-artwork-image-fit
+                            draggable={false}
+                            src={imageUrl}
+                            alt=""
+                            aria-hidden="true"
+                            onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
+                            onError={() => handleImageError(artwork.id)}
+                            className={
+                              "absolute inset-0 h-full w-full object-contain " +
+                              (isActive ? "opacity-100" : "opacity-0")
+                            }
+                          />
+                        </>
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
                           <span className={isActive
