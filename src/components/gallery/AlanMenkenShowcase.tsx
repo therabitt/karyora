@@ -1060,8 +1060,13 @@ export function AlanMenkenShowcase({
                   const staggerIndex = transitionDirection === "next"
                     ? sliceIndex
                     : SLICE_COUNT - 1 - sliceIndex;
-                  const enterY = (sliceIndex % 2 === 0 ? -1 : 1) *
-                    (transitionDirection === "next" ? 64 : -64);
+                  const centeredGroupTop = (stageHeight - sliceGroupHeight) / 2;
+                  // Odd-numbered panels (1, 3, 5) begin fully above the stage
+                  // and travel down into focus. Even-numbered panels (2, 4)
+                  // begin below the stage and travel up into focus.
+                  const enterY = sliceIndex % 2 === 0
+                    ? -(centeredGroupTop + panelTop + panelHeight + 24)
+                    : stageHeight - (centeredGroupTop + panelTop) + 24;
 
                   return (
                     <div
@@ -1074,8 +1079,7 @@ export function AlanMenkenShowcase({
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
                         animationDelay: (staggerIndex * 22 + 20) + "ms",
-                        "--slice-enter-x": (transitionDirection === "next" ? 6 : -6) + "px",
-                        "--slice-enter-y": -enterY + "px",
+                        "--slice-enter-y": enterY + "px",
                       } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
@@ -1143,8 +1147,13 @@ export function AlanMenkenShowcase({
                     const staggerIndex = transitionSnapshot.direction === "next"
                       ? sliceIndex
                       : SLICE_COUNT - 1 - sliceIndex;
-                    const exitY = (sliceIndex % 2 === 0 ? -1 : 1) *
-                      (transitionSnapshot.direction === "next" ? 64 : -64);
+                    const centeredOutgoingGroupTop =
+                      (stageHeight - outgoingSliceGroupHeight) / 2;
+                    // Continue each panel's entrance direction on exit, travelling
+                    // far enough for its entire rectangle to clear the clipped stage.
+                    const exitY = sliceIndex % 2 === 0
+                      ? stageHeight - (centeredOutgoingGroupTop + panelTop) + 24
+                      : -(centeredOutgoingGroupTop + panelTop + panelHeight + 24);
 
                     return (
                       <div
@@ -1157,9 +1166,7 @@ export function AlanMenkenShowcase({
                           width: outgoingSlicePanelWidth + "px",
                           height: panelHeight + "px",
                           animationDelay: (staggerIndex * 22) + "ms",
-                          "--slice-exit-x": (transitionSnapshot.direction === "next" ? -6 : 6) + "px",
                           "--slice-exit-y": exitY + "px",
-                          "--slice-exit-distance": (exitY < 0 ? "-100%" : "100%"),
                         } as CSSProperties}
                       >
                         {outgoingImageUrl && !failed ? (
