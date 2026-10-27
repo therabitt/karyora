@@ -236,6 +236,17 @@ body {
   transition: opacity 180ms ease-out, filter 180ms ease-out;
 }
 
+/* Trackpad/mouse wheel input also nudges the image before a step is committed. */
+.artwork-stage[data-wheel-active="true"] [data-drag-surface="active"],
+.artwork-stage[data-wheel-active="true"] .artwork-ribbon-track,
+.artwork-stage[data-wheel-active="true"] .artwork-ribbon-preview {
+  transition: none;
+}
+
+.artwork-stage[data-wheel-active="true"] .artwork-ribbon-track {
+  transform: translate3d(var(--artwork-track-x, 0px), 0, 0);
+}
+
 .artwork-stage [data-artwork-slice] {
   transform: translate3d(var(--slice-parallax-x, 0px), var(--slice-parallax-y, 0px), 0);
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -271,7 +282,8 @@ body {
   .artwork-stage [data-drag-surface="active"],
   .artwork-stage [data-artwork-slice],
   .artwork-stage[data-dragging="true"] .artwork-ribbon-track,
-  .artwork-stage[data-drag-returning="true"] .artwork-ribbon-track {
+  .artwork-stage[data-drag-returning="true"] .artwork-ribbon-track,
+  .artwork-stage[data-wheel-active="true"] .artwork-ribbon-track {
     transition: none;
     transform: none;
   }
