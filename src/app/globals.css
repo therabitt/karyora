@@ -98,7 +98,7 @@ body {
    Only the panel wrapper moves; the image inside each strip keeps its shared crop. */
 @keyframes artwork-slice-enter {
   from {
-    transform: translate3d(var(--slice-enter-x, 6px), var(--slice-enter-y, 64px), 0);
+    transform: translate3d(0, var(--slice-enter-y, 64px), 0);
   }
 
   to {
@@ -112,7 +112,7 @@ body {
   }
 
   to {
-    transform: translate3d(var(--slice-exit-x, -6px), calc(var(--slice-exit-y, -64px) + var(--slice-exit-distance, 100%)), 0);
+    transform: translate3d(0, var(--slice-exit-y, -64px), 0);
   }
 }
 
