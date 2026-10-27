@@ -937,12 +937,9 @@ export function AlanMenkenShowcase({
   const outgoingSliceGroupHeight = outgoingSliceSize
     ? outgoingSliceSize.height + maxSliceOffset * 2
     : 0;
-  const sliceLayoutWidthDifference = outgoingSliceGroupWidth > 0
-    ? Math.abs(sliceGroupWidth - outgoingSliceGroupWidth) /
-      Math.max(sliceGroupWidth, outgoingSliceGroupWidth)
-    : 0;
-  // When the panel group widths differ substantially (e.g. landscape -> portrait),
-  // sequence the old group out before letting the new group enter.
+  // When the group widths differ substantially (e.g. landscape -> portrait),
+  // sequence the old group out before letting the new group enter. Keep the marker
+  // attached to the incoming artwork so the delayed animation is not restarted.
   const isSliceLayoutChange =
     viewMode === "sliced" && delayedSliceArtworkId === current.id;
   const shouldDelayCurrentSliceEntrance = isSliceLayoutChange;
