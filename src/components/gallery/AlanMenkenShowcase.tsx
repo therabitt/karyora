@@ -927,7 +927,7 @@ export function AlanMenkenShowcase({
         >
           <div className="flex flex-col items-center">
             <h1
-              key={current.id}
+              key={`title-${current.id}`}
               className="artwork-caption-title-enter font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl"
             >
               <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
@@ -936,14 +936,14 @@ export function AlanMenkenShowcase({
             </h1>
             {current.description && (
               <p
-                key={current.id}
+                key={`description-${current.id}`}
                 className="artwork-caption-description-enter mt-1 line-clamp-2 max-w-2xl font-sans text-xs leading-relaxed text-ink-soft sm:text-sm"
               >
                 {current.description}
               </p>
             )}
             <div
-              key={current.id}
+              key={`metadata-${current.id}`}
               className="artwork-caption-meta-enter mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-accent sm:text-[11px]"
             >
               <span>{current.medium.replace(/-/g, " ")}</span>
