@@ -153,7 +153,12 @@ body {
 }
 
 .artwork-ribbon-enter {
-  animation: artwork-ribbon-enter 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-ribbon-enter 980ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* The focused artwork uses the same 1100 ms settling time as Ribbon's FLIP transition. */
+.artwork-ribbon-enter[data-artwork-active="true"] {
+  animation-duration: 1100ms;
 }
 
 .artwork-ribbon-item img {
