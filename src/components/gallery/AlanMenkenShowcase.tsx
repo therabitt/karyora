@@ -71,6 +71,7 @@ type RibbonLayoutEntry = {
   isActive: boolean;
   imageUrl: string | null;
   failed: boolean;
+  imageScale: number;
   width: number;
   height: number;
   left: number;
@@ -368,7 +369,6 @@ export function AlanMenkenShowcase({
 
       const first = previousRects.get(id);
       const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
-      const isActiveNow = id === activeId;
       const currentOffset = Number(element.dataset.ribbonOffset ?? "0");
       const targetTransform = "translate3d(0px, " + staggerY + "px, 0)";
       let fromTransform: string;
