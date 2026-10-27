@@ -16,6 +16,7 @@ import {
 import {
   getSwipeDirection,
   getWheelDirection,
+  shouldHandleArtworkKeyboardNavigation,
 } from "@/lib/gallery/artwork-interaction";
 
 export interface AlanMenkenShowcaseProps {
@@ -101,30 +102,38 @@ export function AlanMenkenShowcase({
     setRawActiveIndex((previous) => (previous - 1 + total) % total);
   }, [total]);
 
-  const handleStageKeyDown = useCallback((event: ReactKeyboardEvent<HTMLElement>) => {
-    if (
-      isNavigationOpen ||
-      event.defaultPrevented ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.metaKey
-    ) return;
+  useEffect(() => {
+    function handleGlobalKeyDown(event: KeyboardEvent) {
+      const target = event.target;
+      const element = target instanceof HTMLElement ? target : null;
+      const stage = stageRef.current;
+      const interactiveTarget = Boolean(
+        element?.closest("button, a, input, textarea, select, [role='button'], [role='link']")
+      );
+      const context = {
+        key: event.key,
+        defaultPrevented: event.defaultPrevented,
+        modifierPressed: event.altKey || event.ctrlKey || event.metaKey,
+        navigationOpen: isNavigationOpen,
+        artworkCount: total,
+        editableTarget: Boolean(
+          element?.isContentEditable ||
+          element?.closest("input, textarea, select, [contenteditable='true']")
+        ),
+        interactiveTarget,
+        interactiveTargetWithinStage: Boolean(stage && element && stage.contains(element)),
+      };
 
-    const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (
-      target.isContentEditable ||
-      target.closest("input, textarea, select, [contenteditable='true']")
-    ) return;
+      if (!shouldHandleArtworkKeyboardNavigation(context)) return;
 
-    if (event.key === "ArrowRight") {
       event.preventDefault();
-      handleNext();
-    } else if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      handlePrev();
+      if (event.key === "ArrowRight") handleNext();
+      else handlePrev();
     }
-  }, [handleNext, handlePrev, isNavigationOpen]);
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [handleNext, handlePrev, isNavigationOpen, total]);
 
   const handleStageWheel = useCallback((event: ReactWheelEvent<HTMLElement>) => {
     if (isNavigationOpen || total <= 1 || event.ctrlKey) return;
@@ -343,7 +352,6 @@ export function AlanMenkenShowcase({
           ref={stageRef}
           aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
           tabIndex={0}
-          onKeyDown={handleStageKeyDown}
           onWheel={handleStageWheel}
           onPointerDown={handleStagePointerDown}
           onPointerUp={handleStagePointerUp}
