@@ -49,8 +49,7 @@ type RibbonRect = {
   isActive: boolean;
   opacity: number;
   filter: string;
-  cropOpacity: number;
-  fitOpacity: number;
+  imageTransform: string;
 };
 
 type RibbonSeamExitSnapshot = {
@@ -228,8 +227,8 @@ export function AlanMenkenShowcase({
         const rect = element.getBoundingClientRect();
         if (rect.width > 0 && rect.height > 0) {
           const computedStyle = window.getComputedStyle(element);
-          const cropLayer = element.querySelector<HTMLElement>("[data-artwork-image-crop]");
-          const fitLayer = element.querySelector<HTMLElement>("[data-artwork-image-fit]");
+          const image = element.querySelector<HTMLElement>("[data-artwork-image]");
+          const imageStyle = image ? window.getComputedStyle(image) : null;
           previousRects.set(id, {
             left: rect.left,
             top: rect.top,
@@ -239,15 +238,18 @@ export function AlanMenkenShowcase({
             isActive: element.dataset.artworkActive === "true",
             opacity: Number(computedStyle.opacity),
             filter: computedStyle.filter,
-            cropOpacity: cropLayer ? Number(window.getComputedStyle(cropLayer).opacity) : 1,
-            fitOpacity: fitLayer ? Number(window.getComputedStyle(fitLayer).opacity) : 0,
+            imageTransform: imageStyle?.transform ?? "none",
           });
         }
       });
 
-      // Preserve the current visual position when another selection interrupts an animation.
+      // Preserve the current visual position and image crop when another selection
+      // interrupts an animation. The next FLIP begins from those measured states.
       ribbonItemsRef.current.forEach((element) => {
         element.getAnimations().forEach((animation) => animation.cancel());
+        element.querySelectorAll<HTMLElement>("[data-artwork-image]").forEach((image) => {
+          image.getAnimations().forEach((animation) => animation.cancel());
+        });
         element.style.transformOrigin = "top left";
       });
       previousRibbonRectsRef.current = previousRects;
@@ -422,6 +424,8 @@ export function AlanMenkenShowcase({
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
+      const image = element.querySelector<HTMLElement>("[data-artwork-image]");
+      const targetImageTransform = image ? window.getComputedStyle(image).transform : "none";
       const animation = element.animate(
         [
           {
@@ -446,45 +450,23 @@ export function AlanMenkenShowcase({
         },
       );
 
-      // Keep the preview crop and the focused full image as separate layers. Blend
-      // between them during the geometry change so landscapes reveal naturally rather
-      // than snapping from a tall crop to a wide full-image presentation.
-      const cropLayer = element.querySelector<HTMLElement>("[data-artwork-image-crop]");
-      const fitLayer = element.querySelector<HTMLElement>("[data-artwork-image-fit]");
-      if (first && cropLayer && fitLayer) {
-        const previousCropOpacity = first.cropOpacity;
-        const previousFitOpacity = first.fitOpacity;
-        const targetCropOpacity = isActiveNow ? 0 : 1;
-        const targetFitOpacity = isActiveNow ? 1 : 0;
-
-        cropLayer.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
-        fitLayer.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
-
-        if (
-          Math.abs(previousCropOpacity - targetCropOpacity) > 0.01 ||
-          Math.abs(previousFitOpacity - targetFitOpacity) > 0.01
-        ) {
-          const imageBlendDuration = 420;
-          const imageBlendDelay = 170;
-          cropLayer.animate(
-            [{ opacity: previousCropOpacity }, { opacity: targetCropOpacity }],
-            {
-              duration: imageBlendDuration,
-              delay: imageBlendDelay,
-              easing: "cubic-bezier(0.2, 0.78, 0.22, 1)",
-              fill: "both",
-            },
-          );
-          fitLayer.animate(
-            [{ opacity: previousFitOpacity }, { opacity: targetFitOpacity }],
-            {
-              duration: imageBlendDuration,
-              delay: imageBlendDelay,
-              easing: "cubic-bezier(0.2, 0.78, 0.22, 1)",
-              fill: "both",
-            },
-          );
-        }
+      // The same image transitions from its measured preview crop scale to its
+      // focused natural-ratio scale, synchronized to the frame's width/height motion.
+      // There is only one image node, so no duplicate artwork can appear stacked.
+      if (first && image) {
+        image.getAnimations().forEach((imageAnimation) => imageAnimation.cancel());
+        const imageAnimation = image.animate(
+          [
+            { transform: first.imageTransform },
+            { transform: targetImageTransform },
+          ],
+          {
+            duration,
+            easing,
+            fill: "both",
+          },
+        );
+        imageAnimation.onfinish = () => imageAnimation.cancel();
       }
 
       animation.onfinish = () => {
@@ -724,6 +706,7 @@ export function AlanMenkenShowcase({
     const artwork = displayArtworks[index];
     const isActive = index === activeIndex;
     const dimensions = getDimensions(artwork);
+    const aspectRatio = dimensions.width / dimensions.height;
     const patternIndex =
       ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
       STAGGER_HEIGHTS_RIBBONS.length;
@@ -733,6 +716,10 @@ export function AlanMenkenShowcase({
       Math.min(1.2, Math.max(0.6, stageHeight / 480))
     );
     const previewHeight = Math.max(1, Math.round(stageHeight * heightPercent / 100));
+    const frameAspectRatio = previewWidth > 0 && previewHeight > 0
+      ? previewWidth / previewHeight
+      : aspectRatio;
+    const coverScale = Math.max(aspectRatio / frameAspectRatio, frameAspectRatio / aspectRatio);
 
     return {
       index,
@@ -741,6 +728,7 @@ export function AlanMenkenShowcase({
       isActive,
       imageUrl: getStoragePublicUrl(artwork.public_image_path),
       failed: Boolean(failedImages[artwork.id]),
+      imageScale: isActive ? 1 : coverScale,
       width: isActive ? activeSize.width : previewWidth,
       height: isActive ? activeSize.height : previewHeight,
       left: 0,
@@ -891,6 +879,7 @@ export function AlanMenkenShowcase({
                     isActive,
                     imageUrl,
                     failed,
+                    imageScale,
                     width,
                     height,
                     left,
@@ -932,38 +921,17 @@ export function AlanMenkenShowcase({
                       }}
                     >
                       {imageUrl && !failed ? (
-                        <>
-                          {/* Keep both presentations mounted so the image appearance
-                              can transition in sync with the frame's position and size. */}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            data-artwork-image-crop
-                            draggable={false}
-                            src={imageUrl}
-                            alt=""
-                            aria-hidden="true"
-                            onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
-                            onError={() => handleImageError(artwork.id)}
-                            className={
-                              "absolute inset-0 h-full w-full object-cover transition-transform duration-700 motion-reduce:transition-none " +
-                              (isActive ? "opacity-0" : "opacity-100 group-hover:scale-[1.025]")
-                            }
-                          />
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            data-artwork-image-fit
-                            draggable={false}
-                            src={imageUrl}
-                            alt=""
-                            aria-hidden="true"
-                            onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
-                            onError={() => handleImageError(artwork.id)}
-                            className={
-                              "absolute inset-0 h-full w-full object-contain " +
-                              (isActive ? "opacity-100" : "opacity-0")
-                            }
-                          />
-                        </>
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          data-artwork-image
+                          draggable={false}
+                          src={imageUrl}
+                          alt={isActive ? (artwork.alt_text || artwork.title) : ""}
+                          onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
+                          onError={() => handleImageError(artwork.id)}
+                          className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
+                          style={{ transform: "scale(" + imageScale + ")" }}
+                        />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
                           <span className={isActive
