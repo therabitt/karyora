@@ -170,11 +170,11 @@ body {
 }
 
 [data-transition-direction="next"] .artwork-composition-enter {
-  animation: artwork-composition-enter-next 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: artwork-composition-enter-next 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 [data-transition-direction="previous"] .artwork-composition-enter {
-  animation: artwork-composition-enter-previous 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: artwork-composition-enter-previous 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artwork-exit-layer {
@@ -184,41 +184,41 @@ body {
 }
 
 .artwork-exit-next {
-  animation: artwork-composition-exit-next 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: artwork-composition-exit-next 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artwork-exit-previous {
-  animation: artwork-composition-exit-previous 640ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: artwork-composition-exit-previous 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-title-enter {
   --caption-shift-x: 9px;
-  animation: artwork-caption-enter 270ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 [data-transition-direction="previous"] .artwork-caption-title-enter {
   --caption-shift-x: -9px;
-  animation: artwork-caption-enter 270ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-description-enter {
   --caption-shift-x: 6px;
-  animation: artwork-caption-enter 300ms cubic-bezier(0.2, 0.78, 0.22, 1) 45ms both;
+  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
 }
 
 [data-transition-direction="previous"] .artwork-caption-description-enter {
   --caption-shift-x: -6px;
-  animation: artwork-caption-enter 300ms cubic-bezier(0.2, 0.78, 0.22, 1) 45ms both;
+  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
 }
 
 [data-transition-direction="next"] .artwork-caption-meta-enter {
   --caption-shift-x: 4px;
-  animation: artwork-caption-enter 260ms cubic-bezier(0.2, 0.78, 0.22, 1) 85ms both;
+  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
 }
 
 [data-transition-direction="previous"] .artwork-caption-meta-enter {
   --caption-shift-x: -4px;
-  animation: artwork-caption-enter 260ms cubic-bezier(0.2, 0.78, 0.22, 1) 85ms both;
+  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
 }
 
 @media (prefers-reduced-motion: reduce) {
