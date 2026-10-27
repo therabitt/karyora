@@ -94,44 +94,25 @@ body {
   background-color: var(--color-border-strong);
 }
 
-/* Continuous artwork motion: prioritize physical position and scale, not opacity. */
-@keyframes artwork-composition-enter-next {
+/* Sliced mode moves each strip independently, like a vertical shutter.
+   Only the panel wrapper moves; the image inside each strip keeps its shared crop. */
+@keyframes artwork-slice-enter {
   from {
-    transform: translate3d(38px, 0, 0) scale(0.94);
+    transform: translate3d(var(--slice-enter-x, 6px), var(--slice-enter-y, 64px), 0);
   }
 
   to {
-    transform: translate3d(0, 0, 0) scale(1);
+    transform: translate3d(0, 0, 0);
   }
 }
 
-@keyframes artwork-composition-enter-previous {
+@keyframes artwork-slice-exit {
   from {
-    transform: translate3d(-38px, 0, 0) scale(0.94);
+    transform: translate3d(0, 0, 0);
   }
 
   to {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes artwork-composition-exit-next {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  to {
-    transform: translate3d(-30%, 0, 0) scale(0.84);
-  }
-}
-
-@keyframes artwork-composition-exit-previous {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  to {
-    transform: translate3d(30%, 0, 0) scale(0.84);
+    transform: translate3d(var(--slice-exit-x, -6px), var(--slice-exit-y, -64px), 0);
   }
 }
 
@@ -169,26 +150,20 @@ body {
   outline-offset: 4px;
 }
 
-[data-transition-direction="next"] .artwork-composition-enter {
-  animation: artwork-composition-enter-next 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
+.artwork-slice-enter-panel {
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: artwork-slice-enter 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-[data-transition-direction="previous"] .artwork-composition-enter {
-  animation: artwork-composition-enter-previous 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
+.artwork-slice-exit-panel {
+  will-change: transform;
+  backface-visibility: hidden;
+  animation: artwork-slice-exit 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .artwork-exit-layer {
   pointer-events: none;
-  transform-origin: center center;
-  will-change: transform;
-}
-
-.artwork-exit-next {
-  animation: artwork-composition-exit-next 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
-}
-
-.artwork-exit-previous {
-  animation: artwork-composition-exit-previous 860ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-title-enter {
@@ -223,6 +198,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .artwork-composition-enter,
+  .artwork-slice-enter-panel,
+  .artwork-slice-exit-panel,
   .artwork-exit-layer,
   .artwork-caption-title-enter,
   .artwork-caption-description-enter,
