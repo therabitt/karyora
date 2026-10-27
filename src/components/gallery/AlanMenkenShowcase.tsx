@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
@@ -38,41 +38,20 @@ type ArtworkTransitionSnapshot = {
   direction: "next" | "previous";
   viewMode: ViewMode;
   sequence: number;
-  releaseVelocity: number;
 };
 
-type ArtworkPointerGesture = {
+type RibbonRect = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+type ArtworkSwipeStart = {
   pointerId: number;
-  pointerType: string;
-  startX: number;
-  startY: number;
-  lastX: number;
-  lastAt: number;
-  velocityX: number;
-  dragging: boolean;
+  x: number;
+  y: number;
 };
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function resetArtworkDragStyles(stage: HTMLElement, animateReturn: boolean): void {
-  stage.style.setProperty("--artwork-visual-x", "0px");
-  stage.style.setProperty("--artwork-track-x", "0px");
-  stage.style.setProperty("--artwork-preview-x", "0px");
-  stage.style.setProperty("--artwork-tilt", "0deg");
-  stage.style.setProperty("--artwork-composition-tilt", "0deg");
-  stage.style.setProperty("--artwork-drag-scale", "1");
-  stage.removeAttribute("data-dragging");
-
-  stage.querySelectorAll<HTMLElement>("[data-artwork-slice]").forEach((slice) => {
-    slice.style.setProperty("--slice-parallax-x", "0px");
-    slice.style.setProperty("--slice-parallax-y", "0px");
-  });
-
-  if (animateReturn) stage.dataset.dragReturning = "true";
-  else delete stage.dataset.dragReturning;
-}
 
 function getPanelVisibilityClass(offset: number): string {
   const distance = Math.abs(offset);
@@ -100,6 +79,8 @@ export function AlanMenkenShowcase({
   const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
   const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
   const transitionSequenceRef = useRef(0);
+  const ribbonItemsRef = useRef(new Map<string, HTMLButtonElement>());
+  const previousRibbonRectsRef = useRef<Map<string, RibbonRect> | null>(null);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
@@ -109,8 +90,7 @@ export function AlanMenkenShowcase({
   const wheelLockedRef = useRef(false);
   const lastWheelEventAtRef = useRef(0);
   const wheelUnlockTimerRef = useRef<number | null>(null);
-  const pointerStartRef = useRef<ArtworkPointerGesture | null>(null);
-  const dragResetTimerRef = useRef<number | null>(null);
+  const pointerStartRef = useRef<ArtworkSwipeStart | null>(null);
 
   useEffect(() => {
     const element = stageRef.current;
@@ -142,7 +122,6 @@ export function AlanMenkenShowcase({
   const selectArtwork = useCallback((
     targetIndex: number,
     direction: "next" | "previous",
-    releaseVelocity = 0,
   ) => {
     if (total <= 1) return;
 
@@ -151,15 +130,41 @@ export function AlanMenkenShowcase({
     if (normalizedIndex === outgoingIndex) return;
 
     const outgoingArtwork = displayArtworks[outgoingIndex];
-    if (outgoingArtwork) {
-      setTransitionSnapshot({
-        artwork: outgoingArtwork,
-        direction,
-        viewMode,
-        sequence: ++transitionSequenceRef.current,
-        releaseVelocity: clamp(Math.abs(releaseVelocity), 0, 1.6),
+    if (viewMode === "ribbons" && typeof window !== "undefined") {
+      const previousRects = new Map<string, RibbonRect>();
+
+      // Capture on-screen geometry before React changes the active artwork and panel positions.
+      ribbonItemsRef.current.forEach((element, id) => {
+        const rect = element.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          previousRects.set(id, {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          });
+        }
       });
+
+      // Preserve the current visual position when another selection interrupts an animation.
+      ribbonItemsRef.current.forEach((element) => {
+        element.getAnimations().forEach((animation) => animation.cancel());
+        element.style.transformOrigin = "top left";
+      });
+      previousRibbonRectsRef.current = previousRects;
+      setTransitionSnapshot(null);
+    } else {
+      previousRibbonRectsRef.current = null;
+      if (outgoingArtwork) {
+        setTransitionSnapshot({
+          artwork: outgoingArtwork,
+          direction,
+          viewMode,
+          sequence: ++transitionSequenceRef.current,
+        });
+      }
     }
+
     activeIndexRef.current = normalizedIndex;
     setTransitionDirection(direction);
     setRawActiveIndex(normalizedIndex);
@@ -182,10 +187,76 @@ export function AlanMenkenShowcase({
       setTransitionSnapshot((currentSnapshot) =>
         currentSnapshot?.sequence === transitionSnapshot.sequence ? null : currentSnapshot
       );
-    }, 280);
+    }, 640);
 
     return () => window.clearTimeout(timeoutId);
   }, [transitionSnapshot]);
+
+  useLayoutEffect(() => {
+    const previousRects = previousRibbonRectsRef.current;
+    if (!previousRects) return;
+
+    previousRibbonRectsRef.current = null;
+    if (viewMode !== "ribbons") return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      ribbonItemsRef.current.forEach((element) => {
+        element.style.transformOrigin = "";
+      });
+      return;
+    }
+
+    const activeId = displayArtworks[activeIndex]?.id;
+    const easing = "cubic-bezier(0.2, 0.78, 0.22, 1)";
+
+    ribbonItemsRef.current.forEach((element, id) => {
+      const last = element.getBoundingClientRect();
+      if (last.width <= 0 || last.height <= 0) return;
+
+      const first = previousRects.get(id);
+      let fromTransform: string;
+
+      if (first) {
+        const dx = first.left - last.left;
+        const dy = first.top - last.top;
+        const scaleX = first.width / last.width;
+        const scaleY = first.height / last.height;
+
+        if (
+          Math.abs(dx) < 0.5 &&
+          Math.abs(dy) < 0.5 &&
+          Math.abs(scaleX - 1) < 0.005 &&
+          Math.abs(scaleY - 1) < 0.005
+        ) {
+          element.style.transformOrigin = "";
+          return;
+        }
+
+        fromTransform = "translate3d(" + dx + "px, " + dy + "px, 0) scale(" + scaleX + ", " + scaleY + ")";
+      } else {
+        const entryX = transitionDirection === "next" ? 30 : -30;
+        fromTransform = "translate3d(" + entryX + "px, 0, 0) scale(0.88, 0.88)";
+      }
+
+      const animation = element.animate(
+        [
+          { transform: fromTransform },
+          { transform: "translate3d(0, 0, 0) scale(1, 1)" },
+        ],
+        {
+          duration: id === activeId ? 760 : 680,
+          easing,
+          fill: "both",
+        },
+      );
+
+      animation.onfinish = () => {
+        animation.cancel();
+        element.style.transformOrigin = "";
+      };
+    });
+  }, [activeIndex, displayArtworks, transitionDirection, viewMode]);
 
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
@@ -233,7 +304,6 @@ export function AlanMenkenShowcase({
       : rawDelta;
     if (!Number.isFinite(normalizedDelta) || normalizedDelta === 0) return;
 
-    // The viewport owns vertical wheel navigation; prevent page scrolling here only.
     event.preventDefault();
 
     if (wheelUnlockTimerRef.current !== null) {
@@ -243,15 +313,6 @@ export function AlanMenkenShowcase({
       wheelLockedRef.current = false;
       wheelAccumulatorRef.current = 0;
       wheelUnlockTimerRef.current = null;
-
-      const stage = stageRef.current;
-      if (stage) {
-        // Removing the active wheel state first lets the zeroed transform spring back naturally.
-        delete stage.dataset.wheelActive;
-        stage.style.setProperty("--artwork-visual-x", "0px");
-        stage.style.setProperty("--artwork-track-x", "0px");
-        stage.style.setProperty("--artwork-preview-x", "0px");
-      }
     }, 260);
 
     if (wheelLockedRef.current) return;
@@ -263,66 +324,17 @@ export function AlanMenkenShowcase({
     lastWheelEventAtRef.current = now;
     wheelAccumulatorRef.current += normalizedDelta;
 
-    const stage = stageRef.current;
-    if (stage) {
-      if (!stage.dataset.wheelActive) {
-        // Direct input takes precedence over any unfinished entrance animation.
-        stage.querySelectorAll(".artwork-selection-enter, .artwork-composition-enter, .artwork-slice-enter")
-          .forEach((element) => element.classList.remove(
-            "artwork-selection-enter", "artwork-composition-enter", "artwork-slice-enter"
-          ));
-      }
-      stage.dataset.wheelActive = "true";
-      // The image follows the accumulated wheel/trackpad input before the navigation threshold.
-      stage.style.setProperty(
-        "--artwork-visual-x",
-        String(clamp(-wheelAccumulatorRef.current * 0.48, -42, 42)) + "px",
-      );
-      stage.style.setProperty(
-        "--artwork-track-x",
-        String(clamp(-wheelAccumulatorRef.current * 0.15, -16, 16)) + "px",
-      );
-      stage.style.setProperty(
-        "--artwork-preview-x",
-        String(clamp(-wheelAccumulatorRef.current * 0.05, -7, 7)) + "px",
-      );
-    }
-
     const direction = getWheelDirection(wheelAccumulatorRef.current, 55);
     if (!direction) return;
 
-    const releaseVelocity = clamp(Math.abs(wheelAccumulatorRef.current) / 120, 0, 1.6);
     wheelAccumulatorRef.current = 0;
     wheelLockedRef.current = true;
-    if (stage) {
-      delete stage.dataset.wheelActive;
-      stage.style.setProperty("--artwork-visual-x", "0px");
-      stage.style.setProperty("--artwork-track-x", "0px");
-      stage.style.setProperty("--artwork-preview-x", "0px");
-    }
-    selectArtwork(
-      direction === "next"
-        ? (activeIndexRef.current + 1) % total
-        : (activeIndexRef.current - 1 + total) % total,
-      direction,
-      releaseVelocity,
-    );
-  }, [isNavigationOpen, selectArtwork, total]);
-
-  const clearDragResetTimer = useCallback(() => {
-    if (dragResetTimerRef.current !== null) {
-      window.clearTimeout(dragResetTimerRef.current);
-      dragResetTimerRef.current = null;
-    }
-  }, []);
+    if (direction === "next") handleNext();
+    else handlePrev();
+  }, [handleNext, handlePrev, isNavigationOpen, total]);
 
   const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    if (
-      (event.pointerType !== "mouse" && event.pointerType !== "touch" && event.pointerType !== "pen") ||
-      (event.pointerType === "mouse" && event.button !== 0) ||
-      isNavigationOpen ||
-      total <= 1
-    ) {
+    if (event.pointerType !== "touch" || isNavigationOpen || total <= 1) {
       pointerStartRef.current = null;
       return;
     }
@@ -332,160 +344,36 @@ export function AlanMenkenShowcase({
       target instanceof Element &&
       target.closest("button, a, input, textarea, select, [contenteditable='true']")
     ) {
-      // Preserve native activation for controls. Direct manipulation starts on the artwork surface.
       pointerStartRef.current = null;
       return;
     }
 
-    clearDragResetTimer();
-    if (wheelUnlockTimerRef.current !== null) {
-      window.clearTimeout(wheelUnlockTimerRef.current);
-      wheelUnlockTimerRef.current = null;
-    }
-    wheelLockedRef.current = false;
-    wheelAccumulatorRef.current = 0;
-    delete event.currentTarget.dataset.wheelActive;
-
     pointerStartRef.current = {
       pointerId: event.pointerId,
-      pointerType: event.pointerType,
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      lastAt: performance.now(),
-      velocityX: 0,
-      dragging: false,
+      x: event.clientX,
+      y: event.clientY,
     };
-  }, [clearDragResetTimer, isNavigationOpen, total]);
-
-  const handleStagePointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    const gesture = pointerStartRef.current;
-    const stage = stageRef.current;
-    if (!gesture || !stage || gesture.pointerId !== event.pointerId || isNavigationOpen) return;
-
-    const deltaX = event.clientX - gesture.startX;
-    const deltaY = event.clientY - gesture.startY;
-    const horizontal = Math.abs(deltaX);
-    const vertical = Math.abs(deltaY);
-    const now = performance.now();
-
-    if (!gesture.dragging) {
-      if (horizontal < 7 && vertical < 7) return;
-
-      // Keep vertical gestures native. The gallery only captures intentional horizontal movement.
-      if (vertical > horizontal * 1.12) {
-        pointerStartRef.current = null;
-        return;
-      }
-      if (horizontal < 7) return;
-
-      gesture.dragging = true;
-      stage.dataset.dragging = "true";
-      stage.querySelectorAll(".artwork-selection-enter, .artwork-composition-enter, .artwork-slice-enter")
-        .forEach((element) => element.classList.remove(
-          "artwork-selection-enter", "artwork-composition-enter", "artwork-slice-enter"
-        ));
-      try {
-        stage.setPointerCapture(event.pointerId);
-      } catch {
-        // Pointer capture is best-effort; normal pointer events still work within the viewport.
-      }
-    }
-
-    const elapsed = Math.max(1, now - gesture.lastAt);
-    const instantaneousVelocity = (event.clientX - gesture.lastX) / elapsed;
-    gesture.velocityX = gesture.velocityX * 0.58 + instantaneousVelocity * 0.42;
-    gesture.lastX = event.clientX;
-    gesture.lastAt = now;
-
-    // The artwork follows the pointer with slight resistance; surrounding panels lag behind.
-    const visualX = clamp(deltaX * 0.74, -112, 112);
-    const normalizedDistance = Math.min(1, horizontal / 150);
-    const tilt = clamp(-deltaX * 0.012, -1.7, 1.7);
-    const compositionTilt = clamp(-deltaX * 0.006, -0.85, 0.85);
-    const dragScale = 1 - normalizedDistance * 0.018;
-
-    stage.style.setProperty("--artwork-visual-x", String(visualX) + "px");
-    stage.style.setProperty("--artwork-track-x", String(clamp(deltaX * 0.12, -18, 18)) + "px");
-    stage.style.setProperty("--artwork-preview-x", String(clamp(deltaX * 0.045, -8, 8)) + "px");
-    stage.style.setProperty("--artwork-tilt", String(tilt) + "deg");
-    stage.style.setProperty("--artwork-composition-tilt", String(compositionTilt) + "deg");
-    stage.style.setProperty("--artwork-drag-scale", String(dragScale));
-
-    const slices = stage.querySelectorAll<HTMLElement>("[data-artwork-slice]");
-    slices.forEach((slice, index) => {
-      const relativeIndex = index - (slices.length - 1) / 2;
-      const parallaxX = clamp(-deltaX * relativeIndex * 0.035, -10, 10);
-      const parallaxY = clamp(Math.abs(deltaX) * Math.abs(relativeIndex) * 0.012, 0, 4);
-      slice.style.setProperty("--slice-parallax-x", String(parallaxX) + "px");
-      slice.style.setProperty("--slice-parallax-y", String(parallaxY) + "px");
-    });
-
-    if (event.cancelable) event.preventDefault();
-  }, [isNavigationOpen]);
+  }, [isNavigationOpen, total]);
 
   const handleStagePointerUp = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    const gesture = pointerStartRef.current;
-    const stage = stageRef.current;
+    const start = pointerStartRef.current;
     pointerStartRef.current = null;
-    if (!gesture || gesture.pointerId !== event.pointerId || !stage) return;
+    if (!start || start.pointerId !== event.pointerId || isNavigationOpen) return;
 
-    const deltaX = event.clientX - gesture.startX;
-    const deltaY = event.clientY - gesture.startY;
-    const horizontal = Math.abs(deltaX);
-    const vertical = Math.abs(deltaY);
-
-    if (gesture.dragging) {
-      const direction = deltaX < 0 ? "next" : "previous";
-      const fling = horizontal >= 30 && Math.abs(gesture.velocityX) >= 0.42;
-      const shouldNavigate = horizontal >= vertical * 1.12 && (horizontal >= 58 || fling);
-      resetArtworkDragStyles(stage, !shouldNavigate);
-
-      if (shouldNavigate) {
-        selectArtwork(
-          direction === "next"
-            ? (activeIndexRef.current + 1) % total
-            : (activeIndexRef.current - 1 + total) % total,
-          direction,
-          gesture.velocityX,
-        );
-      } else {
-        clearDragResetTimer();
-        dragResetTimerRef.current = window.setTimeout(() => {
-          if (stageRef.current) delete stageRef.current.dataset.dragReturning;
-          dragResetTimerRef.current = null;
-        }, 280);
-      }
-      return;
-    }
-
-    // Keep the established swipe threshold for short gestures that never entered drag mode.
-    const direction = getSwipeDirection(gesture.startX, gesture.startY, event.clientX, event.clientY);
+    const direction = getSwipeDirection(start.x, start.y, event.clientX, event.clientY);
     if (direction === "next") handleNext();
     else if (direction === "previous") handlePrev();
-  }, [clearDragResetTimer, handleNext, handlePrev, selectArtwork, total]);
+  }, [handleNext, handlePrev, isNavigationOpen]);
 
   const handleStagePointerCancel = useCallback((event: ReactPointerEvent<HTMLElement>) => {
-    const gesture = pointerStartRef.current;
-    if (gesture?.pointerId !== event.pointerId) return;
-    pointerStartRef.current = null;
-
-    if (gesture.dragging && stageRef.current) {
-      resetArtworkDragStyles(stageRef.current, true);
-      clearDragResetTimer();
-      dragResetTimerRef.current = window.setTimeout(() => {
-        if (stageRef.current) delete stageRef.current.dataset.dragReturning;
-        dragResetTimerRef.current = null;
-      }, 280);
+    if (pointerStartRef.current?.pointerId === event.pointerId) {
+      pointerStartRef.current = null;
     }
-  }, [clearDragResetTimer]);
+  }, []);
 
   useEffect(() => () => {
     if (wheelUnlockTimerRef.current !== null) {
       window.clearTimeout(wheelUnlockTimerRef.current);
-    }
-    if (dragResetTimerRef.current !== null) {
-      window.clearTimeout(dragResetTimerRef.current);
     }
   }, []);
 
@@ -657,11 +545,10 @@ export function AlanMenkenShowcase({
         <section
           ref={stageRef}
           data-transition-direction={transitionDirection}
-          aria-label="Artwork viewport. Use left and right arrow keys, scroll, drag, or swipe to change artwork."
+          aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
           tabIndex={0}
           onWheel={handleStageWheel}
           onPointerDown={handleStagePointerDown}
-          onPointerMove={handleStagePointerMove}
           onPointerUp={handleStagePointerUp}
           onPointerCancel={handleStagePointerCancel}
           className="artwork-stage relative min-h-0 w-full flex-1 overflow-hidden touch-pan-y focus:outline-hidden focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
@@ -684,75 +571,60 @@ export function AlanMenkenShowcase({
                   const staggerOffset = Math.round(
                     STAGGER_OFFSETS_RIBBONS[patternIndex] * Math.min(1.2, Math.max(0.6, stageHeight / 480))
                   );
-
-                  if (isActive) {
-                    return (
-                      <div
-                        key={artwork.id}
-                        data-drag-surface="active"
-                        className="artwork-selection-enter relative z-20 flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl transition-[width,height] duration-500 ease-out motion-reduce:transition-none"
-                        style={{
-                          width: activeSize.width + "px",
-                          height: activeSize.height + "px",
-                        }}
-                      >
-                        {imageUrl && !failed ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                          draggable={false}
-                            src={imageUrl}
-                            alt={artwork.alt_text || artwork.title}
-                            onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
-                            onError={() => handleImageError(artwork.id)}
-                            className="h-full w-full object-contain"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
-                            <span className="font-artwork-title text-xl text-ink">{artwork.title}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  const visibility = getPanelVisibilityClass(offset);
                   const previewHeight = Math.round(stageHeight * heightPercent / 100);
+                  const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
+
                   return (
                     <button
                       key={artwork.id}
+                      ref={(element) => {
+                        if (element) ribbonItemsRef.current.set(artwork.id, element);
+                        else ribbonItemsRef.current.delete(artwork.id);
+                      }}
                       type="button"
+                      data-artwork-id={artwork.id}
+                      aria-label={(isActive ? "Selected artwork: " : "Select artwork: ") + artwork.title}
+                      aria-pressed={isActive}
                       onClick={() => {
+                        if (isActive) return;
                         const forwardDistance = (index - activeIndexRef.current + total) % total;
                         const backwardDistance = (activeIndexRef.current - index + total) % total;
                         selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
                       }}
-                      aria-label={"Select artwork: " + artwork.title}
-                      aria-pressed="false"
-                      className={"artwork-ribbon-preview group relative shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + visibility}
+                      className={
+                        "artwork-ribbon-item group relative shrink-0 overflow-hidden rounded-xs " +
+                        "focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " +
+                        (isActive
+                          ? "z-20 flex border-2 border-accent bg-surface shadow-xl"
+                          : "border border-border/70 bg-surface-muted shadow-sm hover:border-border-strong ") +
+                        visibility
+                      }
                       style={{
-                        width: previewWidth + "px",
-                        height: previewHeight + "px",
-                        transform: "translate3d(var(--artwork-preview-x, 0px), " + staggerOffset + "px, 0)",
-                      }}
+                        width: (isActive ? activeSize.width : previewWidth) + "px",
+                        height: (isActive ? activeSize.height : previewHeight) + "px",
+                        "--ribbon-stagger-y": (isActive ? 0 : staggerOffset) + "px",
+                      } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           draggable={false}
                           src={imageUrl}
-                          alt=""
+                          alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
+                          className="h-full w-full object-contain"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center p-1 text-center">
-                          <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">{artwork.title}</span>
+                        <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
+                          <span className={isActive
+                            ? "font-artwork-title text-xl text-ink"
+                            : "font-artwork-title text-xs text-ink [writing-mode:vertical-rl]"
+                          }>
+                            {artwork.title}
+                          </span>
                         </div>
                       )}
-                      <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
-                        {artwork.title}
-                      </span>
                     </button>
                   );
                 })}
@@ -844,15 +716,11 @@ export function AlanMenkenShowcase({
             </div>
           )}
 
-          {transitionSnapshot && outgoingArtwork && outgoingSize && (
+          {transitionSnapshot && viewMode === "sliced" && outgoingArtwork && outgoingSize && (
             <div
               key={transitionSnapshot.sequence}
               aria-hidden="true"
               className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
-              style={{
-                "--artwork-exit-shift": (transitionSnapshot.direction === "next" ? -1 : 1) *
-                  (20 + Math.min(56, transitionSnapshot.releaseVelocity * 35)) + "px",
-              } as CSSProperties}
             >
               {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
                 <div
