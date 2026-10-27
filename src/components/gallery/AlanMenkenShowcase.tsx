@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
-import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
@@ -1076,7 +1076,7 @@ export function AlanMenkenShowcase({
                         animationDelay: (staggerIndex * 26 + 32) + "ms",
                         "--slice-enter-x": (transitionDirection === "next" ? 6 : -6) + "px",
                         "--slice-enter-y": -enterY + "px",
-                      }}
+                      } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -1159,7 +1159,8 @@ export function AlanMenkenShowcase({
                           animationDelay: (staggerIndex * 26) + "ms",
                           "--slice-exit-x": (transitionSnapshot.direction === "next" ? -6 : 6) + "px",
                           "--slice-exit-y": exitY + "px",
-                        }}
+                          "--slice-exit-distance": (exitY < 0 ? "-100%" : "100%"),
+                        } as CSSProperties}
                       >
                         {outgoingImageUrl && !failed ? (
                           // eslint-disable-next-line @next/next/no-img-element
