@@ -1152,7 +1152,7 @@ export function AlanMenkenShowcase({
                     // Continue each panel's entrance direction on exit, travelling
                     // far enough for its entire rectangle to clear the clipped stage.
                     const exitY = sliceIndex % 2 === 0
-                      ? stageHeight - (centeredOutgoingGroupTop + panelTop) + 24
+                      ? stageHeight - (centeredOutgoingGroupTop + panelTop) + panelHeight + 24
                       : -(centeredOutgoingGroupTop + panelTop + panelHeight + 24);
 
                     return (
