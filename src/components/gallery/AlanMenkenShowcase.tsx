@@ -837,7 +837,7 @@ export function AlanMenkenShowcase({
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
                   const itemClassName = isActive
                     ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
-                    : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
+                    : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale hover:opacity-90 hover:grayscale-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
 
                   return (
                     <button
@@ -875,11 +875,7 @@ export function AlanMenkenShowcase({
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className={
-                            isActive
-                              ? "h-full w-full object-contain"
-                              : "h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.025]"
-                          }
+                          className="h-full w-full object-cover"
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
