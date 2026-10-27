@@ -1108,7 +1108,7 @@ export function AlanMenkenShowcase({
                         const backwardDistance = (activeIndexRef.current - index + total) % total;
                         selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
                       }}
-                      className={itemClassName + " " + visibility + (isRibbonEntranceActive ? " artwork-ribbon-enter" : "")}
+                      className={itemClassName + " " + visibility + (isRibbonEntranceActive ? " artwork-ribbon-enter" + (isActive ? " artwork-ribbon-enter-active" : "") : "")}
                       style={{
                         left: left + "px",
                         top: top + "px",
