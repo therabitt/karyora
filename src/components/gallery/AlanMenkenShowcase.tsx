@@ -187,7 +187,7 @@ export function AlanMenkenShowcase({
       setTransitionSnapshot((currentSnapshot) =>
         currentSnapshot?.sequence === transitionSnapshot.sequence ? null : currentSnapshot
       );
-    }, 640);
+    }, 700);
 
     return () => window.clearTimeout(timeoutId);
   }, [transitionSnapshot]);
@@ -212,7 +212,10 @@ export function AlanMenkenShowcase({
 
     ribbonItemsRef.current.forEach((element, id) => {
       const last = element.getBoundingClientRect();
-      if (last.width <= 0 || last.height <= 0) return;
+      if (last.width <= 0 || last.height <= 0) {
+        element.style.transformOrigin = "";
+        return;
+      }
 
       const first = previousRects.get(id);
       const staggerY = Number(element.dataset.ribbonStaggerY ?? "0");
