@@ -682,7 +682,7 @@ export function AlanMenkenShowcase({
                   } = entry;
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
                   const itemClassName = isActive
-                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                    ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden rounded-xs bg-surface shadow-xl focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
 
                   return (
@@ -893,7 +893,7 @@ export function AlanMenkenShowcase({
                 </div>
               ) : (
                 <div
-                  className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl"
+                  className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs bg-surface shadow-xl"
                   style={{
                     width: outgoingSize.width + "px",
                     height: outgoingSize.height + "px",
@@ -922,28 +922,34 @@ export function AlanMenkenShowcase({
           aria-label="Selected artwork information"
           aria-live="polite"
           aria-atomic="true"
+          data-transition-direction={transitionDirection}
           className="flex shrink-0 flex-col items-center px-4 py-3 text-center sm:px-8 sm:py-4"
         >
-          <div
-            key={current.id}
-            className="artwork-caption-enter flex flex-col items-center"
-            style={{ animationDelay: "80ms" }}
-          >
-            <h1 className="font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl">
-            <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
-              {current.title}
-            </Link>
-          </h1>
-          {current.description && (
-            <p className="mt-1 line-clamp-2 max-w-2xl font-sans text-xs leading-relaxed text-ink-soft sm:text-sm">
-              {current.description}
-            </p>
-          )}
-          <div className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-accent sm:text-[11px]">
-            <span>{current.medium.replace(/-/g, " ")}</span>
-            <span aria-hidden="true" className="text-border-strong">·</span>
-            <span>{current.category.replace(/-/g, " ")}</span>
-          </div>
+          <div className="flex flex-col items-center">
+            <h1
+              key={current.id}
+              className="artwork-caption-title-enter font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl"
+            >
+              <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
+                {current.title}
+              </Link>
+            </h1>
+            {current.description && (
+              <p
+                key={current.id}
+                className="artwork-caption-description-enter mt-1 line-clamp-2 max-w-2xl font-sans text-xs leading-relaxed text-ink-soft sm:text-sm"
+              >
+                {current.description}
+              </p>
+            )}
+            <div
+              key={current.id}
+              className="artwork-caption-meta-enter mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.16em] text-accent sm:text-[11px]"
+            >
+              <span>{current.medium.replace(/-/g, " ")}</span>
+              <span aria-hidden="true" className="text-border-strong">·</span>
+              <span>{current.category.replace(/-/g, " ")}</span>
+            </div>
           </div>
         </section>
       </main>
