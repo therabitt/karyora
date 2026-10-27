@@ -33,6 +33,12 @@ const SLICE_HEIGHTS = [88, 95, 100, 92, 86];
 
 type ViewMode = "ribbons" | "sliced";
 
+type ArtworkTransitionSnapshot = {
+  artwork: PublicArtwork;
+  direction: "next" | "previous";
+  sequence: number;
+};
+
 function getPanelVisibilityClass(offset: number): string {
   const distance = Math.abs(offset);
   if (distance <= 1) return "flex";
@@ -54,6 +60,9 @@ export function AlanMenkenShowcase({
   const activeIndex = total > 0 ? ((rawActiveIndex % total) + total) % total : 0;
 
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
+  const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
+  const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
+  const transitionSequenceRef = useRef(0);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
@@ -92,15 +101,45 @@ export function AlanMenkenShowcase({
     return () => window.removeEventListener("resize", measure);
   }, [total]);
 
+  const selectArtwork = useCallback((targetIndex: number, direction: "next" | "previous") => {
+    if (total <= 1) return;
+
+    const normalizedIndex = ((targetIndex % total) + total) % total;
+    if (normalizedIndex === activeIndex) return;
+
+    const outgoingArtwork = displayArtworks[activeIndex];
+    if (outgoingArtwork) {
+      setTransitionSnapshot({
+        artwork: outgoingArtwork,
+        direction,
+        sequence: ++transitionSequenceRef.current,
+      });
+    }
+    setTransitionDirection(direction);
+    setRawActiveIndex(normalizedIndex);
+  }, [activeIndex, displayArtworks, total]);
+
   const handleNext = useCallback(() => {
     if (total <= 1) return;
-    setRawActiveIndex((previous) => (previous + 1) % total);
-  }, [total]);
+    selectArtwork((activeIndex + 1) % total, "next");
+  }, [activeIndex, selectArtwork, total]);
 
   const handlePrev = useCallback(() => {
     if (total <= 1) return;
-    setRawActiveIndex((previous) => (previous - 1 + total) % total);
-  }, [total]);
+    selectArtwork((activeIndex - 1 + total) % total, "previous");
+  }, [activeIndex, selectArtwork, total]);
+
+  useEffect(() => {
+    if (!transitionSnapshot) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setTransitionSnapshot((currentSnapshot) =>
+        currentSnapshot?.sequence === transitionSnapshot.sequence ? null : currentSnapshot
+      );
+    }, 280);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [transitionSnapshot]);
 
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
@@ -292,6 +331,27 @@ export function AlanMenkenShowcase({
     preferredActiveWidth,
     stageHeight * 0.86
   );
+  const outgoingArtwork = transitionSnapshot?.artwork ?? null;
+  const outgoingDimensions = outgoingArtwork ? getDimensions(outgoingArtwork) : null;
+  const outgoingAspectRatio = outgoingDimensions
+    ? outgoingDimensions.width / outgoingDimensions.height
+    : 1;
+  const outgoingPreferredWidth = stageWidth < 640
+    ? stageWidth * (outgoingAspectRatio >= 1.2 ? 0.76 : 0.54)
+    : stageWidth * (
+        outgoingAspectRatio >= 1.3 ? 0.54 : outgoingAspectRatio >= 0.85 ? 0.42 : 0.36
+      );
+  const outgoingSize = outgoingDimensions
+    ? fitArtworkWithinBounds(
+        outgoingDimensions.width,
+        outgoingDimensions.height,
+        outgoingPreferredWidth,
+        stageHeight * 0.86
+      )
+    : null;
+  const outgoingImageUrl = outgoingArtwork
+    ? getStoragePublicUrl(outgoingArtwork.public_image_path)
+    : null;
   const availablePreviewWidth = previewPanelCount > 0
     ? (stageWidth - activeSize.width - previewPanelCount * ribbonGap - 12) / previewPanelCount
     : 0;
@@ -352,6 +412,7 @@ export function AlanMenkenShowcase({
       <main className="flex min-h-0 flex-1 flex-col">
         <section
           ref={stageRef}
+          data-transition-direction={transitionDirection}
           aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
           tabIndex={0}
           onWheel={handleStageWheel}
@@ -413,7 +474,11 @@ export function AlanMenkenShowcase({
                     <button
                       key={artwork.id}
                       type="button"
-                      onClick={() => setRawActiveIndex(index)}
+                      onClick={() => {
+                        const forwardDistance = (index - activeIndex + total) % total;
+                        const backwardDistance = (activeIndex - index + total) % total;
+                        selectArtwork(index, forwardDistance <= backwardDistance ? "next" : "previous");
+                      }}
                       aria-label={"Select artwork: " + artwork.title}
                       aria-pressed="false"
                       className={"group relative shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale transition-[opacity,filter,transform] duration-500 ease-out hover:opacity-90 hover:grayscale-0 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + visibility}
@@ -460,7 +525,7 @@ export function AlanMenkenShowcase({
 
               <div
                 key={current.id}
-                className="artwork-selection-enter relative shrink-0"
+                className="artwork-composition-enter relative shrink-0"
                 role="img"
                 aria-label={"Sliced artwork composition: " + current.title}
                 style={{
@@ -480,13 +545,14 @@ export function AlanMenkenShowcase({
 
                   return (
                     <div
-                      key={sliceIndex}
-                      className="absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg transition-[top,height] duration-500 ease-out motion-reduce:transition-none"
+                      key={`${current.id}-${sliceIndex}`}
+                      className="artwork-slice-enter absolute overflow-hidden rounded-[2px] border border-border/70 bg-surface-muted shadow-lg transition-[top,height] duration-500 ease-out motion-reduce:transition-none"
                       style={{
                         left: left + "px",
                         top: panelTop + "px",
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
+                        animationDelay: `${(transitionDirection === "next" ? sliceIndex : SLICE_COUNT - sliceIndex - 1) * 32}ms`,
                       }}
                     >
                       {currentImageUrl && !failed ? (
@@ -524,6 +590,35 @@ export function AlanMenkenShowcase({
                   <path d="m9 18 6-6-6-6" />
                 </svg>
               </button>
+            </div>
+          )}
+
+          {transitionSnapshot && outgoingSize && (
+            <div
+              key={transitionSnapshot.sequence}
+              aria-hidden="true"
+              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+            >
+              <div
+                className="relative flex shrink-0 items-center justify-center overflow-hidden rounded-xs border-2 border-accent bg-surface shadow-xl"
+                style={{
+                  width: outgoingSize.width + "px",
+                  height: outgoingSize.height + "px",
+                }}
+              >
+                {outgoingImageUrl && !failedImages[outgoingArtwork!.id] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={outgoingImageUrl}
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-surface-muted p-3 text-center">
+                    <span className="font-artwork-title text-xl text-ink">{outgoingArtwork!.title}</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </section>
