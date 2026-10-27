@@ -92,9 +92,9 @@ function cubicBezierCoordinate(t: number, point1: number, point2: number): numbe
 }
 
 function cubicBezierProgress(progress: number): number {
-  const x1 = 0.2;
-  const y1 = 0.78;
-  const x2 = 0.22;
+  const x1 = 0.4;
+  const y1 = 0;
+  const x2 = 0.2;
   const y2 = 1;
   let low = 0;
   let high = 1;
@@ -368,8 +368,8 @@ export function AlanMenkenShowcase({
         { transform: "translate3d(" + exitDistance + "px, 0, 0)" },
       ],
       {
-        duration: 420,
-        easing: "cubic-bezier(0.2, 0.78, 0.22, 1)",
+        duration: 600,
+        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
         fill: "both",
       },
     );
@@ -409,7 +409,7 @@ export function AlanMenkenShowcase({
     }
 
     const activeId = displayArtworks[activeIndex]?.id;
-    const easing = "cubic-bezier(0.2, 0.78, 0.22, 1)";
+    const easing = "cubic-bezier(0.4, 0, 0.2, 1)";
 
     ribbonItemsRef.current.forEach((element, id) => {
       const last = element.getBoundingClientRect();
@@ -471,7 +471,7 @@ export function AlanMenkenShowcase({
 
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
-      const duration = id === activeId ? 760 : 680;
+      const duration = id === activeId ? 980 : 880;
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
@@ -511,8 +511,8 @@ export function AlanMenkenShowcase({
           ? image.naturalWidth / image.naturalHeight
           : Number(element.dataset.artworkAspect ?? "1");
         const startScale = getUniformScale(first.imageTransform);
-        const imageScaleKeyframes: Keyframe[] = Array.from({ length: 25 }, (_, index) => {
-          const offset = index / 24;
+        const imageScaleKeyframes: Keyframe[] = Array.from({ length: 33 }, (_, index) => {
+          const offset = index / 32;
           const progress = cubicBezierProgress(offset);
           const frameWidth = fromWidth + (last.width - fromWidth) * progress;
           const frameHeight = fromHeight + (last.height - fromHeight) * progress;
