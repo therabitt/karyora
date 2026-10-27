@@ -224,9 +224,10 @@ export function AlanMenkenShowcase({
       return;
     }
 
-    // The most distant Ribbon panels start first; the central artwork arrives last.
-    // Leave a small buffer after the longest staggered 760 ms entrance.
-    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1120);
+    // Match Ribbon's FLIP timing: previews settle over 980 ms and the focused artwork
+    // over 1100 ms. Its center-first stagger adds at most 168 ms before the focus arrives.
+    // Clear the entrance class only after every panel has reached its resting position.
+    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1350);
     return () => window.clearTimeout(timeoutId);
   }, [isRibbonEntranceActive, total]);
 
