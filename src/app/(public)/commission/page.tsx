@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/Badge";
 import { CommissionInquiryForm } from "@/components/commissions/CommissionInquiryForm";
 import { getPublicProfile } from "@/lib/data/profile";
 import { getActiveCommissionOfferings } from "@/lib/data/offerings";
@@ -7,7 +6,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Commissions",
-  description: "Commission offerings, pricing guide, and inquiry submission.",
+  description: "Commission offerings, pricing, and project inquiry form.",
 };
 
 interface CommissionPageProps {
@@ -53,160 +52,139 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
 
   const availabilityLabel =
     profile.commission_availability === "open"
-      ? "Commissions Open"
+      ? "Commissions open"
       : isWaitlist
-        ? "Waitlist Only"
-        : "Currently Closed";
+        ? "Waitlist inquiries"
+        : "Commissions closed";
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-16 px-4 py-12 sm:px-6 md:space-y-20 md:py-16 lg:px-8">
-      <section
-        aria-labelledby="commission-title"
-        className="grid grid-cols-1 gap-8 border-b border-border pb-10 md:gap-10 lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-end"
-      >
-        <div className="max-w-3xl space-y-4">
-          <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-            Commission / Project Inquiries
-          </span>
-          <h1
-            id="commission-title"
-            className="font-sans text-4xl leading-tight tracking-tight text-ink sm:text-5xl lg:text-6xl"
-          >
-            Commission Inquiries
-          </h1>
-          <p className="max-w-2xl text-base leading-relaxed text-ink-soft">
-            Explore the available offerings, then tell me about the artwork you have in mind.
-            Every submission is a non-binding inquiry for consideration, not a confirmed booking.
-          </p>
-        </div>
-
-        <aside className="min-w-0 lg:justify-self-end lg:pb-1">
-          <div className="space-y-3 border-l-2 border-accent pl-4">
-            <Badge variant={profile.commission_availability}>
-              {availabilityLabel}
-            </Badge>
-            {availabilityMessage ? (
-              <p className="max-w-sm text-sm leading-relaxed text-text-muted">
-                {availabilityMessage}
-              </p>
-            ) : null}
+    <main className="w-full px-5 py-8 sm:px-8 sm:py-10 lg:px-14 lg:py-12 xl:px-20">
+      <header className="space-y-5 border-b border-border pb-8 sm:pb-10">
+        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-text-muted">
+          Karyora / Commissions
+        </p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between lg:gap-12">
+          <div className="min-w-0 space-y-4">
+            <h1
+              id="commission-title"
+              className="text-[clamp(2.8rem,5.6vw,5.8rem)] leading-[0.94] tracking-[-0.06em] text-ink"
+            >
+              Commission inquiries
+            </h1>
+            <p className="max-w-3xl text-sm leading-relaxed text-ink-soft sm:text-base">
+              Choose an offering, then share the brief for the artwork you have in mind.
+              Every submission is an inquiry for consideration, not a confirmed booking.
+            </p>
           </div>
-        </aside>
-      </section>
 
-      <section aria-labelledby="offerings-title" className="space-y-6 md:space-y-8">
-        <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="space-y-2">
-            <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-              01 / Offerings
-            </span>
-            <h2 id="offerings-title" className="font-sans text-2xl tracking-tight text-ink sm:text-3xl">
-              Commission Offerings
-            </h2>
-          </div>
-          {offerings.length > 0 ? (
-            <span className="text-xs text-text-muted">Prices are shown in each offering's listed currency</span>
-          ) : null}
-        </div>
-
-        {offeringsResult.state === "available" ? (
-          <div>
-            {offerings.map((offering, index) => (
-              <article
-                key={offering.id}
-                className="grid grid-cols-1 gap-4 border-b border-border py-6 first:border-t-0 sm:py-7 md:grid-cols-[2rem_minmax(0,1fr)_12rem] md:gap-6 lg:gap-8"
+          <div className="flex max-w-sm shrink-0 flex-col gap-2 sm:w-64 sm:pb-1 lg:w-72">
+            <p className="flex items-center gap-2 text-xs font-medium text-ink">
+              <span
+                aria-hidden="true"
+                className={isClosed ? "text-text-muted" : "text-success"}
               >
-                <span className="pt-1 text-xs font-mono tabular-nums text-text-muted">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-
-                <div className="min-w-0 space-y-2">
-                  <h3 className="font-sans text-xl leading-snug text-ink sm:text-2xl">
-                    {offering.title}
-                  </h3>
-                  <p className="max-w-2xl whitespace-pre-line text-sm leading-relaxed text-text-muted">
-                    {offering.description}
-                  </p>
-                </div>
-
-                <div className="flex flex-col items-start gap-3 border-t border-border/70 pt-3 sm:flex-row sm:items-center sm:justify-between md:flex-col md:items-start md:justify-center md:border-t-0 md:pt-0">
-                  <p className="text-sm font-medium text-ink">
-                    {formatStartingPrice(offering.price_from, offering.price_currency)}
-                  </p>
-                  {!isClosed ? (
-                    <Link
-                      href={"/commission?offering=" + encodeURIComponent(offering.slug) + "#inquiry"}
-                      className="inline-flex items-center gap-2 text-xs font-semibold text-accent underline-offset-4 transition-colors hover:text-accent-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                      aria-label={"Choose " + offering.title + " and continue to the inquiry form"}
-                    >
-                      Choose this offering <span aria-hidden="true">↗</span>
-                    </Link>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="border-y border-border py-7 sm:py-8">
-            <p className="max-w-2xl text-sm leading-relaxed text-text-muted">
-              {offeringsResult.state === "unavailable"
-                ? "The current offering list could not be loaded. Please check back later for confirmed services and pricing."
-                : "No standard offerings are currently listed."}
+                ●
+              </span>
+              {availabilityLabel}
             </p>
-            {!isClosed && offeringsResult.state === "empty" ? (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-muted">
-                You can still describe a custom project in the inquiry form below.
-              </p>
+            {availabilityMessage ? (
+              <p className="text-sm leading-relaxed text-text-muted">{availabilityMessage}</p>
             ) : null}
-            {!isClosed && offeringsResult.state === "unavailable" ? (
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-muted">
-                You can still submit a custom project inquiry below, subject to the intake status shown above.
-              </p>
-            ) : null}
-          </div>
-        )}
-      </section>
-
-      <section
-        id="inquiry"
-        aria-labelledby="inquiry-title"
-        className="scroll-mt-8 border-t border-border pt-12 md:pt-16"
-      >
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(15rem,0.72fr)_minmax(0,1.28fr)] lg:gap-16">
-          <div className="space-y-4 lg:sticky lg:top-8 lg:self-start">
-            <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-              02 / Project Brief
-            </span>
-            <h2 id="inquiry-title" className="font-sans text-2xl leading-tight tracking-tight text-ink sm:text-3xl">
-              Tell Me About Your Project
-            </h2>
-            <p className="max-w-md text-sm leading-relaxed text-text-muted">
-              Share the essential details and choose a listed offering or describe a custom project.
-              The brief helps the artist assess your request before any booking is confirmed.
-            </p>
-            <p className="border-l border-border-strong pl-3 text-xs leading-relaxed text-text-muted">
-              Non-binding inquiry. No payment is collected through this form.
-            </p>
-          </div>
-
-          <div className="min-w-0">
-            {isClosed ? (
-              <div className="space-y-3 border-y border-border py-8" role="status">
-                <h3 className="font-sans text-xl text-ink">Commissions Are Currently Closed</h3>
-                <p className="max-w-xl text-sm leading-relaxed text-text-muted">
-                  New commission inquiries are not being accepted at this time. Please check back later for availability updates.
-                </p>
-              </div>
-            ) : (
-              <CommissionInquiryForm
-                offerings={offerings}
-                defaultOfferingId={defaultOfferingId}
-                isWaitlist={isWaitlist}
-              />
-            )}
           </div>
         </div>
-      </section>
+      </header>
+
+      <div className="grid grid-cols-1 gap-12 pt-8 sm:pt-10 lg:grid-cols-[minmax(17rem,0.72fr)_minmax(0,1.5fr)] lg:gap-12 xl:gap-20">
+        <section aria-labelledby="offerings-title" className="min-w-0">
+          <div className="space-y-2 pb-4">
+            <h2 id="offerings-title" className="text-2xl tracking-tight text-ink sm:text-3xl">
+              Available offerings
+            </h2>
+            {offerings.length > 0 ? (
+              <p className="text-xs leading-relaxed text-text-muted">
+                Select an offering to add it to your inquiry.
+              </p>
+            ) : null}
+          </div>
+
+          {offeringsResult.state === "available" ? (
+            <div>
+              {offerings.map((offering) => (
+                <article
+                  key={offering.id}
+                  className="grid grid-cols-1 gap-4 border-t border-border py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-6"
+                >
+                  <div className="min-w-0 space-y-2">
+                    <h3 className="text-lg leading-snug text-ink sm:text-xl">{offering.title}</h3>
+                    {offering.description ? (
+                      <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">
+                        {offering.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:flex-col sm:items-end sm:justify-start">
+                    <p className="text-sm font-medium text-ink">
+                      {formatStartingPrice(offering.price_from, offering.price_currency)}
+                    </p>
+                    {!isClosed ? (
+                      <Link
+                        href={"/commission?offering=" + encodeURIComponent(offering.slug) + "#inquiry"}
+                        className="inline-flex min-h-8 items-center gap-1.5 text-xs font-semibold text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+                        aria-label={"Select " + offering.title + " for your inquiry"}
+                      >
+                        Select offering <span aria-hidden="true">↗</span>
+                      </Link>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="border-t border-border py-5">
+              <p className="max-w-lg text-sm leading-relaxed text-text-muted">
+                {offeringsResult.state === "unavailable"
+                  ? "The current offering list could not be loaded. Please check back later for confirmed services and pricing."
+                  : "No standard offerings are currently listed."}
+              </p>
+              {!isClosed ? (
+                <p className="mt-2 max-w-lg text-sm leading-relaxed text-text-muted">
+                  You can still describe a custom project in the inquiry form.
+                </p>
+              ) : null}
+            </div>
+          )}
+        </section>
+
+        <section
+          id="inquiry"
+          aria-labelledby="inquiry-title"
+          className="min-w-0 scroll-mt-8 border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0 xl:pl-14"
+        >
+          <div className="mb-6 space-y-2">
+            <h2 id="inquiry-title" className="text-2xl tracking-tight text-ink sm:text-3xl">
+              Project inquiry
+            </h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-text-muted">
+              Tell me what you need, what you have in mind, and any details that will help shape the work.
+            </p>
+          </div>
+
+          {isClosed ? (
+            <div className="space-y-3 border-y border-border py-6" role="status">
+              <h3 className="text-lg text-ink">New inquiries are currently closed</h3>
+              <p className="max-w-xl text-sm leading-relaxed text-text-muted">
+                The form is unavailable while commission intake is closed. Please check back for updates.
+              </p>
+            </div>
+          ) : (
+            <CommissionInquiryForm
+              offerings={offerings}
+              defaultOfferingId={defaultOfferingId}
+              isWaitlist={isWaitlist}
+            />
+          )}
+        </section>
+      </div>
     </main>
   );
 }
