@@ -175,6 +175,7 @@ export function CommissionInquiryForm({
           Selected Offering (Optional)
         </label>
         <select
+          key={defaultOfferingId}
           id="offering_id"
           name="offering_id"
           defaultValue={defaultOfferingId}
