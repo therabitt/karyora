@@ -160,7 +160,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
             ) : null}
             {!isClosed && offeringsResult.state === "unavailable" ? (
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-muted">
-                You can still submit a custom project inquiry below while commission intake is open.
+                You can still submit a custom project inquiry below, subject to the intake status shown above.
               </p>
             ) : null}
           </div>
