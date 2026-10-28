@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { Badge } from "@/components/ui/Badge";
 import { getPublicProfile } from "@/lib/data/profile";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "Contact the artist for exhibition opportunities, licensing, collaborations, and general inquiries.",
+  description: "Contact the artist for collaborations, print inquiries, licensing, exhibitions, and general messages.",
 };
 
 function isUsableSocialProfile(value: unknown): value is string {
@@ -15,7 +14,7 @@ function isUsableSocialProfile(value: unknown): value is string {
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.pathname.replace(/\/+$/, "") !== "";
+    return url.protocol === "https:" && url.pathname.replace(/\\/+$/, "") !== "";
   } catch {
     return false;
   }
@@ -35,17 +34,17 @@ function formatPlatformName(platform: string): string {
   };
 
   return knownNames[platform.toLowerCase()] ||
-    platform.replace(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+    platform.replace(/[-_]+/g, " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
 }
 
 function getAvailabilityLabel(availability: string): string {
   switch (availability) {
     case "open":
-      return "Commissions Open";
+      return "Accepting commission inquiries";
     case "waitlist":
-      return "Waitlist Only";
+      return "Accepting waitlist inquiries";
     default:
-      return "Currently Closed";
+      return "Commission inquiries are closed";
   }
 }
 
@@ -65,151 +64,98 @@ export default async function ContactPage() {
   const availabilityMessage = profile.availability_message?.trim();
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-16 px-4 py-12 sm:px-6 md:space-y-20 md:py-16 lg:px-8">
+    <main className="w-full px-5 py-8 sm:px-8 sm:py-12 lg:px-14 lg:py-16 xl:px-20">
       <section
         aria-labelledby="contact-title"
-        className="grid grid-cols-1 gap-8 border-b border-border pb-10 md:gap-10 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-end"
+        className="grid grid-cols-1 gap-12 border-b border-border pb-10 sm:pb-14 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.72fr)] lg:gap-12 xl:gap-20"
       >
-        <div className="max-w-3xl space-y-4">
-          <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-            Correspondence / Studio Contact
-          </span>
+        <div className="space-y-7 sm:space-y-9">
+          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-text-muted">
+            Karyora / Contact
+          </p>
           <h1
             id="contact-title"
-            className="font-sans text-4xl leading-tight tracking-tight text-ink sm:text-5xl lg:text-6xl"
+            className="max-w-full text-[clamp(4.1rem,8.6vw,9rem)] leading-[0.82] tracking-[-0.065em] text-ink sm:text-[clamp(5rem,8.6vw,9rem)]"
+            style={{ fontFamily: '"Bodoni MT", Didot, "Times New Roman", serif' }}
           >
-            Get in Touch
+            Let&apos;s make
+            <br />
+            something.
           </h1>
-          <p className="max-w-2xl text-base leading-relaxed text-ink-soft">
-            For exhibition opportunities, print inquiries, commercial licensing, collaborations,
-            or general questions, choose the contact route that best fits your message.
+          <p className="max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
+            For collaborations, print inquiries, licensing, exhibitions, or a note just to say hello.
           </p>
         </div>
 
-        <div className="border-l border-border-strong pl-4 lg:justify-self-end lg:pb-1">
-          <span className="block text-[10px] font-mono uppercase tracking-[0.16em] text-text-muted">
-            Karyora / Contact
-          </span>
-          <span className="mt-2 block text-sm leading-relaxed text-ink">
-            A direct line to the studio, with commission details kept separate.
-          </span>
-        </div>
-      </section>
-
-      <section
-        aria-labelledby="direct-contact-title"
-        className="grid grid-cols-1 gap-6 border-b border-border pb-10 sm:gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-12"
-      >
-        <div className="space-y-3">
-          <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-            01 / Direct Correspondence
-          </span>
-          <h2 id="direct-contact-title" className="font-sans text-2xl tracking-tight text-ink sm:text-3xl">
-            Start with a note.
-          </h2>
-          <p className="max-w-md text-sm leading-relaxed text-text-muted">
-            Use direct email for exhibition opportunities, licensing, print inquiries, collaborations,
-            and other questions outside the standard commission process.
-          </p>
-        </div>
-
-        <div className="min-w-0 self-center md:border-l md:border-border md:pl-8 lg:pl-12">
-          <p className="mb-3 text-xs font-mono uppercase tracking-[0.14em] text-text-muted">
-            Email / Studio
-          </p>
-          {contactEmail ? (
-            <a
-              href={`mailto:${contactEmail}`}
-              className="inline-flex max-w-full items-start gap-3 break-words text-lg font-medium leading-snug text-ink underline decoration-border-strong underline-offset-8 transition-colors hover:text-accent hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 sm:text-2xl"
+        <div className="flex min-w-0 flex-col gap-9 lg:pt-32 xl:pt-44">
+          <section aria-labelledby="direct-contact-title" className="space-y-3">
+            <h2
+              id="direct-contact-title"
+              className="text-[10px] font-mono uppercase tracking-[0.18em] text-text-muted"
             >
-              <span className="break-all">{contactEmail}</span>
-              <span aria-hidden="true" className="shrink-0 text-sm text-accent">↗</span>
-            </a>
-          ) : (
-            <p className="max-w-lg text-base leading-relaxed text-text-muted">
-              Direct email is not currently listed. For artwork requests, you can use the commission
-              inquiry page when intake is open.
-            </p>
-          )}
-        </div>
-      </section>
-
-      <section
-        aria-labelledby="commission-contact-title"
-        className="grid grid-cols-1 gap-6 border-b border-border pb-10 sm:gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:gap-12"
-      >
-        <div className="space-y-3">
-          <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-            02 / Commission Requests
-          </span>
-          <h2 id="commission-contact-title" className="font-sans text-2xl tracking-tight text-ink sm:text-3xl">
-            Have a project in mind?
-          </h2>
-          <p className="max-w-md text-sm leading-relaxed text-text-muted">
-            For personal commissions, character artwork, and custom visual projects, use the dedicated
-            inquiry form so the project details arrive together.
-          </p>
-        </div>
-
-        <div className="min-w-0 self-center md:border-l md:border-border md:pl-8 lg:pl-12">
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge variant={profile.commission_availability}>
-              {getAvailabilityLabel(profile.commission_availability)}
-            </Badge>
-          </div>
-          {availabilityMessage ? (
-            <p className="mt-3 max-w-lg text-sm leading-relaxed text-text-muted">
-              {availabilityMessage}
-            </p>
-          ) : null}
-          <Link
-            href="/commission"
-            className="mt-5 inline-flex min-h-11 items-center gap-3 text-sm font-semibold text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4"
-          >
-            View commission details
-            <span aria-hidden="true">↗</span>
-          </Link>
-        </div>
-      </section>
-
-      {socialEntries.length > 0 ? (
-        <section aria-labelledby="social-contact-title" className="space-y-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
-              <span className="block text-[11px] font-mono font-semibold uppercase tracking-[0.18em] text-accent">
-                03 / Elsewhere
-              </span>
-              <h2 id="social-contact-title" className="font-sans text-2xl tracking-tight text-ink sm:text-3xl">
-                Social & Art Archives
-              </h2>
-            </div>
-            <p className="max-w-md text-sm leading-relaxed text-text-muted">
-              Follow the work or explore more of the artist&apos;s public portfolio.
-            </p>
-          </div>
-
-          <div className="border-t border-border">
-            {socialEntries.map(([platform, url], index) => (
+              Direct correspondence
+            </h2>
+            {contactEmail ? (
               <a
-                key={platform}
-                href={url as string}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group grid min-h-14 grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border py-3 text-sm text-ink transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 sm:gap-5"
-                aria-label={`Open Karyora's ${formatPlatformName(platform)} profile in a new tab`}
+                href={"mailto:" + contactEmail}
+                className="group inline-flex max-w-full items-start gap-2 break-words text-lg leading-snug text-ink underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 sm:text-xl lg:text-2xl"
               >
-                <span className="text-xs font-mono tabular-nums text-text-muted">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <span className="font-medium">{formatPlatformName(platform)}</span>
-                <span className="text-text-muted transition-transform group-hover:translate-x-1 group-hover:text-accent" aria-hidden="true">
-                  ↗
-                </span>
+                <span className="break-all">{contactEmail}</span>
+                <span aria-hidden="true" className="shrink-0 text-xs text-accent">↗</span>
               </a>
-            ))}
-          </div>
-        </section>
-      ) : null}
+            ) : (
+              <p className="max-w-md text-sm leading-relaxed text-text-muted">
+                Direct email is not currently listed. For artwork requests, use the commission inquiry page when intake is open.
+              </p>
+            )}
+          </section>
+
+          <section aria-labelledby="commission-contact-title" className="space-y-3 border-t border-border pt-5">
+            <h2
+              id="commission-contact-title"
+              className="text-[10px] font-mono uppercase tracking-[0.18em] text-text-muted"
+            >
+              Commissions
+            </h2>
+            <p className="text-sm text-ink">{getAvailabilityLabel(profile.commission_availability)}</p>
+            {availabilityMessage ? (
+              <p className="max-w-md text-sm leading-relaxed text-text-muted">{availabilityMessage}</p>
+            ) : null}
+            <Link
+              href="/commission"
+              className="inline-flex min-h-10 items-center gap-2 pt-1 text-sm font-medium text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4"
+            >
+              Project inquiries <span aria-hidden="true">↗</span>
+            </Link>
+          </section>
+
+          {socialEntries.length > 0 ? (
+            <section aria-labelledby="social-contact-title" className="space-y-3 border-t border-border pt-5">
+              <h2
+                id="social-contact-title"
+                className="text-[10px] font-mono uppercase tracking-[0.18em] text-text-muted"
+              >
+                Elsewhere
+              </h2>
+              <div className="flex flex-wrap gap-x-5 gap-y-3">
+                {socialEntries.map(([platform, url]) => (
+                  <a
+                    key={platform}
+                    href={url as string}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-ink underline decoration-border underline-offset-4 transition-colors hover:text-accent hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-3"
+                    aria-label={"Open Karyora's " + formatPlatformName(platform) + " profile in a new tab"}
+                  >
+                    {formatPlatformName(platform)}
+                    <span aria-hidden="true" className="text-[10px] text-text-muted">↗</span>
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </div>
+      </section>
     </main>
   );
 }
