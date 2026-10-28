@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CommissionInquiryForm } from "@/components/commissions/CommissionInquiryForm";
+import { EditorialPageHeader } from "@/components/layout/EditorialPageHeader";
 import { getPublicProfile } from "@/lib/data/profile";
 import { getActiveCommissionOfferings } from "@/lib/data/offerings";
 import type { Metadata } from "next";
@@ -13,10 +14,8 @@ interface CommissionPageProps {
   searchParams?: Promise<{ offering?: string }>;
 }
 
-function formatPrice(amount: number | null, currency: string = "IDR"): string {
-  if (amount === null || amount === undefined) {
-    return "Price on inquiry";
-  }
+function formatPrice(amount: number | null, currency = "IDR"): string {
+  if (amount === null || amount === undefined) return "Price on inquiry";
   try {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
@@ -28,163 +27,88 @@ function formatPrice(amount: number | null, currency: string = "IDR"): string {
   }
 }
 
-function formatStartingPrice(amount: number | null, currency: string = "IDR"): string {
-  return amount === null || amount === undefined
-    ? "Price on inquiry"
-    : "From " + formatPrice(amount, currency);
+function formatStartingPrice(amount: number | null, currency = "IDR"): string {
+  return amount === null || amount === undefined ? "Price on inquiry" : "From " + formatPrice(amount, currency);
 }
 
 export default async function CommissionPage({ searchParams }: CommissionPageProps) {
   const params = searchParams ? await searchParams : {};
-  const selectedOfferingSlug = params.offering || "";
-
   const [profile, offeringsResult] = await Promise.all([
     getPublicProfile(),
     getActiveCommissionOfferings(),
   ]);
-
   const offerings = offeringsResult.offerings;
   const isClosed = profile.commission_availability === "closed";
   const isWaitlist = profile.commission_availability === "waitlist";
   const availabilityMessage = profile.availability_message?.trim();
-  const defaultOfferingId =
-    offerings.find((offering) => offering.slug === selectedOfferingSlug)?.id || "";
-
-  const availabilityLabel =
-    profile.commission_availability === "open"
-      ? "Commissions open"
-      : isWaitlist
-        ? "Waitlist inquiries"
-        : "Commissions closed";
+  const defaultOfferingId = offerings.find((offering) => offering.slug === (params.offering || ""))?.id || "";
+  const availabilityLabel = isClosed ? "Inquiries closed" : isWaitlist ? "Waitlist open" : "Inquiries open";
 
   return (
-    <main className="w-full px-5 py-8 sm:px-8 sm:py-10 lg:px-14 lg:py-12 xl:px-20">
-      <header className="space-y-5 border-b border-border pb-8 sm:pb-10">
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.2em] text-text-muted">
-          Karyora / Commissions
-        </p>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between lg:gap-12">
-          <div className="min-w-0 space-y-4">
-            <h1
-              id="commission-title"
-              className="text-[clamp(2.8rem,5.6vw,5.8rem)] leading-[0.94] tracking-[-0.06em] text-ink"
-            >
-              Commission inquiries
+    <div className="flex min-h-screen flex-col bg-paper text-ink">
+      <EditorialPageHeader />
+      <main className="mx-auto flex w-full max-w-[1500px] flex-1 flex-col px-5 pb-16 pt-5 sm:px-8 sm:pb-20 lg:px-14">
+        <section aria-labelledby="commission-title" className="mx-auto w-full max-w-6xl">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3 border-b border-border pb-5">
+            <h1 id="commission-title" className="text-3xl leading-tight tracking-[-0.045em] sm:text-4xl lg:text-5xl">
+              Commissions
             </h1>
-            <p className="max-w-3xl text-sm leading-relaxed text-ink-soft sm:text-base">
-              Choose an offering, then share the brief for the artwork you have in mind.
-              Every submission is an inquiry for consideration, not a confirmed booking.
-            </p>
-          </div>
-
-          <div className="flex max-w-sm shrink-0 flex-col gap-2 sm:w-64 sm:pb-1 lg:w-72">
-            <p className="flex items-center gap-2 text-xs font-medium text-ink">
-              <span
-                aria-hidden="true"
-                className={isClosed ? "text-text-muted" : "text-success"}
-              >
-                ●
-              </span>
+            <p className="text-xs text-text-muted">
+              <span className={isClosed ? "mr-2 text-text-muted" : "mr-2 text-success"} aria-hidden="true">●</span>
               {availabilityLabel}
             </p>
-            {availabilityMessage ? (
-              <p className="text-sm leading-relaxed text-text-muted">{availabilityMessage}</p>
-            ) : null}
           </div>
-        </div>
-      </header>
+          {availabilityMessage ? (
+            <p className="max-w-2xl py-4 text-sm leading-relaxed text-text-muted">{availabilityMessage}</p>
+          ) : null}
+        </section>
 
-      <div className="grid grid-cols-1 gap-12 pt-8 sm:pt-10 lg:grid-cols-[minmax(17rem,0.72fr)_minmax(0,1.5fr)] lg:gap-12 xl:gap-20">
-        <section aria-labelledby="offerings-title" className="min-w-0">
-          <div className="space-y-2 pb-4">
-            <h2 id="offerings-title" className="text-2xl tracking-tight text-ink sm:text-3xl">
-              Available offerings
-            </h2>
-            {offerings.length > 0 ? (
-              <p className="text-xs leading-relaxed text-text-muted">
-                Select an offering to add it to your inquiry.
-              </p>
-            ) : null}
+        <section aria-labelledby="offerings-title" className="mx-auto mt-8 w-full max-w-6xl">
+          <div className="flex items-baseline justify-between gap-4 border-b border-border pb-3">
+            <h2 id="offerings-title" className="text-xl tracking-tight sm:text-2xl">Offerings</h2>
+            {offerings.length > 0 ? <span className="text-[11px] text-text-muted">{String(offerings.length).padStart(2, "0")} listed</span> : null}
           </div>
-
           {offeringsResult.state === "available" ? (
             <div>
-              {offerings.map((offering) => (
-                <article
-                  key={offering.id}
-                  className="grid grid-cols-1 gap-4 border-t border-border py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start sm:gap-6"
-                >
-                  <div className="min-w-0 space-y-2">
-                    <h3 className="text-lg leading-snug text-ink sm:text-xl">{offering.title}</h3>
-                    {offering.description ? (
-                      <p className="whitespace-pre-line text-sm leading-relaxed text-text-muted">
-                        {offering.description}
-                      </p>
-                    ) : null}
+              {offerings.map((offering, index) => (
+                <article key={offering.id} className="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3 gap-y-3 border-b border-border py-4 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center sm:gap-x-5 sm:py-5">
+                  <span className="pt-1 font-mono text-[10px] text-text-muted">{String(index + 1).padStart(2, "0")}</span>
+                  <div className="min-w-0">
+                    <h3 className="text-lg leading-snug tracking-tight sm:text-xl">{offering.title}</h3>
+                    {offering.description ? <p className="mt-1.5 max-w-3xl whitespace-pre-line text-sm leading-relaxed text-text-muted">{offering.description}</p> : null}
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 sm:flex-col sm:items-end sm:justify-start">
-                    <p className="text-sm font-medium text-ink">
-                      {formatStartingPrice(offering.price_from, offering.price_currency)}
-                    </p>
-                    {!isClosed ? (
-                      <Link
-                        href={"/commission?offering=" + encodeURIComponent(offering.slug) + "#inquiry"}
-                        className="inline-flex min-h-8 items-center gap-1.5 text-xs font-semibold text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-                        aria-label={"Select " + offering.title + " for your inquiry"}
-                      >
-                        Select offering <span aria-hidden="true">↗</span>
-                      </Link>
-                    ) : null}
+                  <div className="col-start-2 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 sm:col-start-auto sm:flex-col sm:items-end sm:justify-center">
+                    <p className="text-sm">{formatStartingPrice(offering.price_from, offering.price_currency)}</p>
+                    {!isClosed ? <Link href={"/commission?offering=" + encodeURIComponent(offering.slug) + "#inquiry"} className="text-xs font-medium text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label={"Choose " + offering.title}>Choose offering ↗</Link> : null}
                   </div>
                 </article>
               ))}
             </div>
           ) : (
-            <div className="border-t border-border py-5">
-              <p className="max-w-lg text-sm leading-relaxed text-text-muted">
-                {offeringsResult.state === "unavailable"
-                  ? "The current offering list could not be loaded. Please check back later for confirmed services and pricing."
-                  : "No standard offerings are currently listed."}
-              </p>
-              {!isClosed ? (
-                <p className="mt-2 max-w-lg text-sm leading-relaxed text-text-muted">
-                  You can still describe a custom project in the inquiry form.
-                </p>
-              ) : null}
+            <div className="border-b border-border py-5">
+              <p className="text-sm text-text-muted">{offeringsResult.state === "unavailable" ? "Offerings are temporarily unavailable." : "No standard offerings are listed at the moment."}</p>
+              {!isClosed ? <p className="mt-1 text-sm text-text-muted">You can still describe a custom project below.</p> : null}
             </div>
           )}
         </section>
 
-        <section
-          id="inquiry"
-          aria-labelledby="inquiry-title"
-          className="min-w-0 scroll-mt-8 border-t border-border pt-8 lg:border-l lg:border-t-0 lg:pl-10 lg:pt-0 xl:pl-14"
-        >
-          <div className="mb-6 space-y-2">
-            <h2 id="inquiry-title" className="text-2xl tracking-tight text-ink sm:text-3xl">
-              Project inquiry
-            </h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-text-muted">
-              Tell me what you need, what you have in mind, and any details that will help shape the work.
-            </p>
+        <section id="inquiry" aria-labelledby="inquiry-title" className="mx-auto mt-12 w-full max-w-6xl scroll-mt-6">
+          <div className="grid grid-cols-1 gap-5 border-b border-border pb-4 sm:grid-cols-[minmax(0,0.7fr)_minmax(0,1.3fr)] sm:items-end sm:gap-10">
+            <h2 id="inquiry-title" className="text-2xl tracking-[-0.035em] sm:text-3xl">Project brief</h2>
+            <p className="max-w-xl text-sm leading-relaxed text-text-muted">Share the details needed to consider your inquiry. Submitting this form does not confirm a booking.</p>
           </div>
-
           {isClosed ? (
-            <div className="space-y-3 border-y border-border py-6" role="status">
-              <h3 className="text-lg text-ink">New inquiries are currently closed</h3>
-              <p className="max-w-xl text-sm leading-relaxed text-text-muted">
-                The form is unavailable while commission intake is closed. Please check back for updates.
-              </p>
+            <div className="py-6" role="status">
+              <p className="text-lg">New inquiries are currently closed.</p>
+              <p className="mt-2 text-sm text-text-muted">Please check back for updates.</p>
             </div>
           ) : (
-            <CommissionInquiryForm
-              offerings={offerings}
-              defaultOfferingId={defaultOfferingId}
-              isWaitlist={isWaitlist}
-            />
+            <div className="pt-6">
+              <CommissionInquiryForm offerings={offerings} defaultOfferingId={defaultOfferingId} isWaitlist={isWaitlist} />
+            </div>
           )}
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
