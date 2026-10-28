@@ -30,15 +30,15 @@
   --color-info: #355C7D;
 
   /* Semantic typography roles */
-  --font-brand: var(--font-playwrite-nl), cursive;
-  --font-artwork-title: var(--font-playwrite-nl), cursive;
+  --font-brand: var(--font-satisfy), cursive;
+  --font-artwork-title: var(--font-satisfy), cursive;
   --font-handwritten: var(--font-caveat), cursive;
   --font-sans: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   /* Compatibility alias: legacy font-serif utilities must not reintroduce a serif font. */
   --font-serif: var(--font-dm-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-/* Playwrite NL uses contextual alternates for connected handwriting and does not ship bold/italic styles. */
+/* Satisfy is a single-weight script; avoid synthetic bold/italic for the brand and artwork titles. */
 .font-brand,
 .font-artwork-title {
   font-weight: 400;
