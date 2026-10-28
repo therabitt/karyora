@@ -13,19 +13,22 @@ interface CommissionInquiryFormProps {
   isWaitlist?: boolean;
 }
 
-function formatPrice(amount: number | null, currency: string = "IDR"): string {
-  if (amount === null || amount === undefined) {
-    return "Price on Inquiry";
-  }
+function formatPrice(amount: number, currency: string = "IDR"): string {
   try {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
-      currency: currency,
+      currency,
       maximumFractionDigits: 0,
     }).format(amount);
   } catch {
-    return `${currency} ${amount.toLocaleString()}`;
+    return currency + " " + amount.toLocaleString();
   }
+}
+
+function formatStartingPrice(amount: number | null, currency: string = "IDR"): string {
+  return amount === null || amount === undefined
+    ? "Price on inquiry"
+    : "From " + formatPrice(amount, currency);
 }
 
 export function CommissionInquiryForm({
@@ -53,10 +56,7 @@ export function CommissionInquiryForm({
           </h3>
           <p className="text-sm text-text-muted leading-relaxed">
             {state.error ||
-              "You have reached the submission limit. Please wait 15 minutes before sending another inquiry."}
-          </p>
-          <p className="text-xs text-text-muted/80 mt-2 font-mono">
-            If you already submitted an inquiry, rest assured it has been received safely by the artist.
+              "The current attempt was not submitted because the submission limit was reached. Please wait for the current 15-minute window to reset before trying again."}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -92,7 +92,7 @@ export function CommissionInquiryForm({
           </h3>
           <p className="text-sm text-text-muted leading-relaxed">
             {state?.message ||
-              "Your commission inquiry has been sent to the artist. You will receive an email response regarding scheduling and scope."}
+              "Your inquiry has been received for consideration. The artist will review your project brief and contact you by email regarding possible next steps."}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -184,7 +184,7 @@ export function CommissionInquiryForm({
           <option value="">Custom project / Not listed</option>
           {offerings.map((o) => (
             <option key={o.id} value={o.id}>
-              {o.title} — from {formatPrice(o.price_from, o.price_currency)}
+              {o.title} — {formatStartingPrice(o.price_from, o.price_currency)}
             </option>
           ))}
         </select>

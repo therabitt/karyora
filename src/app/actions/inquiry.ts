@@ -167,8 +167,8 @@ export async function submitInquiryAction(
     success: true,
     message:
       availabilityAtSubmission === "waitlist"
-        ? "Your inquiry has been placed on the artist's waitlist queue. You will receive an email once your project is reviewed!"
-        : "Your commission inquiry has been submitted successfully! The artist will review your project brief and get in touch via email.",
+        ? "Your inquiry has been received for waitlist consideration. The artist will review your brief and contact you by email if a project can be scheduled."
+        : "Your inquiry has been received. The artist will review your project brief and contact you by email regarding possible next steps.",
     timestamp: Date.now(),
   };
 }
