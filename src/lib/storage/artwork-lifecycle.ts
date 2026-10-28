@@ -187,6 +187,7 @@ export async function publishArtwork({
       updatePayload.palette_metadata = JSON.parse(JSON.stringify(paletteMetadata));
     }
 
+    let previewPathPersisted = true;
     let { error: updateError } = await supabase
       .from("artworks")
       .update(updatePayload)
@@ -210,6 +211,7 @@ export async function publishArtwork({
     // image dimensions will then be measured by the browser on first display.
     if (updateError && updateError.code === "PGRST204" && "public_preview_path" in updatePayload) {
       console.warn("public_preview_path column not yet in schema cache; publishing without preview path");
+      previewPathPersisted = false;
       delete updatePayload.public_preview_path;
       const retryResult = await supabase
         .from("artworks")
@@ -243,11 +245,14 @@ export async function publishArtwork({
     }
 
     // Remove rollback intents for both public assets after the database commit.
+    const committedPaths = previewPathPersisted
+      ? [derivativePath, previewPath]
+      : [derivativePath];
     await supabase
       .from("storage_cleanup_queue")
       .delete()
       .eq("bucket_id", "artworks-public")
-      .in("object_path", [derivativePath, previewPath])
+      .in("object_path", committedPaths)
       .eq("reason", "rollback");
 
     // 6. Revalidate public and admin pages
