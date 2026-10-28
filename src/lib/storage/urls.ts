@@ -24,3 +24,25 @@ export function getStoragePublicUrl(path: string | null | undefined): string | n
   // Default to artworks-public
   return `${supabaseUrl}/storage/v1/object/public/artworks-public/${cleanPath}`;
 }
+
+
+/**
+ * Returns true only for public Storage objects on the configured Supabase origin.
+ * Legacy absolute image URLs remain displayable without requiring an allowlisted
+ * Next.js Image optimizer hostname.
+ */
+export function isOptimizablePublicStorageUrl(url: string | null | undefined): boolean {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url || !supabaseUrl) return false;
+
+  try {
+    const image = new URL(url);
+    const storage = new URL(supabaseUrl);
+    return (
+      image.origin === storage.origin &&
+      image.pathname.startsWith("/storage/v1/object/public/")
+    );
+  } catch {
+    return false;
+  }
+}
