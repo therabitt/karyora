@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getStoragePublicUrl } from "@/lib/storage/urls";
+import { getStoragePublicUrl, isOptimizablePublicStorageUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 
@@ -791,6 +791,7 @@ export function KernArtworkDetail({
                     <Image
                       key={currentArtwork.id}
                       src={imageUrl}
+                      unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
                       width={currentArtwork.image_width || 1200}
                       height={currentArtwork.image_height || 1600}
                       sizes="(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw"
@@ -1006,6 +1007,7 @@ export function KernArtworkDetail({
                       {thumbUrl && !thumbFailed ? (
                         <Image
                           src={thumbUrl}
+                          unoptimized={!isOptimizablePublicStorageUrl(thumbUrl)}
                           width={artwork.image_width || 1200}
                           height={artwork.image_height || 1200}
                           sizes="64px"
@@ -1064,6 +1066,7 @@ export function KernArtworkDetail({
               {imageUrl && !isImageFailed ? (
                 <Image
                   src={imageUrl}
+                  unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
                   width={currentArtwork.image_width || 1200}
                   height={currentArtwork.image_height || 1600}
                   sizes="100vw"
