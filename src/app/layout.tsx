@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Alex_Brush, Caveat, Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Caveat, Cormorant_Garamond, DM_Sans, Playwrite_NL } from "next/font/google";
 import "./globals.css";
 
-const alexBrush = Alex_Brush({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-alex-brush",
+const playwriteNL = Playwrite_NL({
+  variable: "--font-playwrite-nl",
   display: "swap",
 });
 
@@ -47,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={alexBrush.variable + " " + caveat.variable + " " + cormorantGaramond.variable + " " + dmSans.variable + " h-full antialiased"}
+      className={playwriteNL.variable + " " + caveat.variable + " " + cormorantGaramond.variable + " " + dmSans.variable + " h-full antialiased"}
     >
       <body className="min-h-full flex flex-col font-sans bg-paper text-ink selection:bg-accent-soft selection:text-ink">
         {children}
