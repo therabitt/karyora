@@ -183,6 +183,7 @@ export function AlanMenkenShowcase({
   const seamExitLayerRef = useRef<HTMLDivElement>(null);
   const seamExitAnimationRef = useRef<Animation | null>(null);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const stageRef = useRef<HTMLElement>(null);
@@ -827,6 +828,7 @@ export function AlanMenkenShowcase({
     const height = image.naturalHeight;
     if (width <= 0 || height <= 0) return;
 
+    setLoadedImages((previous) => previous[id] ? previous : { ...previous, [id]: true });
     setMeasuredDimensions((previous) => {
       const current = previous[id];
       if (current?.width === width && current?.height === height) return previous;
@@ -1171,7 +1173,21 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
-                        <Image
+                        <>
+                          {!loadedImages[artwork.id] && (
+                            <div
+                              aria-hidden="true"
+                              className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-surface-muted p-2 text-center"
+                            >
+                              <span className={isActive
+                                ? "font-artwork-title text-base leading-tight text-ink"
+                                : "font-artwork-title text-[10px] leading-tight text-ink [writing-mode:vertical-rl]"
+                              }>
+                                {artwork.title}
+                              </span>
+                            </div>
+                          )}
+                          <Image
                           data-artwork-image
                           fill
                           sizes={isActive
@@ -1188,9 +1204,10 @@ export function AlanMenkenShowcase({
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
+                          className={"absolute inset-0 h-full w-full object-contain transition-[scale,opacity] duration-300 motion-reduce:transition-none group-hover:scale-[1.025] " + (loadedImages[artwork.id] ? "opacity-100" : "opacity-0")}
                           style={{ transform: "scale(" + imageScale + ")" }}
-                        />
+                          />
+                        </>
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
                           <span className={isActive
@@ -1272,7 +1289,11 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
-                        <Image
+                        <>
+                          {!loadedImages[current.id] && (
+                            <div aria-hidden="true" className="absolute inset-0 z-0 bg-surface-muted" />
+                          )}
+                          <Image
                           width={Math.max(1, Math.round(sliceSize.width))}
                           height={Math.max(1, Math.round(sliceSize.height))}
                           sizes={`${Math.max(1, Math.round(sliceSize.width))}px`}
@@ -1285,14 +1306,15 @@ export function AlanMenkenShowcase({
                           alt=""
                           onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
                           onError={() => handleImageError(current.id)}
-                          className="absolute max-w-none"
+                          className={"absolute max-w-none transition-opacity duration-200 " + (loadedImages[current.id] ? "opacity-100" : "opacity-0")}
                           style={{
                             width: sliceSize.width + "px",
                             height: sliceSize.height + "px",
                             left: -sliceIndex * slicePanelWidth + "px",
                             top: -(sliceSize.height - panelHeight) / 2 + "px",
                           }}
-                        />
+                          />
+                        </>
                       ) : (
                         <div className="flex h-full w-full items-center justify-center p-1 text-center">
                           <span className="font-artwork-title text-xs text-ink [writing-mode:vertical-rl]">{current.title}</span>
