@@ -154,7 +154,7 @@ export async function publishArtwork({
     const sourceBuffer = await downloadPrivateSource(artwork.private_image_path);
 
     // 3. Generate derivative and upload with rollback intent
-    const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
+    const { derivativePath, previewPath, result: derivative } = await generateAndUploadArtworkDerivative(
       artwork.id,
       sourceBuffer
     );
@@ -178,6 +178,7 @@ export async function publishArtwork({
       status: "published",
       published_at: now,
       public_image_path: derivativePath,
+      public_preview_path: previewPath,
       image_width: derivative.width,
       image_height: derivative.height,
       updated_at: now,
@@ -207,6 +208,17 @@ export async function publishArtwork({
     // The dimensions migration is required before deployment. This final fallback only
     // preserves publication if the database schema cache is briefly stale after migration;
     // image dimensions will then be measured by the browser on first display.
+    if (updateError && updateError.code === "PGRST204" && "public_preview_path" in updatePayload) {
+      console.warn("public_preview_path column not yet in schema cache; publishing without preview path");
+      delete updatePayload.public_preview_path;
+      const retryResult = await supabase
+        .from("artworks")
+        .update(updatePayload)
+        .eq("id", artwork.id)
+        .eq("status", "draft");
+      updateError = retryResult.error;
+    }
+
     if (
       updateError &&
       updateError.code === "PGRST204" &&
@@ -230,12 +242,12 @@ export async function publishArtwork({
       };
     }
 
-    // 5. Remove the rollback intent since publication succeeded
+    // Remove rollback intents for both public assets after the database commit.
     await supabase
       .from("storage_cleanup_queue")
       .delete()
       .eq("bucket_id", "artworks-public")
-      .eq("object_path", derivativePath)
+      .in("object_path", [derivativePath, previewPath])
       .eq("reason", "rollback");
 
     // 6. Revalidate public and admin pages
