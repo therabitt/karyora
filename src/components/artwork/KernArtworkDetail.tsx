@@ -861,7 +861,7 @@ export function KernArtworkDetail({
                           if (!hasPersistedOrCurated && !dynamicThemes[currentArtwork.id]) {
                             const extracted = extractPaletteFromImage(e.currentTarget);
                             if (extracted) {
-                              setDynamicThemes((prev) => ({ ...prev, [currentArtwork.id]: extracted });
+                              setDynamicThemes((prev) => ({ ...prev, [currentArtwork.id]: extracted }));
                             }
                           }
                         }}
