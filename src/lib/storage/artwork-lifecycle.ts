@@ -293,51 +293,62 @@ export async function unpublishArtwork({
     return { error: "Artwork is already in draft status." };
   }
 
-  const oldPublicPath = artwork.public_image_path;
+  const oldPublicPaths = [artwork.public_image_path, artwork.public_preview_path]
+    .filter((path): path is string => Boolean(path));
 
   // 1. Transactionally update artwork to draft
   const now = new Date().toISOString();
-  const { error: updateError } = await supabase
+  const unpublishPayload: Database["public"]["Tables"]["artworks"]["Update"] = {
+    status: "draft",
+    published_at: null,
+    public_image_path: null,
+    public_preview_path: null,
+    is_featured: false,
+    updated_at: now,
+  };
+  let { error: updateError } = await supabase
     .from("artworks")
-    .update({
-      status: "draft",
-      published_at: null,
-      public_image_path: null,
-      is_featured: false,
-      updated_at: now,
-    })
+    .update(unpublishPayload)
     .eq("id", artwork.id)
     .eq("status", "published");
+
+  if (updateError?.code === "PGRST204" && "public_preview_path" in unpublishPayload) {
+    delete unpublishPayload.public_preview_path;
+    const retry = await supabase
+      .from("artworks")
+      .update(unpublishPayload)
+      .eq("id", artwork.id)
+      .eq("status", "published");
+    updateError = retry.error;
+  }
 
   if (updateError) {
     console.error("Failed to update artwork to draft:", updateError);
     return { error: "Failed to unpublish artwork in database." };
   }
 
-  // 2. Enqueue cleanup for former public derivative
+  // 2. Enqueue cleanup for both public derivatives and attempt synchronous deletion.
   let cleanupPending = false;
-  if (oldPublicPath) {
+  for (const publicPath of oldPublicPaths) {
     try {
       await enqueueCleanupItem({
         bucketId: "artworks-public",
-        objectPath: oldPublicPath,
+        objectPath: publicPath,
         reason: "unpublish",
         processAfter: new Date(),
       });
 
-      // Best-effort synchronous deletion attempt
-      const pathInBucket = getPathInBucket("artworks-public", oldPublicPath);
+      const pathInBucket = getPathInBucket("artworks-public", publicPath);
       const { error: removeError } = await supabase.storage
         .from("artworks-public")
-        .remove([pathInBucket, oldPublicPath]);
+        .remove([pathInBucket, publicPath]);
 
       if (!removeError) {
-        // Resolve queue item immediately if deletion succeeded
         await supabase
           .from("storage_cleanup_queue")
           .delete()
           .eq("bucket_id", "artworks-public")
-          .eq("object_path", oldPublicPath);
+          .eq("object_path", publicPath);
       } else {
         cleanupPending = true;
       }
@@ -382,6 +393,7 @@ export async function deleteArtwork({
 
   const privatePath = artwork.private_image_path;
   const publicPath = artwork.public_image_path;
+  const publicPreviewPath = artwork.public_preview_path;
 
   // 1. Enqueue private source cleanup
   if (privatePath) {
@@ -393,11 +405,12 @@ export async function deleteArtwork({
     });
   }
 
-  // 2. Enqueue public derivative cleanup
-  if (publicPath) {
+  // 2. Enqueue cleanup for the main public image and its preview.
+  for (const path of [publicPath, publicPreviewPath]) {
+    if (!path) continue;
     await enqueueCleanupItem({
       bucketId: "artworks-public",
-      objectPath: publicPath,
+      objectPath: path,
       reason: "delete",
       processAfter: new Date(),
     });
@@ -415,20 +428,21 @@ export async function deleteArtwork({
     return { error: "Failed to delete artwork." };
   }
 
-  // 4. Best-effort synchronous deletion of public derivative
-  if (publicPath) {
+  // 4. Best-effort synchronous deletion of public derivatives.
+  for (const path of [publicPath, publicPreviewPath]) {
+    if (!path) continue;
     try {
-      const pathInBucket = getPathInBucket("artworks-public", publicPath);
+      const pathInBucket = getPathInBucket("artworks-public", path);
       const { error: removeError } = await supabase.storage
         .from("artworks-public")
-        .remove([pathInBucket, publicPath]);
+        .remove([pathInBucket, path]);
 
       if (!removeError) {
         await supabase
           .from("storage_cleanup_queue")
           .delete()
           .eq("bucket_id", "artworks-public")
-          .eq("object_path", publicPath);
+          .eq("object_path", path);
       }
     } catch {
       // Retained in queue for retry
