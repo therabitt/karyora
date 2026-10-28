@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Alex_Brush, Caveat, DM_Sans } from "next/font/google";
+import { Alex_Brush, Caveat, Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 
 const alexBrush = Alex_Brush({
@@ -13,6 +13,14 @@ const caveat = Caveat({
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-caveat",
+  display: "swap",
+});
+
+const cormorantGaramond = Cormorant_Garamond({
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  subsets: ["latin"],
+  variable: "--font-cormorant-garamond",
   display: "swap",
 });
 
@@ -39,7 +47,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={alexBrush.variable + " " + caveat.variable + " " + dmSans.variable + " h-full antialiased"}
+      className={alexBrush.variable + " " + caveat.variable + " " + cormorantGaramond.variable + " " + dmSans.variable + " h-full antialiased"}
     >
       <body className="min-h-full flex flex-col font-sans bg-paper text-ink selection:bg-accent-soft selection:text-ink">
         {children}
