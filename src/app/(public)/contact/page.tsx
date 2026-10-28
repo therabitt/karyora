@@ -14,7 +14,7 @@ function isUsableSocialProfile(value: unknown): value is string {
 
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && url.pathname.replace(/\\/+$/, "") !== "";
+    return url.protocol === "https:" && url.pathname.replace(/\/+$/, "") !== "";
   } catch {
     return false;
   }
@@ -34,7 +34,7 @@ function formatPlatformName(platform: string): string {
   };
 
   return knownNames[platform.toLowerCase()] ||
-    platform.replace(/[-_]+/g, " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+    platform.replace(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function getAvailabilityLabel(availability: string): string {
