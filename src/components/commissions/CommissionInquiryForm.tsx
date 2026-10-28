@@ -115,7 +115,7 @@ export function CommissionInquiryForm({
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="commission-form space-y-7 [&_label]:mb-2 [&_label]:block [&_label]:font-mono [&_label]:text-[10px] [&_label]:font-medium [&_label]:uppercase [&_label]:tracking-[0.1em] [&_input]:min-h-11 [&_input]:rounded-none [&_input]:border-0 [&_input]:border-b [&_input]:border-border-strong [&_input]:bg-transparent [&_input]:px-0 [&_input]:py-3 [&_input]:text-sm [&_input]:shadow-none [&_input]:focus:border-accent [&_input]:focus:ring-0 [&_textarea]:rounded-none [&_textarea]:border-0 [&_textarea]:border-b [&_textarea]:border-border-strong [&_textarea]:bg-transparent [&_textarea]:px-0 [&_textarea]:py-3 [&_textarea]:shadow-none [&_textarea]:focus:border-accent [&_textarea]:focus:ring-0">
       {/* Bot Suppression Honeypot (hidden from real users) */}
       <div className="hidden" aria-hidden="true">
         <label htmlFor="hp_website_contact">Leave this field blank</label>
@@ -180,7 +180,7 @@ export function CommissionInquiryForm({
           name="offering_id"
           defaultValue={defaultOfferingId}
           disabled={isPending}
-          className="w-full px-3.5 py-2 text-sm bg-surface rounded-lg border border-border-strong text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+          className="w-full min-h-11 appearance-none rounded-none border-0 border-b border-border-strong bg-transparent px-0 py-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-0"
         >
           <option value="">Custom project / Not listed</option>
           {offerings.map((o) => (
@@ -229,7 +229,7 @@ export function CommissionInquiryForm({
       </div>
 
       {/* Consideration and Privacy Notice */}
-      <div className="p-4 bg-surface-muted text-xs text-text-muted leading-relaxed space-y-1 border border-border">
+      <div className="border-l border-border-strong py-1 pl-4 text-xs leading-relaxed text-text-muted space-y-1">
         <p className="font-semibold text-ink uppercase tracking-wider text-[10px]">
           Privacy & Consideration Notice
         </p>
@@ -242,7 +242,7 @@ export function CommissionInquiryForm({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full sm:w-auto inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-8 py-3.5 rounded-sm bg-accent text-white hover:bg-accent-hover active:bg-accent-hover/90 transition-all shadow-xs gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex min-h-12 w-full items-center justify-between gap-8 border-b border-accent bg-transparent px-0 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-ink transition-colors hover:text-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
         >
           <span>
             {isPending
