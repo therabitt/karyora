@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
@@ -1084,11 +1085,14 @@ export function AlanMenkenShowcase({
                   }}
                 >
                   {seamExitSnapshot.imageUrl && !seamExitSnapshot.failed ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
+                      fill
+                      sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
                       draggable={false}
                       src={seamExitSnapshot.imageUrl}
                       alt=""
+                      loading="eager"
+                      decoding="async"
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -1166,9 +1170,15 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           data-artwork-image
+                          fill
+                          sizes={isActive
+                            ? "(max-width: 639px) 76vw, (max-width: 1023px) 54vw, (max-width: 1279px) 38vw, 660px"
+                            : "(max-width: 639px) 31vw, (max-width: 1023px) 18vw, 140px"}
+                          fetchPriority={isActive ? "high" : "low"}
+                          loading={isActive ? "eager" : "lazy"}
+                          decoding="async"
                           draggable={false}
                           src={imageUrl}
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
@@ -1258,8 +1268,13 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
+                          width={Math.max(1, Math.round(sliceSize.width))}
+                          height={Math.max(1, Math.round(sliceSize.height))}
+                          sizes={`${Math.max(1, Math.round(sliceSize.width))}px`}
+                          fetchPriority="high"
+                          loading="eager"
+                          decoding="async"
                           draggable={false}
                           src={currentImageUrl}
                           alt=""
@@ -1346,9 +1361,12 @@ export function AlanMenkenShowcase({
                         } as CSSProperties}
                       >
                         {outgoingImageUrl && !failed ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                          draggable={false}
+                          <Image
+                            width={Math.max(1, Math.round(outgoingSliceSize.width))}
+                            height={Math.max(1, Math.round(outgoingSliceSize.height))}
+                            sizes={`${Math.max(1, Math.round(outgoingSliceSize.width))}px`}
+                            decoding="async"
+                            draggable={false}
                             src={outgoingImageUrl}
                             alt=""
                             className="absolute max-w-none"
@@ -1379,9 +1397,11 @@ export function AlanMenkenShowcase({
                   }}
                 >
                   {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                          draggable={false}
+                    <Image
+                      fill
+                      sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
+                      decoding="async"
+                      draggable={false}
                       src={outgoingImageUrl}
                       alt=""
                       className="h-full w-full object-contain"
