@@ -324,6 +324,7 @@ export function KernArtworkDetail({
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
   const [dynamicThemes, setDynamicThemes] = useState<Record<string, StackTheme>>({});
 
   // Detect prefers-reduced-motion safely without triggering cascading render lint rules
@@ -788,7 +789,25 @@ export function KernArtworkDetail({
               >
                 <div className="relative flex items-center justify-center">
                   {imageUrl && !isImageFailed ? (
-                    <Image
+                    <>
+                      {!loadedImages[currentArtwork.id] && (
+                        <div
+                          aria-hidden="true"
+                          className="absolute inset-0 z-0 flex flex-col items-center justify-center overflow-hidden rounded-2xs border border-white/10 p-5 text-center"
+                          style={{ background: currentTheme.abstractBg }}
+                        >
+                          <span className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-white/60">
+                            Plate № {itemNumber}
+                          </span>
+                          <span className="max-w-[90%] font-artwork-title text-lg leading-tight text-white/90 sm:text-xl">
+                            {currentArtwork.title}
+                          </span>
+                          <span className="mt-3 font-mono text-[8px] uppercase tracking-[0.18em] text-white/45">
+                            Preparing artwork
+                          </span>
+                        </div>
+                      )}
+                      <Image
                       key={currentArtwork.id}
                       src={imageUrl}
                       unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
@@ -800,6 +819,9 @@ export function KernArtworkDetail({
                       fetchPriority="high"
                       decoding="async"
                       onLoad={(e) => {
+                        setLoadedImages((previous) =>
+                          previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
+                        );
                         const slugKey = currentArtwork.slug?.toLowerCase().trim();
                         const hasPersistedOrCurated = currentArtwork.palette_metadata || (slugKey && CATALOG_THEMES[slugKey]);
                         if (!hasPersistedOrCurated && !dynamicThemes[currentArtwork.id]) {
@@ -810,8 +832,9 @@ export function KernArtworkDetail({
                         }
                       }}
                       onError={() => handleImageError(currentArtwork.id)}
-                      className="block max-h-[48vh] sm:max-h-[52vh] lg:max-h-[54vh] xl:max-h-[60vh] max-w-[min(340px,78vw)] sm:max-w-[min(440px,58vw)] lg:max-w-[min(560px,38vw)] xl:max-w-[min(660px,42vw)] w-auto h-auto object-contain select-none"
+                      className={"relative z-10 block max-h-[48vh] sm:max-h-[52vh] lg:max-h-[54vh] xl:max-h-[60vh] max-w-[min(340px,78vw)] sm:max-w-[min(440px,58vw)] lg:max-w-[min(560px,38vw)] xl:max-w-[min(660px,42vw)] w-auto h-auto object-contain select-none transition-opacity duration-300 motion-reduce:transition-none " + (loadedImages[currentArtwork.id] ? "opacity-100" : "opacity-0")}
                     />
+                    </>
                   ) : (
                     <div className="w-[260px] h-[360px] bg-gradient-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center select-none">
                       <div className="w-12 h-12 rounded-full border border-accent/40 bg-accent-soft/30 flex items-center justify-center mb-3 text-accent font-sans text-lg font-semibold">
