@@ -105,7 +105,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
             </h2>
           </div>
           {offerings.length > 0 ? (
-            <span className="text-xs text-text-muted">Starting prices in IDR unless noted</span>
+            <span className="text-xs text-text-muted">Prices are shown in each offering's listed currency</span>
           ) : null}
         </div>
 
