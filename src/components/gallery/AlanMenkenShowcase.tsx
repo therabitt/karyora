@@ -71,6 +71,7 @@ type RibbonLayoutEntry = {
   artwork: PublicArtwork;
   isActive: boolean;
   imageUrl: string | null;
+  previewImageUrl: string | null;
   failed: boolean;
   imageScale: number;
   aspectRatio: number;
@@ -950,7 +951,11 @@ export function AlanMenkenShowcase({
       offset,
       artwork,
       isActive,
-      imageUrl: getStoragePublicUrl(artwork.public_image_path),
+      imageUrl: isActive
+        ? getStoragePublicUrl(artwork.public_image_path)
+        : getStoragePublicUrl(artwork.public_preview_path) || getStoragePublicUrl(artwork.public_image_path),
+      previewImageUrl:
+        getStoragePublicUrl(artwork.public_preview_path) || getStoragePublicUrl(artwork.public_image_path),
       failed: Boolean(failedImages[artwork.id]),
       imageScale: isActive ? 1 : coverScale,
       aspectRatio,
@@ -1118,6 +1123,7 @@ export function AlanMenkenShowcase({
                     artwork,
                     isActive,
                     imageUrl,
+                    previewImageUrl,
                     failed,
                     imageScale,
                     aspectRatio,
@@ -1186,18 +1192,35 @@ export function AlanMenkenShowcase({
                               </span>
                             </div>
                           )}
+                          {isActive && previewImageUrl && (
+                            <Image
+                              key={artwork.id + "-preview-underlay"}
+                              fill
+                              sizes="(max-width: 639px) 76vw, (max-width: 1023px) 54vw, (max-width: 1279px) 38vw, 660px"
+                              loading="eager"
+                              fetchPriority="high"
+                              unoptimized
+                              decoding="async"
+                              draggable={false}
+                              src={previewImageUrl}
+                              alt=""
+                              aria-hidden="true"
+                              className="absolute inset-0 z-[1] h-full w-full object-contain"
+                              style={{ transform: "scale(" + imageScale + ")" }}
+                            />
+                          )}
                           <Image
                           key={artwork.id + (isActive ? "-active" : "-preview")}
                           data-artwork-image
                           fill
                           sizes={isActive
                             ? "(max-width: 639px) 76vw, (max-width: 1023px) 54vw, (max-width: 1279px) 38vw, 660px"
-                            : "(max-width: 639px) 31vw, (max-width: 1023px) 18vw, 140px"}
+                            : "(max-width: 639px) 31vw, (max-width: 1023px) 18vw, 280px"}
                           fetchPriority={isActive ? "high" : "low"}
                           // Load all current ribbon panels eagerly: they animate in from off-canvas,
                           // so lazy-loading by intersection can reveal a blank panel mid-transition.
                           loading="eager"
-                          unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
+                          unoptimized
                           decoding="async"
                           draggable={false}
                           src={imageUrl}
