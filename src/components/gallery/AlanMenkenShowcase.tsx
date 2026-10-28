@@ -828,7 +828,6 @@ export function AlanMenkenShowcase({
     const height = image.naturalHeight;
     if (width <= 0 || height <= 0) return;
 
-    setLoadedImages((previous) => previous[id] ? previous : { ...previous, [id]: true });
     setMeasuredDimensions((previous) => {
       const current = previous[id];
       if (current?.width === width && current?.height === height) return previous;
@@ -1174,7 +1173,7 @@ export function AlanMenkenShowcase({
                     >
                       {imageUrl && !failed ? (
                         <>
-                          {!loadedImages[artwork.id] && (
+                          {!loadedImages[artwork.id + (isActive ? ":active" : ":preview")] && (
                             <div
                               aria-hidden="true"
                               className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center bg-surface-muted p-2 text-center"
@@ -1188,6 +1187,7 @@ export function AlanMenkenShowcase({
                             </div>
                           )}
                           <Image
+                          key={artwork.id + (isActive ? "-active" : "-preview")}
                           data-artwork-image
                           fill
                           sizes={isActive
@@ -1202,9 +1202,15 @@ export function AlanMenkenShowcase({
                           draggable={false}
                           src={imageUrl}
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
-                          onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
+                          onLoad={(event) => {
+                            setLoadedImages((previous) => {
+                              const key = artwork.id + (isActive ? ":active" : ":preview");
+                              return previous[key] ? previous : { ...previous, [key]: true };
+                            });
+                            handleImageLoad(artwork.id, event.currentTarget);
+                          }}
                           onError={() => handleImageError(artwork.id)}
-                          className={"absolute inset-0 h-full w-full object-contain transition-[scale,opacity] duration-300 motion-reduce:transition-none group-hover:scale-[1.025] " + (loadedImages[artwork.id] ? "opacity-100" : "opacity-0")}
+                          className={"absolute inset-0 h-full w-full object-contain transition-[scale,opacity] duration-300 motion-reduce:transition-none group-hover:scale-[1.025] " + (loadedImages[artwork.id + (isActive ? ":active" : ":preview")] ? "opacity-100" : "opacity-0")}
                           style={{ transform: "scale(" + imageScale + ")" }}
                           />
                         </>
@@ -1290,7 +1296,7 @@ export function AlanMenkenShowcase({
                     >
                       {currentImageUrl && !failed ? (
                         <>
-                          {!loadedImages[current.id] && (
+                          {!loadedImages[current.id + ":slice"] && (
                             <div aria-hidden="true" className="absolute inset-0 z-0 bg-surface-muted" />
                           )}
                           <Image
@@ -1304,9 +1310,15 @@ export function AlanMenkenShowcase({
                           draggable={false}
                           src={currentImageUrl}
                           alt=""
-                          onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
+                          onLoad={(event) => {
+                            setLoadedImages((previous) => {
+                              const key = current.id + ":slice";
+                              return previous[key] ? previous : { ...previous, [key]: true };
+                            });
+                            handleImageLoad(current.id, event.currentTarget);
+                          }}
                           onError={() => handleImageError(current.id)}
-                          className={"absolute max-w-none transition-opacity duration-200 " + (loadedImages[current.id] ? "opacity-100" : "opacity-0")}
+                          className={"absolute max-w-none transition-opacity duration-200 " + (loadedImages[current.id + ":slice"] ? "opacity-100" : "opacity-0")}
                           style={{
                             width: sliceSize.width + "px",
                             height: sliceSize.height + "px",
