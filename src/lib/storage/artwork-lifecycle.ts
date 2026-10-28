@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { enqueueCleanupItem } from "@/lib/storage/cleanup";
 import {
   createPublicDerivative,
+  MAX_ARTWORK_DERIVATIVE_DIMENSION,
+  MAX_ARTWORK_PREVIEW_DIMENSION,
   type ProcessedImageResult,
 } from "@/lib/storage/image-processor";
 import { extractImageColorAnalysis } from "@/lib/storage/palette-extractor";
