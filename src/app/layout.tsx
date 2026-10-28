@@ -3,6 +3,7 @@ import { Caveat, Cormorant_Garamond, DM_Sans, Satisfy } from "next/font/google";
 import "./globals.css";
 
 const satisfy = Satisfy({
+  weight: "400",
   subsets: ["latin"],
   variable: "--font-satisfy",
   display: "swap",
