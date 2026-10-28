@@ -8,8 +8,8 @@ import React, {
   useMemo,
 } from "react";
 import Link from "next/link";
-import Image, { getImageProps } from "next/image";
-import { getStoragePublicUrl, isOptimizablePublicStorageUrl } from "@/lib/storage/urls";
+import Image from "next/image";
+import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 
@@ -325,6 +325,8 @@ export function KernArtworkDetail({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [loadedPreviews, setLoadedPreviews] = useState<Record<string, boolean>>({});
+  const [failedPreviewImages, setFailedPreviewImages] = useState<Record<string, boolean>>({});
   const [dynamicThemes, setDynamicThemes] = useState<Record<string, StackTheme>>({});
 
   // Detect prefers-reduced-motion safely without triggering cascading render lint rules
@@ -353,6 +355,11 @@ export function KernArtworkDetail({
   const totalFormatted = String(totalCount).padStart(2, "0");
 
   const imageUrl = getStoragePublicUrl(currentArtwork.public_image_path);
+  const previewAssetUrl = getStoragePublicUrl(currentArtwork.public_preview_path);
+  const previewImageUrl = failedPreviewImages[currentArtwork.id] || !previewAssetUrl
+    ? imageUrl
+    : previewAssetUrl;
+  const hasDistinctPreview = Boolean(previewImageUrl && previewImageUrl !== imageUrl);
   const isImageFailed = failedImages[currentArtwork.id];
 
   // Artwork-specific stack theme for the currently active artwork
@@ -365,34 +372,23 @@ export function KernArtworkDetail({
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
-  // Warm the browser cache with the same optimized responsive image URLs
-  // used by the visible artwork. Preloading the raw Storage URL here would
-  // download the original separately from the Next.js optimized rendition.
+  // Warm only the small, pre-generated preview for adjacent artworks. The full
+  // exhibition image loads when selected, so navigation gets visual continuity
+  // without downloading two large image files ahead of time.
   useEffect(() => {
     if (totalCount <= 1) return;
     const nextArt = allArtworks[(activeIndex + 1) % totalCount];
     const prevArt = allArtworks[(activeIndex - 1 + totalCount) % totalCount];
     [nextArt, prevArt].forEach((art) => {
-      if (!art?.public_image_path) return;
-      const url = getStoragePublicUrl(art.public_image_path);
+      if (!art) return;
+      const url = getStoragePublicUrl(art.public_preview_path) ||
+        getStoragePublicUrl(art.public_image_path);
       if (!url) return;
-
-      const imageProps = getImageProps({
-        src: url,
-        alt: "",
-        width: art.image_width || 1200,
-        height: art.image_height || 1600,
-        sizes: "(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw",
-        unoptimized: !isOptimizablePublicStorageUrl(url),
-      }).props;
 
       const image = new window.Image();
       image.fetchPriority = "low";
-      if (imageProps.sizes) image.sizes = imageProps.sizes;
-      if (imageProps.srcSet) image.srcset = imageProps.srcSet;
-      image.src = imageProps.src;
-      // A decode failure should not block navigation; the on-screen image
-      // retains its designed placeholder and reports genuine load failures.
+      image.decoding = "async";
+      image.src = url;
       void image.decode().catch(() => undefined);
     });
   }, [activeIndex, allArtworks, totalCount]);
@@ -806,10 +802,10 @@ export function KernArtworkDetail({
                 <div className="relative flex items-center justify-center">
                   {imageUrl && !isImageFailed ? (
                     <>
-                      {!loadedImages[currentArtwork.id] && (
+                      {!loadedPreviews[currentArtwork.id] && !loadedImages[currentArtwork.id] && (
                         <div
                           aria-hidden="true"
-                          className="absolute inset-0 z-0 flex flex-col items-center justify-center overflow-hidden rounded-2xs border border-white/10 p-5 text-center"
+                          className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center overflow-hidden rounded-2xs border border-white/10 p-5 text-center"
                           style={{ background: currentTheme.abstractBg }}
                         >
                           <span className="mb-3 font-mono text-[9px] uppercase tracking-[0.2em] text-white/60">
@@ -818,38 +814,60 @@ export function KernArtworkDetail({
                           <span className="max-w-[90%] font-artwork-title text-lg leading-tight text-white/90 sm:text-xl">
                             {currentArtwork.title}
                           </span>
-                          <span className="mt-3 font-mono text-[8px] uppercase tracking-[0.18em] text-white/45">
-                            Preparing artwork
-                          </span>
                         </div>
                       )}
                       <Image
-                      key={currentArtwork.id}
-                      src={imageUrl}
-                      unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
-                      width={currentArtwork.image_width || 1200}
-                      height={currentArtwork.image_height || 1600}
-                      sizes="(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw"
-                      alt={currentArtwork.alt_text || currentArtwork.title}
-                      loading="eager"
-                      fetchPriority="high"
-                      decoding="async"
-                      onLoad={(e) => {
-                        setLoadedImages((previous) =>
-                          previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
-                        );
-                        const slugKey = currentArtwork.slug?.toLowerCase().trim();
-                        const hasPersistedOrCurated = currentArtwork.palette_metadata || (slugKey && CATALOG_THEMES[slugKey]);
-                        if (!hasPersistedOrCurated && !dynamicThemes[currentArtwork.id]) {
-                          const extracted = extractPaletteFromImage(e.currentTarget);
-                          if (extracted) {
-                            setDynamicThemes((prev) => ({ ...prev, [currentArtwork.id]: extracted }));
+                        key={currentArtwork.id + "-preview"}
+                        src={previewImageUrl || imageUrl}
+                        width={currentArtwork.image_width || 1200}
+                        height={currentArtwork.image_height || 1600}
+                        sizes="(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw"
+                        alt=""
+                        aria-hidden="true"
+                        loading="eager"
+                        fetchPriority="high"
+                        decoding="async"
+                        unoptimized
+                        onLoad={() => {
+                          setLoadedPreviews((previous) =>
+                            previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
+                          );
+                        }}
+                        onError={() => {
+                          if (previewAssetUrl && previewAssetUrl !== imageUrl) {
+                            setFailedPreviewImages((previous) =>
+                              previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
+                            );
                           }
-                        }
-                      }}
-                      onError={() => handleImageError(currentArtwork.id)}
-                      className={"relative z-10 block max-h-[48vh] sm:max-h-[52vh] lg:max-h-[54vh] xl:max-h-[60vh] max-w-[min(340px,78vw)] sm:max-w-[min(440px,58vw)] lg:max-w-[min(560px,38vw)] xl:max-w-[min(660px,42vw)] w-auto h-auto object-contain select-none transition-opacity duration-300 motion-reduce:transition-none " + (loadedImages[currentArtwork.id] ? "opacity-100" : "opacity-0")}
-                    />
+                        }}
+                        className="relative z-[1] block max-h-[48vh] sm:max-h-[52vh] lg:max-h-[54vh] xl:max-h-[60vh] max-w-[min(340px,78vw)] sm:max-w-[min(440px,58vw)] lg:max-w-[min(560px,38vw)] xl:max-w-[min(660px,42vw)] w-auto h-auto object-contain select-none"
+                      />
+                      <Image
+                        key={currentArtwork.id}
+                        src={imageUrl}
+                        fill
+                        sizes="(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw"
+                        alt={currentArtwork.alt_text || currentArtwork.title}
+                        loading="eager"
+                        fetchPriority={hasDistinctPreview && !loadedPreviews[currentArtwork.id] ? "low" : "high"}
+                        decoding="async"
+                        unoptimized
+                        onLoad={(e) => {
+                          setLoadedImages((previous) =>
+                            previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
+                          );
+                          const slugKey = currentArtwork.slug?.toLowerCase().trim();
+                          const hasPersistedOrCurated = currentArtwork.palette_metadata || (slugKey && CATALOG_THEMES[slugKey]);
+                          if (!hasPersistedOrCurated && !dynamicThemes[currentArtwork.id]) {
+                            const extracted = extractPaletteFromImage(e.currentTarget);
+                            if (extracted) {
+                              setDynamicThemes((prev) => ({ ...prev, [currentArtwork.id]: extracted });
+                            }
+                          }
+                        }}
+                        onError={() => handleImageError(currentArtwork.id)}
+                        className={"absolute inset-0 z-[2] h-full w-full object-contain select-none transition-opacity duration-150 motion-reduce:transition-none " + (loadedImages[currentArtwork.id] ? "opacity-100" : "opacity-0")}
+                      />
                     </>
                   ) : (
                     <div className="w-[260px] h-[360px] bg-gradient-to-b from-surface-muted via-paper to-sand/30 flex flex-col items-center justify-center p-6 text-center select-none">
@@ -1017,7 +1035,8 @@ export function KernArtworkDetail({
               {allArtworks.map((artwork, idx) => {
                 const isSelected = artwork.id === currentArtwork.id;
                 const num = String(idx + 1).padStart(2, "0");
-                const thumbUrl = getStoragePublicUrl(artwork.public_image_path);
+                const thumbUrl = getStoragePublicUrl(artwork.public_preview_path) ||
+                  getStoragePublicUrl(artwork.public_image_path);
                 const thumbFailed = failedImages[artwork.id];
                 return (
                   <button
@@ -1046,7 +1065,7 @@ export function KernArtworkDetail({
                       {thumbUrl && !thumbFailed ? (
                         <Image
                           src={thumbUrl}
-                          unoptimized={!isOptimizablePublicStorageUrl(thumbUrl)}
+                          unoptimized
                           width={artwork.image_width || 1200}
                           height={artwork.image_height || 1200}
                           sizes="64px"
@@ -1105,7 +1124,7 @@ export function KernArtworkDetail({
               {imageUrl && !isImageFailed ? (
                 <Image
                   src={imageUrl}
-                  unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
+                  unoptimized
                   width={currentArtwork.image_width || 1200}
                   height={currentArtwork.image_height || 1600}
                   sizes="100vw"
