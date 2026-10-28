@@ -68,26 +68,33 @@ export async function processSingleCleanupItem(queueItemId: string): Promise<boo
   try {
     // 2. Active reference verification (Section 5.5.3)
     // Check artworks table
-    const { count: privateRef } = await supabase
+    const { count: privateRef, error: privateRefError } = await supabase
       .from("artworks")
       .select("id", { count: "exact", head: true })
       .eq("private_image_path", item.object_path);
 
-    const { count: publicRef } = await supabase
+    const { count: publicRef, error: publicRefError } = await supabase
       .from("artworks")
       .select("id", { count: "exact", head: true })
       .eq("public_image_path", item.object_path);
 
-    const { count: publicPreviewRef } = await supabase
+    const { count: publicPreviewRef, error: publicPreviewRefError } = await supabase
       .from("artworks")
       .select("id", { count: "exact", head: true })
       .eq("public_preview_path", item.object_path);
 
     // Check profiles table
-    const { count: avatarRef } = await supabase
+    const { count: avatarRef, error: avatarRefError } = await supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("avatar_path", item.object_path);
+
+    // Never remove an object unless every active-reference check completed.
+    // In particular, a stale PostgREST schema cache must not make a referenced
+    // preview appear unreferenced after its column was just added.
+    if (privateRefError || publicRefError || publicPreviewRefError || avatarRefError) {
+      throw new Error("Could not verify all active storage references; cleanup will be retried.");
+    }
 
     if (
       (privateRef && privateRef > 0) ||
