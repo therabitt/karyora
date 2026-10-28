@@ -8,6 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
@@ -787,12 +788,16 @@ export function KernArtworkDetail({
               >
                 <div className="relative flex items-center justify-center">
                   {imageUrl && !isImageFailed ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       key={currentArtwork.id}
                       src={imageUrl}
+                      width={currentArtwork.image_width || 1200}
+                      height={currentArtwork.image_height || 1600}
+                      sizes="(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw"
                       alt={currentArtwork.alt_text || currentArtwork.title}
-                      crossOrigin="anonymous"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                       onLoad={(e) => {
                         const slugKey = currentArtwork.slug?.toLowerCase().trim();
                         const hasPersistedOrCurated = currentArtwork.palette_metadata || (slugKey && CATALOG_THEMES[slugKey]);
@@ -999,10 +1004,14 @@ export function KernArtworkDetail({
                     {/* Thumbnail with subtle hover-zoom on the image only */}
                     <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-2xs overflow-hidden shrink-0 border border-black/10 bg-surface-muted inline-flex items-center justify-center">
                       {thumbUrl && !thumbFailed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={thumbUrl}
+                          width={artwork.image_width || 1200}
+                          height={artwork.image_height || 1200}
+                          sizes="64px"
                           alt=""
+                          loading="lazy"
+                          decoding="async"
                           onError={() => handleImageError(artwork.id)}
                           className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.08]"
                         />
@@ -1053,10 +1062,14 @@ export function KernArtworkDetail({
 
             <div className="flex-1 flex items-center justify-center overflow-hidden my-4">
               {imageUrl && !isImageFailed ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={imageUrl}
+                  width={currentArtwork.image_width || 1200}
+                  height={currentArtwork.image_height || 1600}
+                  sizes="100vw"
                   alt={currentArtwork.alt_text || currentArtwork.title}
+                  loading="eager"
+                  decoding="async"
                   className="max-w-full max-h-[82vh] object-contain rounded-xs shadow-2xl select-none"
                 />
               ) : null}
