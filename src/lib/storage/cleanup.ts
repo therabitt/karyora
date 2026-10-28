@@ -78,13 +78,23 @@ export async function processSingleCleanupItem(queueItemId: string): Promise<boo
       .select("id", { count: "exact", head: true })
       .eq("public_image_path", item.object_path);
 
+    const { count: publicPreviewRef } = await supabase
+      .from("artworks")
+      .select("id", { count: "exact", head: true })
+      .eq("public_preview_path", item.object_path);
+
     // Check profiles table
     const { count: avatarRef } = await supabase
       .from("profiles")
       .select("id", { count: "exact", head: true })
       .eq("avatar_path", item.object_path);
 
-    if ((privateRef && privateRef > 0) || (publicRef && publicRef > 0) || (avatarRef && avatarRef > 0)) {
+    if (
+      (privateRef && privateRef > 0) ||
+      (publicRef && publicRef > 0) ||
+      (publicPreviewRef && publicPreviewRef > 0) ||
+      (avatarRef && avatarRef > 0)
+    ) {
       // Object is actively referenced; resolve queue row without deleting physical object
       await supabase.from("storage_cleanup_queue").delete().eq("id", item.id);
       return true;
