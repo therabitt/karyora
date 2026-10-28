@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getStoragePublicUrl, isOptimizablePublicStorageUrl } from "@/lib/storage/urls";
+import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 import {
@@ -1096,7 +1096,7 @@ export function AlanMenkenShowcase({
                       sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
                       draggable={false}
                       src={seamExitSnapshot.imageUrl}
-                      unoptimized={!isOptimizablePublicStorageUrl(seamExitSnapshot.imageUrl)}
+                      unoptimized
                       alt=""
                       loading="eager"
                       decoding="async"
@@ -1328,7 +1328,7 @@ export function AlanMenkenShowcase({
                           sizes={`${Math.max(1, Math.round(sliceSize.width))}px`}
                           fetchPriority="high"
                           loading="eager"
-                          unoptimized={!isOptimizablePublicStorageUrl(currentImageUrl)}
+                          unoptimized
                           decoding="async"
                           draggable={false}
                           src={currentImageUrl}
@@ -1428,7 +1428,7 @@ export function AlanMenkenShowcase({
                             height={Math.max(1, Math.round(outgoingSliceSize.height))}
                             sizes={`${Math.max(1, Math.round(outgoingSliceSize.width))}px`}
                             decoding="async"
-                            unoptimized={!isOptimizablePublicStorageUrl(outgoingImageUrl)}
+                            unoptimized
                             draggable={false}
                             src={outgoingImageUrl}
                             alt=""
@@ -1464,7 +1464,7 @@ export function AlanMenkenShowcase({
                       fill
                       sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
                       decoding="async"
-                      unoptimized={!isOptimizablePublicStorageUrl(outgoingImageUrl)}
+                      unoptimized
                       draggable={false}
                       src={outgoingImageUrl}
                       alt=""
