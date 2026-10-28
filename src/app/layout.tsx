@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Caveat, Cormorant_Garamond, DM_Sans, Playwrite_NL } from "next/font/google";
+import { Caveat, Cormorant_Garamond, DM_Sans, Satisfy } from "next/font/google";
 import "./globals.css";
 
-const playwriteNL = Playwrite_NL({
-  variable: "--font-playwrite-nl",
+const satisfy = Satisfy({
+  subsets: ["latin"],
+  variable: "--font-satisfy",
   display: "swap",
 });
 
@@ -45,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={playwriteNL.variable + " " + caveat.variable + " " + cormorantGaramond.variable + " " + dmSans.variable + " h-full antialiased"}
+      className={satisfy.variable + " " + caveat.variable + " " + cormorantGaramond.variable + " " + dmSans.variable + " h-full antialiased"}
     >
       <body className="min-h-full flex flex-col font-sans bg-paper text-ink selection:bg-accent-soft selection:text-ink">
         {children}
