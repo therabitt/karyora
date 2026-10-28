@@ -3,7 +3,7 @@
 **Status:** Design direction approved as a working brief.  
 **Scope:** Public-facing experience first, starting with the homepage and featured artwork showcase.  
 **Product identity:** Karyora, an independent artist portfolio and commission inquiry platform.  
-**Implementation baseline:** Existing Next.js App Router application, Tailwind CSS v4 tokens, Alex Brush, Caveat, DM Sans, Supabase-backed artwork data.  
+**Implementation baseline:** Existing Next.js App Router application, Tailwind CSS v4 tokens, Playwrite NL, Caveat, Cormorant Garamond, DM Sans, Supabase-backed artwork data.  
 **Rule:** Improve the existing MVP in small, reviewable changes. Do not rebuild working functionality just to change the visual presentation.
 
 ---
@@ -93,7 +93,7 @@ The existing design tokens in `src/app/globals.css` are a useful starting point:
 - Border: `#E7E0D6`
 - Terracotta accent: `#B85C45`
 - Accent hover: `#8F3F2A`
-- Fonts: Alex Brush + Caveat + DM Sans
+- Fonts: Playwrite NL + Caveat + Cormorant Garamond + DM Sans
 
 Keep these tokens as the starting palette and type system. Adjust them only when a specific contrast, hierarchy, or visual problem is demonstrated.
 
@@ -152,7 +152,7 @@ Recommended constraints:
 
 ### Typography and color
 
-- Use Alex Brush for the Karyora wordmark and every artwork title, including spotlight, gallery, and artwork-detail contexts. Use Caveat only for short artwork descriptions on artwork-detail pages. Use DM Sans for navigation, all non-artwork headings, body copy, labels, forms, and controls. Do not use DM Serif Display in the active design system.
+- Use Playwrite NL for the Karyora wordmark and every artwork title, including spotlight, gallery, and artwork-detail contexts. Keep Playwrite NL at its supported regular weight and enable contextual alternates for connected strokes. Use Caveat for artwork descriptions on the homepage and artwork-detail pages. Use Cormorant Garamond for expressive editorial display headlines, and DM Sans for navigation, body copy, labels, forms, and controls. Do not use DM Serif Display in the active design system.
 - Reserve monospace/overtracked uppercase type for occasional indices, categories, or technical metadata. Do not apply it to every label.
 - Maintain a warm paper/ink foundation with terracotta as a focused accent.
 - Let the artwork provide the primary color; avoid adding multiple decorative accent colors without a clear role.
