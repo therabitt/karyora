@@ -185,6 +185,7 @@ export function AlanMenkenShowcase({
   const seamExitAnimationRef = useRef<Animation | null>(null);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
   const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
+  const [loadedPreviewUnderlays, setLoadedPreviewUnderlays] = useState<Record<string, boolean>>({});
   const [measuredDimensions, setMeasuredDimensions] = useState<Record<string, ArtworkDimensions>>({});
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const stageRef = useRef<HTMLElement>(null);
@@ -1205,6 +1206,11 @@ export function AlanMenkenShowcase({
                               src={previewImageUrl}
                               alt=""
                               aria-hidden="true"
+                              onLoad={() => {
+                                setLoadedPreviewUnderlays((previous) =>
+                                  previous[artwork.id] ? previous : { ...previous, [artwork.id]: true }
+                                );
+                              }}
                               className="absolute inset-0 z-[1] h-full w-full object-contain"
                               style={{ transform: "scale(" + imageScale + ")" }}
                             />
@@ -1216,7 +1222,9 @@ export function AlanMenkenShowcase({
                           sizes={isActive
                             ? "(max-width: 639px) 76vw, (max-width: 1023px) 54vw, (max-width: 1279px) 38vw, 660px"
                             : "(max-width: 639px) 31vw, (max-width: 1023px) 18vw, 280px"}
-                          fetchPriority={isActive ? "high" : "low"}
+                          fetchPriority={isActive
+                            ? loadedPreviewUnderlays[artwork.id] ? "high" : "low"
+                            : "low"}
                           // Load all current ribbon panels eagerly: they animate in from off-canvas,
                           // so lazy-loading by intersection can reveal a blank panel mid-transition.
                           loading="eager"
