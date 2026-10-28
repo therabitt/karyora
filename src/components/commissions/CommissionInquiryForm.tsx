@@ -13,19 +13,22 @@ interface CommissionInquiryFormProps {
   isWaitlist?: boolean;
 }
 
-function formatPrice(amount: number | null, currency: string = "IDR"): string {
-  if (amount === null || amount === undefined) {
-    return "Price on Inquiry";
-  }
+function formatPrice(amount: number, currency: string = "IDR"): string {
   try {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
-      currency: currency,
+      currency,
       maximumFractionDigits: 0,
     }).format(amount);
   } catch {
-    return `${currency} ${amount.toLocaleString()}`;
+    return currency + " " + amount.toLocaleString();
   }
+}
+
+function formatStartingPrice(amount: number | null, currency: string = "IDR"): string {
+  return amount === null || amount === undefined
+    ? "Price on inquiry"
+    : "From " + formatPrice(amount, currency);
 }
 
 export function CommissionInquiryForm({
@@ -53,10 +56,7 @@ export function CommissionInquiryForm({
           </h3>
           <p className="text-sm text-text-muted leading-relaxed">
             {state.error ||
-              "You have reached the submission limit. Please wait 15 minutes before sending another inquiry."}
-          </p>
-          <p className="text-xs text-text-muted/80 mt-2 font-mono">
-            If you already submitted an inquiry, rest assured it has been received safely by the artist.
+              "The current attempt was not submitted because the submission limit was reached. Please wait for the current 15-minute window to reset before trying again."}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -77,7 +77,7 @@ export function CommissionInquiryForm({
     );
   }
 
-  // If action succeeded and hasn't been dismissed by "Submit Another Inquiry"
+  // If action succeeded and hasn't been dismissed by "Send another note"
   const isSuccessActive = Boolean(state?.success && state.timestamp !== dismissedTimestamp);
 
   if (isSuccessActive) {
@@ -92,7 +92,7 @@ export function CommissionInquiryForm({
           </h3>
           <p className="text-sm text-text-muted leading-relaxed">
             {state?.message ||
-              "Your commission inquiry has been sent to the artist. You will receive an email response regarding scheduling and scope."}
+              "Your inquiry has been received for consideration. The artist will review your project brief and contact you by email regarding possible next steps."}
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -115,7 +115,7 @@ export function CommissionInquiryForm({
   }
 
   return (
-    <form action={formAction} className="space-y-6">
+    <form action={formAction} className="commission-form space-y-8 [&_label]:mb-2 [&_label]:block [&_label]:font-sans [&_label]:text-sm [&_label]:font-normal [&_label]:tracking-normal [&_input]:min-h-11 [&_input]:rounded-none [&_input]:border-0 [&_input]:border-b [&_input]:border-border-strong [&_input]:bg-transparent [&_input]:px-0 [&_input]:py-3 [&_input]:text-sm [&_input]:shadow-none [&_input]:focus:border-accent [&_input]:focus:ring-0 [&_textarea]:rounded-none [&_textarea]:border-0 [&_textarea]:border-b [&_textarea]:border-border-strong [&_textarea]:bg-transparent [&_textarea]:px-0 [&_textarea]:py-3 [&_textarea]:shadow-none [&_textarea]:focus:border-accent [&_textarea]:focus:ring-0">
       {/* Bot Suppression Honeypot (hidden from real users) */}
       <div className="hidden" aria-hidden="true">
         <label htmlFor="hp_website_contact">Leave this field blank</label>
@@ -150,7 +150,7 @@ export function CommissionInquiryForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input
-          label="Your Name *"
+          label="What should I call you? *"
           id="client_name"
           name="client_name"
           placeholder="e.g. Maya Lin"
@@ -159,7 +159,7 @@ export function CommissionInquiryForm({
           required
         />
         <Input
-          label="Email Address *"
+          label="Where can I reach you? *"
           id="client_email"
           name="client_email"
           type="email"
@@ -172,19 +172,20 @@ export function CommissionInquiryForm({
 
       <div className="space-y-1.5">
         <label htmlFor="offering_id" className="block text-sm font-medium text-ink">
-          Selected Offering (Optional)
+          What are we making? (optional)
         </label>
         <select
+          key={defaultOfferingId}
           id="offering_id"
           name="offering_id"
           defaultValue={defaultOfferingId}
           disabled={isPending}
-          className="w-full px-3.5 py-2 text-sm bg-surface rounded-lg border border-border-strong text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+          className="w-full min-h-11 appearance-none rounded-none border-0 border-b border-border-strong bg-transparent px-0 py-3 text-sm text-ink focus:border-accent focus:outline-none focus:ring-0"
         >
           <option value="">Custom project / Not listed</option>
           {offerings.map((o) => (
             <option key={o.id} value={o.id}>
-              {o.title} — from {formatPrice(o.price_from, o.price_currency)}
+              {o.title} — {formatStartingPrice(o.price_from, o.price_currency)}
             </option>
           ))}
         </select>
@@ -196,12 +197,12 @@ export function CommissionInquiryForm({
       </div>
 
       <Textarea
-        label="Project Brief & Description *"
+        label="Tell me about your idea *"
         id="description"
         name="description"
         rows={5}
-        placeholder="Describe your character, desired mood, composition ideas, references, or intended usage..."
-        helperText="Minimum 20 characters. Be as specific as helpful."
+        placeholder="The idea, mood, references, where it will live... start anywhere."
+        helperText="A few details help me understand what you have in mind."
         error={state?.fieldErrors?.description?.[0]}
         disabled={isPending}
         required
@@ -209,16 +210,16 @@ export function CommissionInquiryForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Input
-          label="Budget (IDR, Optional)"
+          label="Do you have a budget in mind? (optional)"
           id="budget_amount"
           name="budget_amount"
           type="number"
-          placeholder="e.g. 1000000"
+          placeholder="Your approximate budget in IDR"
           error={state?.fieldErrors?.budget_amount?.[0]}
           disabled={isPending}
         />
         <Input
-          label="Desired Completion Date (Optional)"
+          label="When do you need it? (optional)"
           id="desired_deadline"
           name="desired_deadline"
           type="date"
@@ -228,10 +229,8 @@ export function CommissionInquiryForm({
       </div>
 
       {/* Consideration and Privacy Notice */}
-      <div className="p-4 bg-surface-muted text-xs text-text-muted leading-relaxed space-y-1 border border-border">
-        <p className="font-semibold text-ink uppercase tracking-wider text-[10px]">
-          Privacy & Consideration Notice
-        </p>
+      <div className="space-y-1 py-1 text-xs leading-relaxed text-text-muted">
+        <p className="text-sm text-ink">A small note before you send</p>
         <p>
           Submitting this inquiry is a request for artist consideration. It does not constitute a confirmed booking, agreement, or payment obligation. Your email is kept strictly private.
         </p>
@@ -241,14 +240,14 @@ export function CommissionInquiryForm({
         <button
           type="submit"
           disabled={isPending}
-          className="w-full sm:w-auto inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-8 py-3.5 rounded-sm bg-accent text-white hover:bg-accent-hover active:bg-accent-hover/90 transition-all shadow-xs gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex min-h-12 w-full items-center justify-between gap-8 border-b border-ink bg-transparent px-0 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
         >
           <span>
             {isPending
-              ? "Sending Inquiry..."
+              ? "Sending your note..."
               : isWaitlist
-              ? "Submit to Waitlist"
-              : "Send Commission Inquiry"}
+              ? "Join the waitlist"
+              : "Send your inquiry"}
           </span>
           <span aria-hidden="true">→</span>
         </button>

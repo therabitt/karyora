@@ -41,11 +41,20 @@ export const DEFAULT_OFFERINGS: PublicOffering[] = [
   },
 ];
 
+export interface PublicOfferingsResult {
+  offerings: PublicOffering[];
+  state: "available" | "empty" | "unavailable";
+}
+
 /**
  * Retrieves active commission offerings for public presentation.
  * Uses public_commission_offerings security-invoker view.
+ *
+ * Do not display demo defaults as live services or prices when the public query
+ * returns no rows or fails. The page can distinguish a genuinely empty list
+ * from a temporary data-access failure using the returned state.
  */
-export async function getActiveCommissionOfferings(): Promise<PublicOffering[]> {
+export async function getActiveCommissionOfferings(): Promise<PublicOfferingsResult> {
   try {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -53,17 +62,22 @@ export async function getActiveCommissionOfferings(): Promise<PublicOffering[]> 
       .select("*")
       .order("display_order", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      return DEFAULT_OFFERINGS;
+    if (error) {
+      console.error("Failed to fetch public commission offerings:", error);
+      return { offerings: [], state: "unavailable" };
     }
 
-    return data;
+    if (!data || data.length === 0) {
+      return { offerings: [], state: "empty" };
+    }
+
+    return { offerings: data, state: "available" };
   } catch (err) {
     if (isNextInternalBailout(err)) {
       throw err;
     }
-    console.warn("Could not fetch active offerings, using fallback:", err);
-    return DEFAULT_OFFERINGS;
+    console.warn("Could not fetch public commission offerings:", err);
+    return { offerings: [], state: "unavailable" };
   }
 }
 
