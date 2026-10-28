@@ -324,8 +324,8 @@ export function KernArtworkDetail({
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
-  const [loadedImages, setLoadedImages] = useState<Record<string, boolean>>({});
-  const [loadedPreviews, setLoadedPreviews] = useState<Record<string, boolean>>({});
+  const [loadedArtworkId, setLoadedArtworkId] = useState<string | null>(null);
+  const [loadedPreviewArtworkId, setLoadedPreviewArtworkId] = useState<string | null>(null);
   const [failedPreviewImages, setFailedPreviewImages] = useState<Record<string, boolean>>({});
   const [dynamicThemes, setDynamicThemes] = useState<Record<string, StackTheme>>({});
 
@@ -802,7 +802,7 @@ export function KernArtworkDetail({
                 <div className="relative flex items-center justify-center">
                   {imageUrl && !isImageFailed ? (
                     <>
-                      {!loadedPreviews[currentArtwork.id] && !loadedImages[currentArtwork.id] && (
+                      {loadedPreviewArtworkId !== currentArtwork.id && loadedArtworkId !== currentArtwork.id && (
                         <div
                           aria-hidden="true"
                           className="pointer-events-none absolute inset-0 z-0 flex flex-col items-center justify-center overflow-hidden rounded-2xs border border-white/10 p-5 text-center"
@@ -829,9 +829,7 @@ export function KernArtworkDetail({
                         decoding="async"
                         unoptimized
                         onLoad={() => {
-                          setLoadedPreviews((previous) =>
-                            previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
-                          );
+                          setLoadedPreviewArtworkId(currentArtwork.id);
                         }}
                         onError={() => {
                           if (previewAssetUrl && previewAssetUrl !== imageUrl) {
@@ -849,13 +847,11 @@ export function KernArtworkDetail({
                         sizes="(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw"
                         alt={currentArtwork.alt_text || currentArtwork.title}
                         loading="eager"
-                        fetchPriority={hasDistinctPreview && !loadedPreviews[currentArtwork.id] ? "low" : "high"}
+                        fetchPriority={hasDistinctPreview && loadedPreviewArtworkId !== currentArtwork.id ? "low" : "high"}
                         decoding="async"
                         unoptimized
                         onLoad={(e) => {
-                          setLoadedImages((previous) =>
-                            previous[currentArtwork.id] ? previous : { ...previous, [currentArtwork.id]: true }
-                          );
+                          setLoadedArtworkId(currentArtwork.id);
                           const slugKey = currentArtwork.slug?.toLowerCase().trim();
                           const hasPersistedOrCurated = currentArtwork.palette_metadata || (slugKey && CATALOG_THEMES[slugKey]);
                           if (!hasPersistedOrCurated && !dynamicThemes[currentArtwork.id]) {
@@ -866,7 +862,7 @@ export function KernArtworkDetail({
                           }
                         }}
                         onError={() => handleImageError(currentArtwork.id)}
-                        className={"absolute inset-0 z-[2] h-full w-full object-contain select-none transition-opacity duration-150 motion-reduce:transition-none " + (loadedImages[currentArtwork.id] ? "opacity-100" : "opacity-0")}
+                        className={"absolute inset-0 z-[2] h-full w-full object-contain select-none transition-opacity duration-150 motion-reduce:transition-none " + (loadedArtworkId === currentArtwork.id ? "opacity-100" : "opacity-0")}
                       />
                     </>
                   ) : (
