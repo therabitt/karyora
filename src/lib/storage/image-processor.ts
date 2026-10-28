@@ -5,7 +5,8 @@ import sharp from "sharp";
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024; // 25 MiB = 26,214,400 bytes
 export const MAX_DIMENSION = 10_000; // 10,000 pixels
 export const MAX_TOTAL_PIXELS = 64_000_000; // 64 MP (e.g. 8,000 × 8,000 px)
-export const MAX_ARTWORK_DERIVATIVE_DIMENSION = 1600; // 1,600 pixels bounding box
+export const MAX_ARTWORK_DERIVATIVE_DIMENSION = 1600; // 1,600px exhibition image
+export const MAX_ARTWORK_PREVIEW_DIMENSION = 960; // Sharp preview variant, sufficient for high-DPI ribbon panels
 export const MAX_AVATAR_DERIVATIVE_DIMENSION = 512; // 512 pixels bounding box
 
 export interface ProcessedImageResult {
@@ -101,7 +102,8 @@ export async function validateSourceImageMetadata(buffer: Buffer) {
  */
 export async function createPublicDerivative(
   buffer: Buffer,
-  maxDimension: number = MAX_ARTWORK_DERIVATIVE_DIMENSION
+  maxDimension: number = MAX_ARTWORK_DERIVATIVE_DIMENSION,
+  quality = 85
 ): Promise<ProcessedImageResult> {
   // 1. Validate source metadata first
   await validateSourceImageMetadata(buffer);
@@ -120,7 +122,7 @@ export async function createPublicDerivative(
       fit: "inside",
       withoutEnlargement: true,
     })
-    .webp({ quality: 85 })
+    .webp({ quality })
     .toBuffer({ resolveWithObject: true });
 
   return {
