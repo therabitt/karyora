@@ -55,38 +55,64 @@ export async function downloadPrivateSource(objectPath: string): Promise<Buffer>
 export async function generateAndUploadArtworkDerivative(
   artworkId: string,
   sourceBuffer: Buffer
-): Promise<{ derivativePath: string; result: ProcessedImageResult }> {
+): Promise<{
+  derivativePath: string;
+  previewPath: string;
+  result: ProcessedImageResult;
+}> {
   const supabase = createServiceClient();
   const derivativeId = crypto.randomUUID();
+  const previewId = crypto.randomUUID();
   const derivativePath = `artworks-public/artworks/${artworkId}/${derivativeId}.webp`;
+  const previewPath = `artworks-public/previews/${artworkId}/${previewId}.webp`;
   const storagePath = `artworks/${artworkId}/${derivativeId}.webp`;
+  const previewStoragePath = `previews/${artworkId}/${previewId}.webp`;
 
-  // 1. Register rollback cleanup intent before generating/uploading (Section 4.8.4)
-  const processAfter = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes in the future
-  await enqueueCleanupItem({
-    bucketId: "artworks-public",
-    objectPath: derivativePath,
-    reason: "rollback",
-    processAfter,
-  });
+  // Register cleanup intents for both generated assets before any upload begins.
+  const processAfter = new Date(Date.now() + 10 * 60 * 1000);
+  await Promise.all([
+    enqueueCleanupItem({
+      bucketId: "artworks-public",
+      objectPath: derivativePath,
+      reason: "rollback",
+      processAfter,
+    }),
+    enqueueCleanupItem({
+      bucketId: "artworks-public",
+      objectPath: previewPath,
+      reason: "rollback",
+      processAfter,
+    }),
+  ]);
 
-  // 2. Process orientation-corrected, metadata-stripped WebP derivative (max 1600px)
-  const result = await createPublicDerivative(sourceBuffer, 1600);
+  // The main exhibition image is up to 1600px. The preview is pre-generated at
+  // 1200px / quality 88, so hover panels remain sharp on high-DPI displays while
+  // avoiding an additional runtime image transformation for every panel.
+  const [result, preview] = await Promise.all([
+    createPublicDerivative(sourceBuffer, MAX_ARTWORK_DERIVATIVE_DIMENSION, 88),
+    createPublicDerivative(sourceBuffer, MAX_ARTWORK_PREVIEW_DIMENSION, 88),
+  ]);
 
-  // 3. Upload to artworks-public (path relative to bucket)
-  const { error: uploadError } = await supabase.storage
-    .from("artworks-public")
-    .upload(storagePath, result.buffer, {
+  const [mainUpload, previewUpload] = await Promise.all([
+    supabase.storage.from("artworks-public").upload(storagePath, result.buffer, {
       contentType: "image/webp",
       upsert: true,
-    });
+    }),
+    supabase.storage.from("artworks-public").upload(previewStoragePath, preview.buffer, {
+      contentType: "image/webp",
+      upsert: true,
+    }),
+  ]);
 
-  if (uploadError) {
-    console.error("Failed to upload public artwork derivative:", uploadError);
-    throw new Error("Failed to store exhibition image derivative.");
+  if (mainUpload.error || previewUpload.error) {
+    console.error("Failed to upload artwork image derivative(s):", {
+      main: mainUpload.error,
+      preview: previewUpload.error,
+    });
+    throw new Error("Failed to store the public artwork image set.");
   }
 
-  return { derivativePath, result };
+  return { derivativePath, previewPath, result };
 }
 
 /**
