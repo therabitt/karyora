@@ -4,7 +4,7 @@ import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { getStoragePublicUrl } from "@/lib/storage/urls";
+import { getStoragePublicUrl, isOptimizablePublicStorageUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 import {
@@ -1090,6 +1090,7 @@ export function AlanMenkenShowcase({
                       sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
                       draggable={false}
                       src={seamExitSnapshot.imageUrl}
+                      unoptimized={!isOptimizablePublicStorageUrl(seamExitSnapshot.imageUrl)}
                       alt=""
                       loading="eager"
                       decoding="async"
@@ -1177,7 +1178,10 @@ export function AlanMenkenShowcase({
                             ? "(max-width: 639px) 76vw, (max-width: 1023px) 54vw, (max-width: 1279px) 38vw, 660px"
                             : "(max-width: 639px) 31vw, (max-width: 1023px) 18vw, 140px"}
                           fetchPriority={isActive ? "high" : "low"}
-                          loading={isActive ? "eager" : "lazy"}
+                          // Load all current ribbon panels eagerly: they animate in from off-canvas,
+                          // so lazy-loading by intersection can reveal a blank panel mid-transition.
+                          loading="eager"
+                          unoptimized={!isOptimizablePublicStorageUrl(imageUrl)}
                           decoding="async"
                           draggable={false}
                           src={imageUrl}
@@ -1274,6 +1278,7 @@ export function AlanMenkenShowcase({
                           sizes={`${Math.max(1, Math.round(sliceSize.width))}px`}
                           fetchPriority="high"
                           loading="eager"
+                          unoptimized={!isOptimizablePublicStorageUrl(currentImageUrl)}
                           decoding="async"
                           draggable={false}
                           src={currentImageUrl}
@@ -1366,6 +1371,7 @@ export function AlanMenkenShowcase({
                             height={Math.max(1, Math.round(outgoingSliceSize.height))}
                             sizes={`${Math.max(1, Math.round(outgoingSliceSize.width))}px`}
                             decoding="async"
+                            unoptimized={!isOptimizablePublicStorageUrl(outgoingImageUrl)}
                             draggable={false}
                             src={outgoingImageUrl}
                             alt=""
@@ -1401,6 +1407,7 @@ export function AlanMenkenShowcase({
                       fill
                       sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
                       decoding="async"
+                      unoptimized={!isOptimizablePublicStorageUrl(outgoingImageUrl)}
                       draggable={false}
                       src={outgoingImageUrl}
                       alt=""
