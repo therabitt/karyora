@@ -1222,9 +1222,7 @@ export function AlanMenkenShowcase({
                           sizes={isActive
                             ? "(max-width: 639px) 76vw, (max-width: 1023px) 54vw, (max-width: 1279px) 38vw, 660px"
                             : "(max-width: 639px) 31vw, (max-width: 1023px) 18vw, 280px"}
-                          fetchPriority={isActive
-                            ? loadedPreviewUnderlays[artwork.id] ? "high" : "low"
-                            : "low"}
+                          fetchPriority={isActive && loadedPreviewUnderlays[artwork.id] ? "high" : "low"}
                           // Load all current ribbon panels eagerly: they animate in from off-canvas,
                           // so lazy-loading by intersection can reveal a blank panel mid-transition.
                           loading="eager"
