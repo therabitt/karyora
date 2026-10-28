@@ -6,7 +6,6 @@ import { PublicHeader } from "@/components/layout/PublicHeader";
 
 export function PublicLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  // These pages own their shared exhibition-style header and composition.
   const isArtworkDetail = pathname.startsWith("/artworks/");
   const isHome = pathname === "/";
   const isEditorialPage = pathname === "/contact" || pathname === "/commission";
@@ -18,7 +17,7 @@ export function PublicLayoutShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-paper">
       <PublicHeader />
-      <main className="flex-1 flex flex-col">{children}</main>
+      <div className="flex-1 flex flex-col">{children}</div>
     </div>
   );
 }
