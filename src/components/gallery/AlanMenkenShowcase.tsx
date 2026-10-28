@@ -1417,7 +1417,7 @@ export function AlanMenkenShowcase({
             {current.description && (
               <p
                 key={`description-${current.id}`}
-                className="artwork-caption-description-enter mt-1 line-clamp-2 max-w-2xl font-sans text-xs leading-relaxed text-ink-soft sm:text-sm"
+                className="artwork-caption-description-enter mt-1 line-clamp-2 max-w-2xl font-handwritten text-base leading-snug text-ink-soft sm:text-lg"
               >
                 {current.description}
               </p>
