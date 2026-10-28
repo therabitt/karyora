@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test:artwork-layout": "node scripts/test-artwork-layout.cjs",
-    "test:artwork-interaction": "node scripts/test-artwork-interaction.cjs"
+    "test:artwork-interaction": "node scripts/test-artwork-interaction.cjs",
+    "backfill:artwork-previews": "node scripts/backfill-artwork-previews.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
