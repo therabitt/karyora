@@ -8,7 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { getStoragePublicUrl, isOptimizablePublicStorageUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
@@ -365,19 +365,35 @@ export function KernArtworkDetail({
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
-  // Preload next and previous artwork images into browser cache to prevent flashes
+  // Warm the browser cache with the same optimized responsive image URLs
+  // used by the visible artwork. Preloading the raw Storage URL here would
+  // download the original separately from the Next.js optimized rendition.
   useEffect(() => {
     if (totalCount <= 1) return;
     const nextArt = allArtworks[(activeIndex + 1) % totalCount];
     const prevArt = allArtworks[(activeIndex - 1 + totalCount) % totalCount];
     [nextArt, prevArt].forEach((art) => {
-      if (art?.public_image_path) {
-        const url = getStoragePublicUrl(art.public_image_path);
-        if (url) {
-          const img = new Image();
-          img.src = url;
-        }
-      }
+      if (!art?.public_image_path) return;
+      const url = getStoragePublicUrl(art.public_image_path);
+      if (!url) return;
+
+      const imageProps = getImageProps({
+        src: url,
+        alt: "",
+        width: art.image_width || 1200,
+        height: art.image_height || 1600,
+        sizes: "(max-width: 639px) 78vw, (max-width: 1023px) 58vw, (max-width: 1279px) 38vw, 42vw",
+        unoptimized: !isOptimizablePublicStorageUrl(url),
+      }).props;
+
+      const image = new window.Image();
+      image.fetchPriority = "low";
+      if (imageProps.sizes) image.sizes = imageProps.sizes;
+      if (imageProps.srcSet) image.srcset = imageProps.srcSet;
+      image.src = imageProps.src;
+      // A decode failure should not block navigation; the on-screen image
+      // retains its designed placeholder and reports genuine load failures.
+      void image.decode().catch(() => undefined);
     });
   }, [activeIndex, allArtworks, totalCount]);
 
