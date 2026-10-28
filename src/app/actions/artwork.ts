@@ -102,17 +102,19 @@ export async function createArtworkAction(
     const now = new Date().toISOString();
 
     let publicImagePath: string | null = null;
+    let publicPreviewPath: string | null = null;
     let publishedAt: string | null = null;
     let imageWidth = validatedMeta.effectiveWidth;
     let imageHeight = validatedMeta.effectiveHeight;
 
     // 3. If published, generate exhibition WebP derivative
     if (shouldPublish) {
-      const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
+      const { derivativePath, previewPath, result: derivative } = await generateAndUploadArtworkDerivative(
         artworkId,
         sourceBuffer
       );
       publicImagePath = derivativePath;
+      publicPreviewPath = previewPath;
       publishedAt = now;
       imageWidth = derivative.width;
       imageHeight = derivative.height;
@@ -131,6 +133,7 @@ export async function createArtworkAction(
       tags: parsed.data.tags,
       private_image_path: pendingUpload.object_path,
       public_image_path: publicImagePath,
+      public_preview_path: publicPreviewPath,
       image_width: imageWidth,
       image_height: imageHeight,
       status: shouldPublish ? "published" : "draft",
@@ -157,13 +160,13 @@ export async function createArtworkAction(
       validatedMeta.format
     );
 
-    // 6. If published, remove rollback intent
-    if (publicImagePath) {
+    // 6. If published, remove rollback intents for both generated public assets.
+    if (publicImagePath && publicPreviewPath) {
       await supabase
         .from("storage_cleanup_queue")
         .delete()
         .eq("bucket_id", "artworks-public")
-        .eq("object_path", publicImagePath)
+        .in("object_path", [publicImagePath, publicPreviewPath])
         .eq("reason", "rollback");
     }
 
@@ -243,6 +246,7 @@ export async function updateArtworkAction(
   try {
     let newPrivatePath = currentArtwork.private_image_path;
     let newPublicPath = currentArtwork.public_image_path;
+    let newPublicPreviewPath = currentArtwork.public_preview_path;
     let newImageWidth = currentArtwork.image_width;
     let newImageHeight = currentArtwork.image_height;
 
@@ -258,14 +262,17 @@ export async function updateArtworkAction(
 
       if (isPublished) {
         // Generate new derivative with rollback intent
-        const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
+        const { derivativePath, previewPath, result: derivative } = await generateAndUploadArtworkDerivative(
           currentArtwork.id,
           sourceBuffer
         );
         newPublicPath = derivativePath;
+        newPublicPreviewPath = previewPath;
         newImageWidth = derivative.width;
         newImageHeight = derivative.height;
       } else {
+        newPublicPath = null;
+        newPublicPreviewPath = null;
         newImageWidth = validatedMeta.effectiveWidth;
         newImageHeight = validatedMeta.effectiveHeight;
       }
@@ -282,11 +289,12 @@ export async function updateArtworkAction(
         });
       }
 
-      // Queue old public derivative for cleanup if replacing
-      if (isPublished && currentArtwork.public_image_path) {
+      // Queue both former public assets for cleanup after replacing the source.
+      for (const path of [currentArtwork.public_image_path, currentArtwork.public_preview_path]) {
+        if (!isPublished || !path) continue;
         await enqueueCleanupItem({
           bucketId: "artworks-public",
-          objectPath: currentArtwork.public_image_path,
+          objectPath: path,
           reason: "replace",
           processAfter: new Date(),
         });
@@ -313,6 +321,7 @@ export async function updateArtworkAction(
         is_featured: isPublished ? parsed.data.is_featured : false,
         private_image_path: newPrivatePath,
         public_image_path: newPublicPath,
+        public_preview_path: newPublicPreviewPath,
         image_width: newImageWidth,
         image_height: newImageHeight,
         updated_at: now,
@@ -332,13 +341,13 @@ export async function updateArtworkAction(
       };
     }
 
-    // If replacement derivative was uploaded, remove rollback intent
-    if (newUploadId && isPublished && newPublicPath) {
+    // If replacement derivatives were uploaded, clear both rollback intents.
+    if (newUploadId && isPublished && newPublicPath && newPublicPreviewPath) {
       await supabase
         .from("storage_cleanup_queue")
         .delete()
         .eq("bucket_id", "artworks-public")
-        .eq("object_path", newPublicPath)
+        .in("object_path", [newPublicPath, newPublicPreviewPath])
         .eq("reason", "rollback");
     }
 
