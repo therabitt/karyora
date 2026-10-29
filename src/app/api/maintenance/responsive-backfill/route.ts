@@ -32,26 +32,6 @@ function isResponsivePath(path: string | null) {
   return Number.isInteger(edge) && edge > 0 && edge <= MAX_ARTWORK_EDGE;
 }
 
-async function getSource(supabase: ReturnType<typeof createClient>, artwork: {
-  private_image_path: string | null;
-  public_image_path: string;
-}) {
-  if (artwork.private_image_path) {
-    const { data, error } = await supabase.storage
-      .from(PRIVATE_BUCKET)
-      .download(stripBucketPrefix(artwork.private_image_path, PRIVATE_BUCKET));
-    if (!error && data) {
-      return { buffer: Buffer.from(await data.arrayBuffer()), source: "private" as const };
-    }
-  }
-
-  const { data, error } = await supabase.storage
-    .from(PUBLIC_BUCKET)
-    .download(stripBucketPrefix(artwork.public_image_path, PUBLIC_BUCKET));
-  if (error || !data) throw new Error("Unable to download a valid source image.");
-  return { buffer: Buffer.from(await data.arrayBuffer()), source: "public-fallback" as const };
-}
-
 function authorized(request: Request) {
   const expected = process.env.KARYORA_RESPONSIVE_BACKFILL_TOKEN ?? "";
   const provided = new URL(request.url).searchParams.get("token") ?? "";
@@ -102,11 +82,30 @@ export async function GET(request: Request) {
       return NextResponse.json({ status: "skipped", id: artwork.id, reason: "already-responsive" });
     }
 
-    const source = await getSource(supabase, {
-      private_image_path: artwork.private_image_path,
-      public_image_path: artwork.public_image_path!,
-    });
-    const buffer = source.buffer;
+    let sourceBuffer: Buffer | null = null;
+    let source: "private" | "public-fallback" = "private";
+
+    if (artwork.private_image_path) {
+      const privateResult = await supabase.storage
+        .from(PRIVATE_BUCKET)
+        .download(stripBucketPrefix(artwork.private_image_path, PRIVATE_BUCKET));
+      if (!privateResult.error && privateResult.data) {
+        sourceBuffer = Buffer.from(await privateResult.data.arrayBuffer());
+      }
+    }
+
+    if (!sourceBuffer) {
+      source = "public-fallback";
+      const publicResult = await supabase.storage
+        .from(PUBLIC_BUCKET)
+        .download(stripBucketPrefix(artwork.public_image_path!, PUBLIC_BUCKET));
+      if (publicResult.error || !publicResult.data) {
+        throw new Error("Unable to download a valid source image.");
+      }
+      sourceBuffer = Buffer.from(await publicResult.data.arrayBuffer());
+    }
+
+    const buffer = sourceBuffer;
     if (buffer.length === 0 || buffer.length > MAX_SOURCE_BYTES) {
       throw new Error("Source image is empty or exceeds 25 MiB.");
     }
