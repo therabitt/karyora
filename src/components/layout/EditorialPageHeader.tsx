@@ -14,7 +14,7 @@ export function EditorialPageHeader() {
         href="/"
         aria-label="Karyora home"
         className={
-          "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight transition-colors sm:text-4xl lg:text-[44px] " +
+          "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight transition-colors motion-transition-micro sm:text-4xl lg:text-[44px] " +
           (isNavigationOpen ? "text-paper" : "text-ink hover:text-accent")
         }
       >
