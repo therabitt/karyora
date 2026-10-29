@@ -334,7 +334,7 @@ export function AlanMenkenShowcase({
       slicedNavigationLockedRef.current = true;
 
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+      const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 850);
       const sliceStep = getMotionDuration("--motion-stagger-slice-step", 60);
       const sliceTie = getMotionDuration("--motion-stagger-slice-tie", 12);
       const maximumSliceStagger =
@@ -486,7 +486,7 @@ export function AlanMenkenShowcase({
       transitionSnapshot.viewMode === "sliced" &&
       currentArtworkId !== undefined &&
       delayedSliceArtworkId === currentArtworkId;
-    const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+    const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 850);
     const sliceStagger =
       Math.floor((SLICE_COUNT - 1) / 2) *
         getMotionDuration("--motion-stagger-slice-step", 60) +
@@ -496,7 +496,7 @@ export function AlanMenkenShowcase({
       ? (hasSequentialSliceHandoff
         ? getMotionDuration("--motion-delay-slice-handoff", 920)
         : 0) + sliceDuration + sliceStagger + safetyBuffer
-      : getMotionDuration("--motion-duration-image", 720) + safetyBuffer;
+      : getMotionDuration("--motion-duration-image", 900) + safetyBuffer;
 
     const timeoutId = window.setTimeout(() => {
       setTransitionSnapshot((currentSnapshot) =>
@@ -531,7 +531,7 @@ export function AlanMenkenShowcase({
       ],
       {
         duration: getMotionDuration("--motion-duration-ribbon-far", 800),
-        easing: getMotionEasing("--motion-ease-in", "cubic-bezier(0.72, 0, 0.28, 1)"),
+        easing: getMotionEasing("--motion-ease-in", "cubic-bezier(0.7, 0, 0.84, 0)"),
         fill: "both",
       },
     );
