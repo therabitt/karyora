@@ -583,8 +583,8 @@ export function KernArtworkDetail({
 
   const getLayer2Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${standardEase} forwards`;
-      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${standardEase} forwards`;
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${detailEaseStandard} forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${detailEaseStandard} forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
@@ -604,8 +604,8 @@ export function KernArtworkDetail({
 
   const getLayer3Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${standardEase} forwards`;
-      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${standardEase} forwards`;
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${detailEaseStandard} forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${detailEaseStandard} forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
