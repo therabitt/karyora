@@ -128,7 +128,7 @@ export function PublicNavigationMenu({
             closeMenu();
             triggerRef.current?.focus();
           }}
-          className={"absolute inset-0 h-full w-full bg-[#121110]/45 backdrop-saturate-50 transition-opacity duration-300 motion-reduce:transition-none " + (
+          className={"absolute inset-0 h-full w-full bg-[#121110]/45 backdrop-saturate-50 transition-opacity motion-transition-ui motion-reduce:transition-none " + (
             isOpen ? "opacity-100" : "opacity-0"
           )}
         />
@@ -140,7 +140,7 @@ export function PublicNavigationMenu({
           aria-modal="true"
           aria-label="Karyora navigation"
           aria-hidden={!isOpen}
-          className={"absolute inset-x-0 top-0 z-[102] flex h-[27vh] min-h-[230px] max-h-[300px] flex-col bg-[#171512] text-paper shadow-[0_24px_60px_rgba(0,0,0,0.22)] transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none " + (
+          className={"absolute inset-x-0 top-0 z-[102] flex h-[27vh] min-h-[230px] max-h-[300px] flex-col bg-[#171512] text-paper shadow-[0_24px_60px_rgba(0,0,0,0.22)] transition-transform motion-transition-navigation ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none " + (
             isOpen ? "translate-y-0" : "-translate-y-full"
           )}
         >
