@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test:artwork-layout": "node scripts/test-artwork-layout.cjs",
     "test:artwork-interaction": "node scripts/test-artwork-interaction.cjs",
+    "test:motion-system": "node scripts/test-motion-system.cjs",
     "prebuild": "node --check scripts/backfill-artwork-responsive-images.mjs"
   },
   "dependencies": {
