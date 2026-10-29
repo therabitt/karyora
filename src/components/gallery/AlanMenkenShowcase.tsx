@@ -1184,6 +1184,7 @@ export function AlanMenkenShowcase({
                     failed,
                     imageScale,
                     aspectRatio,
+                    sourceSize,
                     width,
                     height,
                     left,
