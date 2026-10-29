@@ -886,7 +886,7 @@ export function KernArtworkDetail({
                   </div>
 
                   {/* Zoom hint (hover only) */}
-                  <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-ink/80 text-white backdrop-blur-xs text-[10px] font-mono tracking-wider rounded-2xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1.5 shadow-sm">
+                  <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-ink/80 text-white backdrop-blur-xs text-[10px] font-mono tracking-wider rounded-2xs opacity-0 group-hover:opacity-100 transition-opacity motion-transition-micro pointer-events-none flex items-center gap-1.5 shadow-sm">
                     <span>Zoom</span>
                     <span aria-hidden="true">⤢</span>
                   </div>
@@ -1056,7 +1056,7 @@ export function KernArtworkDetail({
                       triggerCardThrow(artwork, idx, dir);
                     }}
                     aria-label={`Select № ${num}: ${artwork.title}`}
-                    className={`group shrink-0 relative flex items-center gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xs transition-all duration-200 border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`group shrink-0 relative flex items-center gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xs transition-all motion-transition-micro border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                       isNavDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
                     } ${
                       isSelected
@@ -1079,7 +1079,7 @@ export function KernArtworkDetail({
                           decoding="async"
                           alt=""
                           onError={() => handleImageError(artwork.id)}
-                          className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.08]"
+                          className="w-full h-full object-cover transition-transform motion-transition-ui group-hover:scale-[1.08]"
                         />
                       ) : (
                         <span className="w-2 h-2 rounded-full bg-accent/60" />
@@ -1105,7 +1105,7 @@ export function KernArtworkDetail({
             role="dialog"
             aria-modal="true"
             aria-label={`Full resolution view: ${currentArtwork.title}`}
-            className="fixed inset-0 z-50 bg-ink/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-8 animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 bg-ink/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-8 animate-in fade-in motion-fade-in"
           >
             <div className="flex items-center justify-between text-white/80">
               <div className="flex items-center gap-3">
