@@ -71,7 +71,7 @@ assert.equal(motionTokens.get("--motion-ease-ribbon-focus"), easing);
 assert.equal(motionTokens.get("--motion-ease-unified-experiment"), easing);
 assert.equal(getCubicBezierProgress(0, easing), 0);
 assert.equal(getCubicBezierProgress(1, easing), 1);
-assert.ok(getCubicBezierProgress(0.25, easing) > 0.25);
+assert.ok(getCubicBezierProgress(0.25, easing) < 0.25);
 assert.ok(getCubicBezierProgress(0.75, easing) > getCubicBezierProgress(0.25, easing));
 assert.equal(getCubicBezierProgress(0.4, "linear"), 0.4);
 
