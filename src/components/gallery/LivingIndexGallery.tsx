@@ -89,13 +89,13 @@ export function LivingIndexGallery({
                       itemRefs.current[idx] = el;
                     }}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`relative transition-colors duration-150 group ${
+                    className={`relative transition-colors motion-transition-micro group ${
                       isActive ? "bg-surface-muted/50" : "hover:bg-surface-muted/25"
                     }`}
                   >
                     {/* Active Visual Indicator Rule */}
                     <div
-                      className={`absolute left-0 top-0 bottom-0 w-1 bg-accent transition-opacity duration-150 ${
+                      className={`absolute left-0 top-0 bottom-0 w-1 bg-accent transition-opacity motion-transition-micro ${
                         isActive ? "opacity-100" : "opacity-0"
                       }`}
                       aria-hidden="true"
@@ -166,7 +166,7 @@ export function LivingIndexGallery({
                             {year}
                           </span>
                           <span
-                            className={`text-sm font-sans transition-transform duration-150 ${
+                            className={`text-sm font-sans transition-transform motion-transition-micro ${
                               isActive
                                 ? "text-accent translate-x-1"
                                 : "text-border-strong group-hover:text-accent group-hover:translate-x-1"
@@ -203,7 +203,7 @@ export function LivingIndexGallery({
                       src={activeImageUrl}
                       alt={activeArtwork.alt_text || activeArtwork.title}
                       onError={() => handleImageError(activeArtwork.id)}
-                      className="max-w-full max-h-full object-contain rounded-2xs shadow-sm transition-opacity duration-300 ease-out group-hover/stage:scale-[1.01]"
+                      className="max-w-full max-h-full object-contain rounded-2xs shadow-sm transition-all motion-transition-image group-hover/stage:scale-[1.01]"
                     />
                   ) : (
                     /* Designed Exhibition Canvas Fallback */
