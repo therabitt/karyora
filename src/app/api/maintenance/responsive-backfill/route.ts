@@ -137,7 +137,7 @@ export async function GET(request: Request) {
         status: "planned",
         id: artwork.id,
         title: artwork.title,
-        source: source.source,
+        source,
         sourceBytes: buffer.length,
         sourceFormat: metadata.format,
         sourceDimensions: { width, height },
