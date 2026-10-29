@@ -22,6 +22,7 @@ const {
   getMotionStaggerDelay,
   getStaggerDelayExpression,
   getSliceStaggerRank,
+  getSliceStaggerDelay,
   getCubicBezierProgress,
 } = loaded.exports;
 
@@ -40,15 +41,21 @@ assert.equal(
   "calc(var(--motion-stagger-slice-step) + var(--motion-stagger-slice-step) + var(--motion-stagger-slice-step))",
 );
 
-const nextOrder = [0, 1, 2, 3, 4].sort((a, b) =>
-  getSliceStaggerRank(a, 5, "next") - getSliceStaggerRank(b, 5, "next")
+assert.deepEqual([0, 1, 2, 3, 4].map((index) => getSliceStaggerRank(index, 5)), [2, 1, 0, 1, 2]);
+assert.deepEqual(
+  [0, 1, 2, 3, 4].map((index) => getSliceStaggerDelay(index, 5, "next", 60, 12)),
+  [120, 60, 0, 72, 132],
 );
-const previousOrder = [0, 1, 2, 3, 4].sort((a, b) =>
-  getSliceStaggerRank(a, 5, "previous") - getSliceStaggerRank(b, 5, "previous")
+assert.deepEqual(
+  [0, 1, 2, 3, 4].map((index) => getSliceStaggerDelay(index, 5, "previous", 60, 12)),
+  [132, 72, 0, 60, 120],
 );
-assert.deepEqual(nextOrder, [2, 1, 3, 0, 4]);
-assert.deepEqual(previousOrder, [2, 3, 1, 4, 0]);
-assert.equal(getSliceStaggerRank(-1, 5, "next"), 0);
+assert.deepEqual(
+  [0, 1, 2, 3, 4].map((index) => getSliceStaggerDelay(index, 5, "next", 60, 12, true)),
+  [12, 72, 120, 60, 0],
+);
+assert.equal(getSliceStaggerRank(-1, 5), 0);
+assert.equal(getSliceStaggerDelay(-1, 5, "next", 60, 12), 0);
 
 const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
 assert.equal(getCubicBezierProgress(0, easing), 0);
