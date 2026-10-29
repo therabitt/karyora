@@ -101,7 +101,7 @@ export function PublicNavigationMenu({
         aria-label={isOpen ? "Close navigation menu" : "Open navigation menu"}
         aria-expanded={isOpen}
         aria-controls="karyora-public-navigation"
-        className={"inline-flex min-h-11 min-w-11 items-center justify-center rounded-full transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + buttonClassName}
+        className={"inline-flex min-h-11 min-w-11 items-center justify-center rounded-full transition-colors motion-transition-micro focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent " + buttonClassName}
       >
         <span className="sr-only">{isOpen ? "Close menu" : "Open menu"}</span>
         {isOpen ? (
@@ -140,7 +140,7 @@ export function PublicNavigationMenu({
           aria-modal="true"
           aria-label="Karyora navigation"
           aria-hidden={!isOpen}
-          className={"absolute inset-x-0 top-0 z-[102] flex h-[27vh] min-h-[230px] max-h-[300px] flex-col bg-[#171512] text-paper shadow-[0_24px_60px_rgba(0,0,0,0.22)] transition-transform motion-transition-navigation ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none " + (
+          className={"absolute inset-x-0 top-0 z-[102] flex h-[27vh] min-h-[230px] max-h-[300px] flex-col bg-[#171512] text-paper shadow-[0_24px_60px_rgba(0,0,0,0.22)] transition-transform motion-transition-navigation motion-reduce:transition-none " + (
             isOpen ? "translate-y-0" : "-translate-y-full"
           )}
         >
@@ -154,7 +154,7 @@ export function PublicNavigationMenu({
                 triggerRef.current?.focus();
               }}
               aria-label="Close navigation menu"
-              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-paper transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full text-paper transition-colors motion-transition-micro hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
             >
               <svg aria-hidden="true" viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
                 <path d="M6 6l12 12M18 6L6 18" />
@@ -183,7 +183,7 @@ export function PublicNavigationMenu({
                   tabIndex={isOpen ? 0 : -1}
                   onClick={closeMenu}
                   aria-current={active ? "page" : undefined}
-                  className={"whitespace-nowrap font-handwritten text-[27px] leading-none transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:text-3xl lg:text-[40px] " + linkColor}
+                  className={"whitespace-nowrap font-handwritten text-[27px] leading-none transition-colors motion-transition-micro focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:text-3xl lg:text-[40px] " + linkColor}
                 >
                   {item.label}
                 </Link>
