@@ -89,7 +89,7 @@ export function LivingIndexGallery({
                       itemRefs.current[idx] = el;
                     }}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`relative transition-colors motion-transition-micro group ${
+                    className={`relative transition-colors motion-transition-micro motion-transition-micro group ${
                       isActive ? "bg-surface-muted/50" : "hover:bg-surface-muted/25"
                     }`}
                   >
@@ -113,7 +113,7 @@ export function LivingIndexGallery({
                         <div className="space-y-0.5 flex-1 min-w-0 pr-2">
                           <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.16em]">
                             <span
-                              className={`font-semibold transition-colors ${
+                              className={`font-semibold transition-colors motion-transition-micro ${
                                 isActive ? "text-accent" : "text-text-muted"
                               }`}
                             >
@@ -135,7 +135,7 @@ export function LivingIndexGallery({
 
                           {/* Title */}
                           <h2
-                            className={`font-artwork-title text-lg xl:text-xl tracking-tight transition-colors truncate leading-tight ${
+                            className={`font-artwork-title text-lg xl:text-xl tracking-tight transition-colors motion-transition-micro truncate leading-tight ${
                               isActive
                                 ? "text-accent font-normal"
                                 : "text-ink group-hover:text-accent font-normal"
@@ -193,7 +193,7 @@ export function LivingIndexGallery({
               <Link
                 href={`/artworks/${activeArtwork.slug}`}
                 aria-label={`View full case study: ${activeArtwork.title}`}
-                className="group/stage relative w-full h-[380px] xl:h-[440px] rounded-xs border border-border/80 bg-paper/80 p-4 sm:p-5 overflow-hidden transition-all hover:border-accent/40 hover:shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent flex items-center justify-center block"
+                className="group/stage relative w-full h-[380px] xl:h-[440px] rounded-xs border border-border/80 bg-paper/80 p-4 sm:p-5 overflow-hidden transition-all motion-transition-ui hover:border-accent/40 hover:shadow-xs focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent flex items-center justify-center block"
               >
                 <div className="w-full h-full flex items-center justify-center overflow-hidden relative">
                   {activeImageUrl && !activeImageFailed ? (
@@ -259,7 +259,7 @@ export function LivingIndexGallery({
                     <span>Explore Case Study</span>
                     <span
                       aria-hidden="true"
-                      className="motion-safe:transition-transform group-hover/link:translate-x-1"
+                      className="motion-safe:transition-transform motion-transition-micro group-hover/link:translate-x-1"
                     >
                       →
                     </span>
