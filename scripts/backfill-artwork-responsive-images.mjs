@@ -26,8 +26,16 @@ function stripBucketPrefix(path, bucket) {
   return path.startsWith(`${bucket}/`) ? path.slice(bucket.length + 1) : path;
 }
 function isResponsivePath(path) {
-  const clean = path?.replace(/^\\/+/, "");
-  return /^artworks-public\\/artworks\\/[^/]+\\/[^/]+\\/responsive\\/\\d+\\.webp$/.test(clean || "");
+  if (!path) return false;
+  const clean = path.startsWith("/") ? path.slice(1) : path;
+  const withoutBucket = clean.startsWith(`${BUCKET_PUBLIC}/`)
+    ? clean.slice(BUCKET_PUBLIC.length + 1)
+    : clean;
+  const parts = withoutBucket.split("/");
+  if (parts.length !== 5 || parts[0] !== "artworks" || parts[3] !== "responsive") return false;
+  const edgeText = parts[4].endsWith(".webp") ? parts[4].slice(0, -".webp".length) : "";
+  const edge = Number(edgeText);
+  return Number.isInteger(edge) && edge > 0 && edge <= MAX_ARTWORK_DIMENSION;
 }
 function targetEdges(width, height) {
   const maxEdge = Math.min(MAX_ARTWORK_DIMENSION, Math.max(width, height));
