@@ -173,6 +173,7 @@ body {
 }
 
 .artwork-ribbon-enter {
+  transform-origin: center center;
   animation: artwork-ribbon-enter 760ms cubic-bezier(0.2, 0.72, 0.24, 1) both;
 }
 
