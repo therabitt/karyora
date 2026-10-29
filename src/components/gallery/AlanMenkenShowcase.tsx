@@ -6,8 +6,6 @@ import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 
-const RIBBON_ACTIVE_IMAGE_SIZES = "(min-width: 1280px) min(780px, 58vw), (min-width: 640px) 54vw, 76vw";
-const RIBBON_PREVIEW_IMAGE_SIZES = "(min-width: 1280px) 17vw, (min-width: 640px) 20vw, 24vw";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 import {
@@ -22,6 +20,9 @@ import {
   getWheelDirection,
   shouldHandleArtworkKeyboardNavigation,
 } from "@/lib/gallery/artwork-interaction";
+
+const RIBBON_ACTIVE_IMAGE_SIZES = "(min-width: 1280px) min(780px, 58vw), (min-width: 640px) 54vw, 76vw";
+const RIBBON_PREVIEW_IMAGE_SIZES = "(min-width: 1280px) 17vw, (min-width: 640px) 20vw, 24vw";
 
 export interface AlanMenkenShowcaseProps {
   artworks: PublicArtwork[];
