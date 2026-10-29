@@ -545,6 +545,10 @@ export function KernArtworkDetail({
   // Backward: Throws right, enters from left.
   const isFwd = direction === "forward";
 
+  const detailEaseStandard = getMotionEasing(
+    "--motion-ease-standard",
+    "cubic-bezier(0.72, 0, 0.28, 1)",
+  );
   const detailEaseIn = getMotionEasing(
     "--motion-ease-in",
     "cubic-bezier(0.72, 0, 0.28, 1)",
@@ -558,8 +562,8 @@ export function KernArtworkDetail({
 
   const getLayer1Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${standardEase} forwards`;
-      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${standardEase} forwards`;
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${detailEaseStandard} forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${detailEaseStandard} forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
