@@ -104,7 +104,7 @@ export function ImageUploader({
       </label>
 
       <div
-        className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-colors ${
+        className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-colors motion-transition-micro ${
           uploadError
             ? "border-danger/50 bg-danger/5"
             : uploadId
