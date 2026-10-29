@@ -3,17 +3,27 @@ import { getStoragePublicUrl } from "@/lib/storage/urls";
 export const ARTWORK_RESPONSIVE_MAX_EDGES = [64, 128, 256, 384, 512, 768, 1024, 1280, 1600] as const;
 
 function normalizeBucketPath(path: string): string {
-  const clean = path.replace(/^\\/+/, "");
+  const clean = path.startsWith("/") ? path.slice(1) : path;
   return clean.startsWith("artworks-public/") ? clean.slice("artworks-public/".length) : clean;
 }
 
 function parseResponsivePath(path: string): { directory: string; maxEdge: number } | null {
-  const normalized = normalizeBucketPath(path);
-  const match = normalized.match(/^(artworks\\/[^/]+\\/[^/]+\\/responsive)\\/(\\d+)\\.webp$/);
-  if (!match) return null;
-  const maxEdge = Number(match[2]);
+  const parts = normalizeBucketPath(path).split("/");
+  if (
+    parts.length !== 5 ||
+    parts[0] !== "artworks" ||
+    parts[3] !== "responsive" ||
+    !parts[4].endsWith(".webp")
+  ) return null;
+
+  const edgeText = parts[4].slice(0, -".webp".length);
+  const maxEdge = Number(edgeText);
   if (!Number.isInteger(maxEdge) || maxEdge <= 0 || maxEdge > 1600) return null;
-  return { directory: `artworks-public/${match[1]}`, maxEdge };
+
+  return {
+    directory: `artworks-public/${parts.slice(0, 4).join("/")}`,
+    maxEdge,
+  };
 }
 
 export function getArtworkResponsiveObjectPaths(publicImagePath: string | null | undefined): string[] {
@@ -29,9 +39,8 @@ export function getArtworkResponsiveObjectPaths(publicImagePath: string | null |
 }
 
 export function getArtworkResponsiveGroupPrefix(objectPath: string): string | null {
-  const normalized = normalizeBucketPath(objectPath);
-  const match = normalized.match(/^(artworks\\/[^/]+\\/[^/]+\\/responsive\\/)\\d+\\.webp$/);
-  return match ? `artworks-public/${match[1]}` : null;
+  const parsed = parseResponsivePath(objectPath);
+  return parsed ? `${parsed.directory}/` : null;
 }
 
 export interface ArtworkImageSources {
@@ -52,8 +61,8 @@ export function getArtworkResponsiveImageSources(
 
   const candidates = getArtworkResponsiveObjectPaths(publicImagePath)
     .map((path) => {
-      const edgeMatch = path.match(/\\/(\\d+)\\.webp$/);
-      const edge = edgeMatch ? Number(edgeMatch[1]) : 0;
+      const fileName = path.slice(path.lastIndexOf("/") + 1);
+      const edge = Number(fileName.slice(0, -".webp".length));
       const width = edge === parsed.maxEdge
         ? imageWidth
         : Math.max(1, Math.round(imageWidth * edge / parsed.maxEdge));
