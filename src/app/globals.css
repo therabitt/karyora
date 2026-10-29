@@ -104,15 +104,25 @@ body {
   background-color: var(--color-border-strong);
 }
 
-/* Ribbon arrives in a converging vertical wave: outer panels enter first, then
-   progressively reveal the artwork that anchors the center of the viewport. */
+/* Ribbon unfolds from the selected artwork, then settles with a restrained soft bounce. */
 @keyframes artwork-ribbon-enter {
-  from {
-    transform: translate3d(0, var(--ribbon-enter-y, -120vh), 0);
+  0% {
+    opacity: 0.28;
+    transform: translate3d(var(--ribbon-enter-x, 0px), var(--ribbon-enter-y, 0px), 0) scale(0.94);
   }
 
-  to {
-    transform: translate3d(0, var(--ribbon-stagger-y, 0px), 0);
+  76% {
+    opacity: 1;
+    transform: translate3d(calc(var(--ribbon-enter-x, 0px) * -0.035), calc(var(--ribbon-stagger-y, 0px) - 5px), 0) scale(1.012);
+  }
+
+  90% {
+    transform: translate3d(0, calc(var(--ribbon-stagger-y, 0px) + 1.5px), 0) scale(0.998);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, var(--ribbon-stagger-y, 0px), 0) scale(1);
   }
 }
 
@@ -163,12 +173,13 @@ body {
 }
 
 .artwork-ribbon-enter {
-  animation: artwork-ribbon-enter 980ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  transform-origin: center center;
+  animation: artwork-ribbon-enter 760ms cubic-bezier(0.2, 0.72, 0.24, 1) both;
 }
 
-/* The focused artwork uses the same 1100 ms settling time as Ribbon's FLIP transition. */
+/* The focal artwork gets a slightly more deliberate settle without delaying the cascade. */
 .artwork-ribbon-enter-active {
-  animation-duration: 1100ms;
+  animation-duration: 820ms;
 }
 
 .artwork-ribbon-item img {
@@ -266,5 +277,47 @@ body {
   .artwork-slice-exit-panel {
     transition: none;
     will-change: auto;
+  }
+}
+
+/* Karyora one-time editorial opening. Each scene changes as a single composed beat. */
+@keyframes karyora-opening-copy-enter {
+  from { opacity: 0; transform: translate3d(0, 16px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes karyora-opening-fade-out {
+  to { opacity: 0; visibility: hidden; }
+}
+
+.karyora-opening { isolation: isolate; opacity: 1; }
+.karyora-opening-copy {
+  animation: karyora-opening-copy-enter 680ms cubic-bezier(0.2, 0.72, 0.24, 1) both;
+}
+.karyora-opening-headline-invitation { max-width: 13ch; }
+.karyora-opening[data-exiting="true"] {
+  pointer-events: none;
+  animation: karyora-opening-fade-out 680ms cubic-bezier(0.4, 0, 0.8, 1) both;
+}
+.karyora-opening[data-exit-action="skip"][data-exiting="true"] {
+  animation-duration: 150ms;
+}
+.karyora-opening-progress-fill {
+  transform-origin: left center;
+  transition: width 420ms cubic-bezier(0.2, 0.72, 0.24, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .karyora-opening-copy,
+  .karyora-opening[data-exiting="true"] {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .karyora-opening-progress-fill,
+  .karyora-opening-skip,
+  .karyora-opening button {
+    transition: none;
   }
 }

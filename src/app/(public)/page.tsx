@@ -1,4 +1,5 @@
 import { AlanMenkenShowcase } from "@/components/gallery/AlanMenkenShowcase";
+import { KaryoraOpeningSequence } from "@/components/opening/KaryoraOpeningSequence";
 import { getFeaturedPublishedArtworks, getPublishedArtworks } from "@/lib/data/artworks";
 
 interface HomePageProps {
@@ -16,10 +17,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const { total: totalArtworksCount } = await getPublishedArtworks({ pageSize: 1 });
 
   return (
-    <AlanMenkenShowcase
-      artworks={featuredArtworks}
-      totalCount={totalArtworksCount}
-      initialIndex={initialIndex}
-    />
+    <KaryoraOpeningSequence enabled={featuredArtworks.length > 0}>
+      <AlanMenkenShowcase
+        artworks={featuredArtworks}
+        totalCount={totalArtworksCount}
+        initialIndex={initialIndex}
+      />
+    </KaryoraOpeningSequence>
   );
 }

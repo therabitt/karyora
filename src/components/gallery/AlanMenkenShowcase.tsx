@@ -8,6 +8,8 @@ import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-va
 
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
+import { useKaryoraOpeningSequence } from "@/components/opening/KaryoraOpeningSequence";
+import { getRibbonCascadeDelay, getRibbonEntranceOriginX } from "@/lib/gallery/ribbon-entrance";
 import {
   fitArtworkWithinBounds,
   getArtworkWindow,
@@ -171,9 +173,9 @@ export function AlanMenkenShowcase({
   }, [activeIndex]);
 
   const [viewMode, setViewMode] = useState<ViewMode>("ribbons");
-  // Start Ribbon's entrance only on the page's initial presentation. Any user
-  // interaction hands control back to the existing FLIP/navigation animations.
-  const [isRibbonEntranceActive, setIsRibbonEntranceActive] = useState(true);
+  const { isOpeningSequenceActive, shouldStartInitialRibbonEntrance } = useKaryoraOpeningSequence();
+  // The homepage controller releases the entrance after its editorial sequence fades out.
+  const [isRibbonEntranceActive, setIsRibbonEntranceActive] = useState(false);
   const [transitionDirection, setTransitionDirection] = useState<"next" | "previous">("next");
   const [transitionSnapshot, setTransitionSnapshot] = useState<ArtworkTransitionSnapshot | null>(null);
   // Persists for the incoming artwork's lifetime so its delayed animation doesn't
@@ -234,6 +236,10 @@ export function AlanMenkenShowcase({
   }, [total]);
 
   useEffect(() => {
+    if (shouldStartInitialRibbonEntrance) setIsRibbonEntranceActive(true);
+  }, [shouldStartInitialRibbonEntrance]);
+
+  useEffect(() => {
     if (total <= 0 || !isRibbonEntranceActive) return;
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -244,7 +250,7 @@ export function AlanMenkenShowcase({
     // Match Ribbon's FLIP timing: previews settle over 980 ms and the focused artwork
     // over 1100 ms. Its center-first stagger adds at most 168 ms before the focus arrives.
     // Clear the entrance class only after every panel has reached its resting position.
-    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1350);
+    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1220);
     return () => window.clearTimeout(timeoutId);
   }, [isRibbonEntranceActive, total]);
 
@@ -703,6 +709,7 @@ export function AlanMenkenShowcase({
 
   useEffect(() => {
     function handleGlobalKeyDown(event: KeyboardEvent) {
+      if (isOpeningSequenceActive) return;
       const target = event.target;
       const element = target instanceof HTMLElement ? target : null;
       const stage = stageRef.current;
@@ -734,10 +741,10 @@ export function AlanMenkenShowcase({
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [handleNext, handlePrev, isNavigationOpen, total]);
+  }, [handleNext, handlePrev, isNavigationOpen, isOpeningSequenceActive, total]);
 
   const handleStageWheel = useCallback((event: ReactWheelEvent<HTMLElement>) => {
-    if (isNavigationOpen || total <= 1 || event.ctrlKey) return;
+    if (isOpeningSequenceActive || isNavigationOpen || total <= 1 || event.ctrlKey) return;
 
     const rawDelta = event.deltaY;
     const normalizedDelta = event.deltaMode === 1
@@ -774,7 +781,7 @@ export function AlanMenkenShowcase({
     wheelLockedRef.current = true;
     if (direction === "next") handleNext();
     else handlePrev();
-  }, [handleNext, handlePrev, isNavigationOpen, total]);
+  }, [handleNext, handlePrev, isNavigationOpen, isOpeningSequenceActive, total]);
 
   const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType !== "touch" || isNavigationOpen || total <= 1) {
@@ -1035,11 +1042,6 @@ export function AlanMenkenShowcase({
     }
   }
 
-  const maxRibbonOffset = Math.max(
-    ...ribbonEntries.map((entry) => Math.abs(entry.offset)),
-    0
-  );
-
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
   const sliceMaxWidth = Math.max(
@@ -1112,6 +1114,7 @@ export function AlanMenkenShowcase({
         <section
           ref={stageRef}
           data-transition-direction={transitionDirection}
+          data-karyora-gallery-stage
           aria-label="Artwork viewport. Use left and right arrow keys, scroll, or swipe to change artwork."
           tabIndex={0}
           onWheel={handleStageWheel}
@@ -1200,9 +1203,9 @@ export function AlanMenkenShowcase({
                   const ribbonPatternIndex =
                     ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
                     STAGGER_HEIGHTS_RIBBONS.length;
-                  const entranceDelay =
-                    (maxRibbonOffset - Math.abs(offset)) * 42 + (offset > 0 ? 10 : 0);
-                  const entranceOffset = ribbonPatternIndex % 2 === 0 ? "-120vh" : "120vh";
+                  const entranceDelay = getRibbonCascadeDelay(offset);
+                  const entranceOriginX = getRibbonEntranceOriginX(stageWidth, left, width);
+                  const entranceOriginY = Math.round(stageHeight / 2 - (top + height / 2));
                   const itemClassName = isActive
                     ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale hover:opacity-90 hover:grayscale-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
@@ -1236,7 +1239,8 @@ export function AlanMenkenShowcase({
                         height: height + "px",
                         transform: "translate3d(0px, " + staggerOffset + "px, 0)",
                         animationDelay: entranceDelay + "ms",
-                        "--ribbon-enter-y": entranceOffset,
+                        "--ribbon-enter-x": entranceOriginX + "px",
+                        "--ribbon-enter-y": entranceOriginY + "px",
                         "--ribbon-stagger-y": staggerOffset + "px",
                       } as CSSProperties}
                     >
