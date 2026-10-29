@@ -24,6 +24,7 @@ import {
   getCubicBezierProgress,
   getMotionDuration,
   getMotionEasing,
+  getMotionStaggerDelay,
   getSliceStaggerDelay,
 } from "@/lib/motion/motion-tokens";
 
@@ -571,9 +572,12 @@ export function AlanMenkenShowcase({
 
     const activeId = displayArtworks[activeIndex]?.id;
     const easing = getMotionEasing(
-      "--motion-ease-standard",
-      "cubic-bezier(0.22, 1, 0.36, 1)",
+      "--motion-ease-ribbon-focus",
+      "cubic-bezier(0.4, 0, 0.2, 1)",
     );
+    const ribbonStaggerStepMs = getMotionDuration("--motion-stagger-ribbon-step", 58);
+    const ribbonStaggerTieMs = getMotionDuration("--motion-stagger-ribbon-tie", 10);
+    const ribbonStaggerCapMs = getMotionDuration("--motion-stagger-ribbon-cap", 232);
 
     ribbonItemsRef.current.forEach((element, id) => {
       const last = element.getBoundingClientRect();
@@ -635,14 +639,24 @@ export function AlanMenkenShowcase({
 
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
-      const ribbonDistance = Math.abs(Number(element.dataset.ribbonOffset ?? "0"));
+      const ribbonOffset = Number(element.dataset.ribbonOffset ?? "0");
+      const ribbonDistance = Math.abs(ribbonOffset);
       const duration = id === activeId
-        ? getMotionDuration("--motion-duration-ribbon-focus", 960)
+        ? getMotionDuration("--motion-duration-ribbon-focus", 1250)
         : ribbonDistance <= 1
-        ? getMotionDuration("--motion-duration-ribbon-near", 920)
+        ? getMotionDuration("--motion-duration-ribbon-near", 1120)
         : ribbonDistance === 2
-        ? getMotionDuration("--motion-duration-ribbon-middle", 860)
-        : getMotionDuration("--motion-duration-ribbon-far", 800);
+        ? getMotionDuration("--motion-duration-ribbon-middle", 1000)
+        : getMotionDuration("--motion-duration-ribbon-far", 900);
+      // Let the focus change lead the supporting panels by a short, bounded cascade.
+      // Mirrored panels receive a tiny directional tie so they do not feel mechanically synchronous.
+      const delay = id === activeId
+        ? 0
+        : Math.min(
+          ribbonStaggerCapMs,
+          getMotionStaggerDelay(ribbonDistance, ribbonStaggerStepMs, ribbonStaggerCapMs) +
+            (ribbonOffset > 0 ? ribbonStaggerTieMs : 0),
+        );
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
@@ -667,6 +681,7 @@ export function AlanMenkenShowcase({
         ],
         {
           duration,
+          delay,
           easing,
           fill: "both",
         },
@@ -704,6 +719,7 @@ export function AlanMenkenShowcase({
 
         const imageAnimation = image.animate(imageScaleKeyframes, {
           duration,
+          delay,
           easing: "linear",
           fill: "both",
         });
