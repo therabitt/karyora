@@ -62,19 +62,25 @@ const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.m
 const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
 const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
 
-const easing = "cubic-bezier(0.72, 0, 0.28, 1)";
+const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
 assert.equal(motionTokens.get("--motion-ease-standard"), easing);
-assert.equal(motionTokens.get("--motion-ease-out"), easing);
-assert.equal(motionTokens.get("--motion-ease-in"), easing);
-assert.equal(motionTokens.get("--motion-ease-spring"), easing);
-assert.equal(motionTokens.get("--motion-ease-ribbon-focus"), easing);
-assert.equal(motionTokens.get("--motion-ease-unified-experiment"), easing);
+assert.equal(motionTokens.get("--motion-ease-out"), "cubic-bezier(0.16, 1, 0.3, 1)");
+assert.equal(motionTokens.get("--motion-ease-in"), "cubic-bezier(0.7, 0, 0.84, 0)");
+assert.equal(motionTokens.get("--motion-ease-spring"), "cubic-bezier(0.22, 1.12, 0.36, 1)");
+assert.equal(motionTokens.has("--motion-ease-unified-experiment"), false);
 assert.equal(getCubicBezierProgress(0, easing), 0);
 assert.equal(getCubicBezierProgress(1, easing), 1);
-assert.ok(getCubicBezierProgress(0.25, easing) < 0.25);
+assert.ok(getCubicBezierProgress(0.25, easing) > 0.25);
 assert.ok(getCubicBezierProgress(0.75, easing) > getCubicBezierProgress(0.25, easing));
 assert.equal(getCubicBezierProgress(0.4, "linear"), 0.4);
 
+assert.equal(motionTokens.get("--motion-duration-micro"), "225ms");
+assert.equal(motionTokens.get("--motion-duration-ui"), "350ms");
+assert.equal(motionTokens.get("--motion-duration-navigation"), "575ms");
+assert.equal(motionTokens.get("--motion-duration-slice-panel"), "850ms");
+assert.equal(motionTokens.get("--motion-duration-detail-exit-total"), "850ms");
+assert.equal(motionTokens.get("--motion-duration-detail-enter-total"), "1000ms");
+assert.equal(motionTokens.get("--motion-duration-reduced"), "120ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-focus"), "1250ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-near"), "1120ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-middle"), "1000ms");
