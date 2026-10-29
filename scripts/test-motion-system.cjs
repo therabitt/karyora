@@ -67,6 +67,30 @@ assert.equal(getCubicBezierProgress(0.4, "linear"), 0.4);
 const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
 const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
 const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
+const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
+assert.equal(motionTokens.get("--motion-duration-ribbon-focus"), "1250ms");
+assert.equal(motionTokens.get("--motion-duration-ribbon-near"), "1120ms");
+assert.equal(motionTokens.get("--motion-duration-ribbon-middle"), "1000ms");
+assert.equal(motionTokens.get("--motion-duration-ribbon-far"), "900ms");
+assert.equal(
+  motionTokens.get("--motion-ease-ribbon-focus"),
+  "cubic-bezier(0.4, 0, 0.2, 1)",
+);
+assert.ok(
+  parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-focus"), 0) >
+    parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-near"), 0),
+  "The focused Ribbon artwork must have the longest transition duration",
+);
+assert.ok(
+  parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-near"), 0) >
+    parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-middle"), 0),
+  "Near Ribbon panels should settle after middle-distance panels",
+);
+assert.ok(
+  parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-middle"), 0) >
+    parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-far"), 0),
+  "Middle-distance Ribbon panels should settle after far panels",
+);
 assert.ok(tokenLines.length >= 20, "Expected a documented set of canonical motion tokens");
 for (const [, token, value] of tokenLines) {
   assert.ok(doc.includes("`" + token + "`"), "Missing documentation for " + token);
