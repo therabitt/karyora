@@ -34,7 +34,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             key={item.href}
             href={item.href}
             onClick={onNavigate}
-            className={`flex items-center px-3.5 py-2.5 text-xs uppercase tracking-[0.12em] transition-all ${
+            className={`flex items-center px-3.5 py-2.5 text-xs uppercase tracking-[0.12em] transition-all motion-transition-ui ${
               isActive
                 ? "border-l-2 border-accent bg-white/10 text-surface font-semibold pl-3 rounded-r-md"
                 : "border-l-2 border-transparent text-surface/65 hover:text-surface hover:bg-white/5 pl-3 rounded-r-md"
@@ -55,7 +55,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="p-6 border-b border-white/[0.08]">
         <Link href="/dashboard" className="block group" onClick={onNavigate}>
           <div className="flex items-center justify-between">
-            <span className="font-brand text-3xl tracking-tight text-surface group-hover:text-accent transition-colors">
+            <span className="font-brand text-3xl tracking-tight text-surface group-hover:text-accent transition-colors motion-transition-micro">
               Karyora
             </span>
             <span className="w-2 h-2 rounded-full bg-accent" />
@@ -73,7 +73,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           href="/"
           target="_blank"
           onClick={onNavigate}
-          className="flex items-center justify-between px-3.5 py-2 text-xs font-mono uppercase tracking-wider text-surface/60 hover:text-accent hover:bg-white/5 rounded-sm transition-colors"
+          className="flex items-center justify-between px-3.5 py-2 text-xs font-mono uppercase tracking-wider text-surface/60 hover:text-accent hover:bg-white/5 rounded-sm transition-colors motion-transition-micro"
         >
           <span>View Public Site</span>
           <span aria-hidden="true">↗</span>
@@ -82,7 +82,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <form action={logoutAction}>
           <button
             type="submit"
-            className="w-full text-center px-3.5 py-2 text-xs uppercase tracking-wider font-semibold text-surface/70 hover:text-danger bg-white/5 hover:bg-white/10 rounded-sm transition-colors cursor-pointer"
+            className="w-full text-center px-3.5 py-2 text-xs uppercase tracking-wider font-semibold text-surface/70 hover:text-danger bg-white/5 hover:bg-white/10 rounded-sm transition-colors motion-transition-micro cursor-pointer"
           >
             Sign Out
           </button>
@@ -125,7 +125,7 @@ export function AdminSidebar() {
           onClick={() => setMobileOpen((v) => !v)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
-          className="w-8 h-8 flex flex-col items-center justify-center gap-1.5 text-surface/80 hover:text-surface transition-colors"
+          className="w-8 h-8 flex flex-col items-center justify-center gap-1.5 text-surface/80 hover:text-surface transition-colors motion-transition-micro"
         >
           {mobileOpen ? (
             /* X icon */
