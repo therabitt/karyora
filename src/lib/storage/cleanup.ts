@@ -2,6 +2,7 @@ import "server-only";
 
 import { createServiceClient } from "@/lib/supabase/service";
 import type { CleanupReason } from "@/types/database.types";
+import { getArtworkResponsiveGroupPrefix } from "@/lib/storage/artwork-image-variants";
 
 export interface EnqueueCleanupParams {
   bucketId: "artworks-private" | "artworks-public" | "profiles-public";
@@ -84,7 +85,25 @@ export async function processSingleCleanupItem(queueItemId: string): Promise<boo
       .select("id", { count: "exact", head: true })
       .eq("avatar_path", item.object_path);
 
-    if ((privateRef && privateRef > 0) || (publicRef && publicRef > 0) || (avatarRef && avatarRef > 0)) {
+    // The canonical responsive artwork references sibling variant files by directory.
+    const responsiveGroupPrefix = item.bucket_id === "artworks-public"
+      ? getArtworkResponsiveGroupPrefix(item.object_path)
+      : null;
+    let responsiveGroupRef = 0;
+    if (responsiveGroupPrefix) {
+      const { count } = await supabase
+        .from("artworks")
+        .select("id", { count: "exact", head: true })
+        .like("public_image_path", `${responsiveGroupPrefix}%`);
+      responsiveGroupRef = count ?? 0;
+    }
+
+    if (
+      (privateRef && privateRef > 0) ||
+      (publicRef && publicRef > 0) ||
+      (avatarRef && avatarRef > 0) ||
+      responsiveGroupRef > 0
+    ) {
       // Object is actively referenced; resolve queue row without deleting physical object
       await supabase.from("storage_cleanup_queue").delete().eq("id", item.id);
       return true;

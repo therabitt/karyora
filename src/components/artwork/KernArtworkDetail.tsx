@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
+import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 
@@ -16,6 +17,8 @@ interface KernArtworkDetailProps {
   initialArtwork: PublicArtwork;
   allArtworks: PublicArtwork[];
 }
+
+const DETAIL_ARTWORK_IMAGE_SIZES = "(min-width: 1280px) min(660px, 42vw), (min-width: 1024px) min(560px, 38vw), (min-width: 640px) min(440px, 58vw), min(340px, 78vw)";
 
 // ─── ARTWORK STACK THEME & ABSTRACT PATTERNS ─────────────────────────────────
 // Each artwork has its own unique 3-layer identity:
@@ -352,6 +355,11 @@ export function KernArtworkDetail({
 
   const imageUrl = getStoragePublicUrl(currentArtwork.public_image_path);
   const isImageFailed = failedImages[currentArtwork.id];
+  const currentResponsiveSources = getArtworkResponsiveImageSources(
+    currentArtwork.public_image_path,
+    currentArtwork.image_width ?? 1600,
+    currentArtwork.image_height ?? 1200,
+  );
 
   // Artwork-specific stack theme for the currently active artwork
   const currentTheme = useMemo(
@@ -363,19 +371,30 @@ export function KernArtworkDetail({
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
-  // Preload next and previous artwork images into browser cache to prevent flashes
+  // Preload only the browser-selected responsive variant for adjacent artworks.
+  // This preserves card-throw continuity without forcing full-resolution files on small screens.
   useEffect(() => {
     if (totalCount <= 1) return;
-    const nextArt = allArtworks[(activeIndex + 1) % totalCount];
-    const prevArt = allArtworks[(activeIndex - 1 + totalCount) % totalCount];
-    [nextArt, prevArt].forEach((art) => {
-      if (art?.public_image_path) {
-        const url = getStoragePublicUrl(art.public_image_path);
-        if (url) {
-          const img = new Image();
-          img.src = url;
-        }
-      }
+    const adjacent = [
+      allArtworks[(activeIndex + 1) % totalCount],
+      allArtworks[(activeIndex - 1 + totalCount) % totalCount],
+    ];
+
+    adjacent.forEach((artwork) => {
+      if (!artwork?.public_image_path) return;
+      const sources = getArtworkResponsiveImageSources(
+        artwork.public_image_path,
+        artwork.image_width ?? 1600,
+        artwork.image_height ?? 1200,
+      );
+      if (!sources.src) return;
+
+      const image = new window.Image();
+      if (sources.srcSet) image.srcset = sources.srcSet;
+      image.sizes = DETAIL_ARTWORK_IMAGE_SIZES;
+      image.fetchPriority = "low";
+      image.decoding = "async";
+      image.src = sources.src;
     });
   }, [activeIndex, allArtworks, totalCount]);
 
@@ -790,7 +809,14 @@ export function KernArtworkDetail({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       key={currentArtwork.id}
-                      src={imageUrl}
+                      src={currentResponsiveSources.src ?? imageUrl}
+                      srcSet={currentResponsiveSources.srcSet}
+                      sizes={DETAIL_ARTWORK_IMAGE_SIZES}
+                      width={currentArtwork.image_width ?? 1600}
+                      height={currentArtwork.image_height ?? 1200}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                       alt={currentArtwork.alt_text || currentArtwork.title}
                       crossOrigin="anonymous"
                       onLoad={(e) => {
@@ -973,6 +999,11 @@ export function KernArtworkDetail({
                 const isSelected = artwork.id === currentArtwork.id;
                 const num = String(idx + 1).padStart(2, "0");
                 const thumbUrl = getStoragePublicUrl(artwork.public_image_path);
+                const thumbSources = getArtworkResponsiveImageSources(
+                  artwork.public_image_path,
+                  artwork.image_width ?? 1600,
+                  artwork.image_height ?? 1200,
+                );
                 const thumbFailed = failedImages[artwork.id];
                 return (
                   <button
@@ -1001,7 +1032,14 @@ export function KernArtworkDetail({
                       {thumbUrl && !thumbFailed ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          src={thumbUrl}
+                          src={thumbSources.src ?? thumbUrl}
+                          srcSet={thumbSources.srcSet}
+                          sizes="32px"
+                          width={64}
+                          height={64}
+                          loading="lazy"
+                          fetchPriority="low"
+                          decoding="async"
                           alt=""
                           onError={() => handleImageError(artwork.id)}
                           className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.08]"
@@ -1055,7 +1093,14 @@ export function KernArtworkDetail({
               {imageUrl && !isImageFailed ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={imageUrl}
+                  src={currentResponsiveSources.src ?? imageUrl}
+                  srcSet={currentResponsiveSources.srcSet}
+                  sizes="100vw"
+                  width={currentArtwork.image_width ?? 1600}
+                  height={currentArtwork.image_height ?? 1200}
+                  loading="eager"
+                  fetchPriority="high"
+                  decoding="async"
                   alt={currentArtwork.alt_text || currentArtwork.title}
                   className="max-w-full max-h-[82vh] object-contain rounded-xs shadow-2xl select-none"
                 />

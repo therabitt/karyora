@@ -1,12 +1,61 @@
 import "server-only";
 
 import sharp from "sharp";
+import { ARTWORK_RESPONSIVE_MAX_EDGES } from "@/lib/storage/artwork-image-variants";
 
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024; // 25 MiB = 26,214,400 bytes
 export const MAX_DIMENSION = 10_000; // 10,000 pixels
 export const MAX_TOTAL_PIXELS = 64_000_000; // 64 MP (e.g. 8,000 × 8,000 px)
 export const MAX_ARTWORK_DERIVATIVE_DIMENSION = 1600; // 1,600 pixels bounding box
 export const MAX_AVATAR_DERIVATIVE_DIMENSION = 512; // 512 pixels bounding box
+
+export interface ProcessedResponsiveImageResult extends ProcessedImageResult {
+  maxEdge: number;
+}
+
+export function getArtworkResponsiveTargetEdges(width: number, height: number): number[] {
+  const maxEdge = Math.min(MAX_ARTWORK_DERIVATIVE_DIMENSION, Math.max(width, height));
+  return [
+    ...ARTWORK_RESPONSIVE_MAX_EDGES.filter((edge) => edge < maxEdge),
+    maxEdge,
+  ];
+}
+
+/**
+ * Creates WebP derivatives for native srcset delivery. Every output is orientation-corrected
+ * and stripped of EXIF/GPS/IPTC/XMP metadata. The maximum variant remains up to 1600px.
+ */
+export async function createPublicResponsiveDerivatives(
+  buffer: Buffer,
+): Promise<ProcessedResponsiveImageResult[]> {
+  const source = await validateSourceImageMetadata(buffer);
+  const targetEdges = getArtworkResponsiveTargetEdges(source.effectiveWidth, source.effectiveHeight);
+  const variants: ProcessedResponsiveImageResult[] = [];
+
+  // Process sequentially to avoid decoding multiple high-resolution images concurrently.
+  for (const targetEdge of targetEdges) {
+    const derivative = await sharp(buffer, {
+      limitInputPixels: MAX_TOTAL_PIXELS,
+      failOn: "error",
+    })
+      .rotate()
+      .resize(targetEdge, targetEdge, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toBuffer({ resolveWithObject: true });
+
+    variants.push({
+      buffer: derivative.data,
+      width: derivative.info.width,
+      height: derivative.info.height,
+      sizeBytes: derivative.info.size,
+      format: "webp",
+      maxEdge: Math.max(derivative.info.width, derivative.info.height),
+    });
+  }
+
+  return variants;
+}
+
 
 export interface ProcessedImageResult {
   buffer: Buffer;
