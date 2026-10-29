@@ -33,7 +33,7 @@ export function Input({
         disabled={disabled}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-help` : undefined}
-        className={`w-full px-3.5 py-2 text-sm bg-surface rounded-lg border text-ink placeholder:text-text-muted/60 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:bg-surface-muted ${
+        className={`w-full px-3.5 py-2 text-sm bg-surface rounded-lg border text-ink placeholder:text-text-muted/60 transition-colors motion-transition-micro focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:bg-surface-muted ${
           error
             ? "border-danger focus:border-danger focus:ring-danger"
             : "border-border-strong focus:border-ink focus:ring-ink"

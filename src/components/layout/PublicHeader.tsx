@@ -14,7 +14,7 @@ export function PublicHeader() {
           href="/"
           aria-label="Karyora home"
           className={
-            "group relative z-[103] flex items-baseline gap-2.5 font-brand text-3xl leading-none tracking-tight transition-colors sm:text-4xl " +
+            "group relative z-[103] flex items-baseline gap-2.5 font-brand text-3xl leading-none tracking-tight transition-colors motion-transition-micro sm:text-4xl " +
             (isNavigationOpen ? "text-paper" : "text-ink hover:text-accent")
           }
         >

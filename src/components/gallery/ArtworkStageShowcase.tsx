@@ -88,7 +88,7 @@ export function ArtworkStageShowcase({
         </p>
         <Link
           href="/gallery"
-          className="mt-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold px-4 py-2 bg-ink text-surface hover:bg-accent rounded-xs transition-colors"
+          className="mt-6 inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold px-4 py-2 bg-ink text-surface hover:bg-accent rounded-xs transition-colors motion-transition-micro"
         >
           <span>Browse Archive</span>
           <span aria-hidden="true">→</span>
@@ -135,7 +135,7 @@ export function ArtworkStageShowcase({
             )}
             <Link
               href="/gallery"
-              className="text-xs font-mono uppercase tracking-wider text-text-muted hover:text-accent transition-colors hidden sm:inline-flex items-center gap-1"
+              className="text-xs font-mono uppercase tracking-wider text-text-muted hover:text-accent transition-colors motion-transition-micro hidden sm:inline-flex items-center gap-1"
             >
               <span>Catalog № {formattedTotal}</span>
               <span aria-hidden="true">→</span>
@@ -160,7 +160,7 @@ export function ArtworkStageShowcase({
                 onClick={() => setActiveIndex(idx)}
                 aria-label={`Select artwork ${itemNumber}: ${artwork.title}`}
                 aria-current={isActive ? "true" : undefined}
-                className={`relative overflow-hidden text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-[cubic-bezier(0.25,1,0.5,1)] group ${
+                className={`relative overflow-hidden text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-safe:transition-all motion-transition-spotlight group ${
                   isActive
                     ? isPortrait
                       ? "flex-[2.8] lg:flex-[3.2] xl:flex-[3.6] rounded-xs border-2 border-accent shadow-2xl z-10 cursor-default"
@@ -195,7 +195,7 @@ export function ArtworkStageShowcase({
                       }
                     }}
                     onError={() => handleImageError(artwork.id)}
-                    className={`w-full h-full motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out ${
+                    className={`w-full h-full motion-safe:transition-transform motion-transition-image ${
                       isPortrait ? "object-cover object-top" : "object-cover object-center"
                     } ${isActive ? "scale-100" : "scale-105"}`}
                   />
@@ -216,7 +216,7 @@ export function ArtworkStageShowcase({
                 {/* Inactive vertical label strip */}
                 {!isActive && (
                   <div
-                    className={`absolute inset-0 flex flex-col justify-between p-3.5 pointer-events-none transition-colors ${
+                    className={`absolute inset-0 flex flex-col justify-between p-3.5 pointer-events-none transition-colors motion-transition-micro ${
                       imageUrl && !isFailed
                         ? "bg-ink/40 group-hover:bg-ink/15"
                         : "bg-paper/30 group-hover:bg-paper/10"
@@ -268,12 +268,12 @@ export function ArtworkStageShowcase({
                       <div className="shrink-0 flex items-center gap-3">
                         <Link
                           href={`/artworks/${artwork.slug}`}
-                          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-semibold px-3.5 py-1.5 bg-ink text-surface hover:bg-accent hover:text-white rounded-xs transition-all shadow-xs group/link"
+                          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-semibold px-3.5 py-1.5 bg-ink text-surface hover:bg-accent hover:text-white rounded-xs transition-all motion-transition-ui shadow-xs group/link"
                         >
                           <span>Case Study</span>
                           <span
                             aria-hidden="true"
-                            className="motion-safe:transition-transform group-hover/link:translate-x-1"
+                            className="motion-safe:transition-transform motion-transition-micro group-hover/link:translate-x-1"
                           >
                             →
                           </span>
@@ -413,7 +413,7 @@ export function ArtworkStageShowcase({
               <h2 className="font-artwork-title text-3xl sm:text-4xl lg:text-5xl text-ink tracking-tight leading-[1.1]">
                 <Link
                   href={`/artworks/${current.slug}`}
-                  className="hover:text-accent transition-colors"
+                  className="hover:text-accent transition-colors motion-transition-micro"
                 >
                   {current.title}
                 </Link>
@@ -429,12 +429,12 @@ export function ArtworkStageShowcase({
             <div className="shrink-0 flex items-center gap-4">
               <Link
                 href={`/artworks/${current.slug}`}
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-1 border-b-2 border-accent/40 hover:border-accent transition-all group"
+                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-1 border-b-2 border-accent/40 hover:border-accent transition-all motion-transition-ui group"
               >
                 <span>Explore Full Case Study & Palette</span>
                 <span
                   aria-hidden="true"
-                  className="motion-safe:transition-transform group-hover:translate-x-1"
+                  className="motion-safe:transition-transform motion-transition-micro group-hover:translate-x-1"
                 >
                   →
                 </span>
@@ -450,7 +450,7 @@ export function ArtworkStageShowcase({
               </span>
               <Link
                 href="/gallery"
-                className="text-xs font-mono uppercase tracking-wider text-accent hover:text-accent-hover font-semibold flex items-center gap-1.5 transition-colors"
+                className="text-xs font-mono uppercase tracking-wider text-accent hover:text-accent-hover font-semibold flex items-center gap-1.5 transition-colors motion-transition-micro"
               >
                 <span>Complete Archive (21 Works)</span>
                 <span aria-hidden="true">↗</span>
@@ -475,7 +475,7 @@ export function ArtworkStageShowcase({
                     role="tab"
                     aria-selected={isSelected}
                     onClick={() => setActiveIndex(idx)}
-                    className={`group relative flex items-center gap-3 p-3 rounded-xs transition-all text-left border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`group relative flex items-center gap-3 p-3 rounded-xs transition-all motion-transition-ui text-left border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                       isSelected
                         ? "bg-ink text-surface border-ink shadow-md"
                         : "bg-surface text-ink-soft border-border hover:border-border-strong hover:bg-surface-muted"

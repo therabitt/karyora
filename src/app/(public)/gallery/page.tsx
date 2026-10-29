@@ -84,7 +84,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
               href={`/gallery${
                 currentQuery ? `?q=${encodeURIComponent(currentQuery)}` : ""
               }${currentSort !== "newest" ? `${currentQuery ? "&" : "?"}sort=${currentSort}` : ""}`}
-              className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1 transition-colors relative ${
+              className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1 transition-colors motion-transition-micro relative ${
                 currentCategory === "all"
                   ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
                   : "text-text-muted hover:text-ink font-medium"
@@ -102,7 +102,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                   href={`/gallery?category=${cat}${
                     currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""
                   }${currentSort !== "newest" ? `&sort=${currentSort}` : ""}`}
-                  className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1 transition-colors relative ${
+                  className={`shrink-0 text-xs uppercase tracking-[0.16em] py-1 transition-colors motion-transition-micro relative ${
                     isActive
                       ? "text-accent font-semibold after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[1.5px] after:bg-accent"
                       : "text-text-muted hover:text-ink font-medium"
@@ -134,7 +134,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                 defaultValue={currentQuery}
                 placeholder="Search archive..."
                 aria-label="Search archive by title or keyword"
-                className="w-full pl-8 pr-7 py-1 text-xs bg-paper border border-border/80 rounded-xs text-ink placeholder:text-text-muted focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent focus:border-accent transition-colors"
+                className="w-full pl-8 pr-7 py-1 text-xs bg-paper border border-border/80 rounded-xs text-ink placeholder:text-text-muted focus:outline-hidden focus-visible:ring-1 focus-visible:ring-accent focus:border-accent transition-colors motion-transition-micro"
               />
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -175,7 +175,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                 href={`/gallery?sort=newest${
                   currentCategory !== "all" ? `&category=${currentCategory}` : ""
                 }${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-                className={`transition-colors ${
+                className={`transition-colors motion-transition-micro ${
                   currentSort === "newest"
                     ? "text-accent font-semibold"
                     : "hover:text-ink"
@@ -188,7 +188,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
                 href={`/gallery?sort=oldest${
                   currentCategory !== "all" ? `&category=${currentCategory}` : ""
                 }${currentQuery ? `&q=${encodeURIComponent(currentQuery)}` : ""}`}
-                className={`transition-colors ${
+                className={`transition-colors motion-transition-micro ${
                   currentSort === "oldest"
                     ? "text-accent font-semibold"
                     : "hover:text-ink"
@@ -220,7 +220,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
 
             <Link
               href="/gallery"
-              className="text-accent hover:text-accent-hover font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1 transition-colors"
+              className="text-accent hover:text-accent-hover font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1 transition-colors motion-transition-micro"
             >
               <span>Reset Archive</span>
               <span aria-hidden="true">↺</span>
@@ -266,7 +266,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             {isFiltered ? (
               <Link
                 href="/gallery"
-                className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-xs border border-ink bg-ink text-surface hover:bg-accent hover:border-accent transition-all shadow-xs gap-1.5"
+                className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-xs border border-ink bg-ink text-surface hover:bg-accent hover:border-accent transition-all motion-transition-ui shadow-xs gap-1.5"
               >
                 <span>Reset All Filters</span>
                 <span aria-hidden="true">↺</span>
@@ -274,7 +274,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             ) : (
               <Link
                 href="/commission"
-                className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-xs bg-accent text-white hover:bg-accent-hover transition-all shadow-xs gap-1.5"
+                className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-xs bg-accent text-white hover:bg-accent-hover transition-all motion-transition-ui shadow-xs gap-1.5"
               >
                 <span>Inquire About a Commission</span>
                 <span aria-hidden="true">→</span>
@@ -306,7 +306,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             }`}
             aria-disabled={currentPage <= 1}
             tabIndex={currentPage <= 1 ? -1 : undefined}
-            className={`min-h-[44px] min-w-[44px] inline-flex items-center gap-2 px-4 py-2 border rounded-xs uppercase tracking-wider font-semibold transition-all ${
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center gap-2 px-4 py-2 border rounded-xs uppercase tracking-wider font-semibold transition-all motion-transition-ui ${
               currentPage <= 1
                 ? "pointer-events-none opacity-30 text-text-muted border-border bg-transparent"
                 : "text-ink border-border bg-surface hover:bg-surface-muted hover:border-border-strong cursor-pointer"
@@ -335,7 +335,7 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
             }`}
             aria-disabled={currentPage >= totalPages}
             tabIndex={currentPage >= totalPages ? -1 : undefined}
-            className={`min-h-[44px] min-w-[44px] inline-flex items-center gap-2 px-4 py-2 border rounded-xs uppercase tracking-wider font-semibold transition-all ${
+            className={`min-h-[44px] min-w-[44px] inline-flex items-center gap-2 px-4 py-2 border rounded-xs uppercase tracking-wider font-semibold transition-all motion-transition-ui ${
               currentPage >= totalPages
                 ? "pointer-events-none opacity-30 text-text-muted border-border bg-transparent"
                 : "text-ink border-border bg-surface hover:bg-surface-muted hover:border-border-strong cursor-pointer"

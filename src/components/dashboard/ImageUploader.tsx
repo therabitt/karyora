@@ -104,7 +104,7 @@ export function ImageUploader({
       </label>
 
       <div
-        className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-colors ${
+        className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-colors motion-transition-micro ${
           uploadError
             ? "border-danger/50 bg-danger/5"
             : uploadId
@@ -184,7 +184,7 @@ export function ImageUploader({
           </div>
           <div className="w-full h-1.5 bg-surface-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-accent transition-all duration-200 rounded-full"
+              className="h-full bg-accent transition-all motion-transition-ui rounded-full"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>

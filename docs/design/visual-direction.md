@@ -162,6 +162,8 @@ Recommended constraints:
 
 ## 6. Principles for animation and interaction
 
+**Canonical source:** [Motion System](./motion-system.md) defines timing, easing, stagger, reduced-motion behavior, and animation safety buffers. Read and update that document when motion behavior changes. JavaScript and Web Animations API code must read the canonical CSS tokens through `src/lib/motion/motion-tokens.ts`, not maintain a parallel set of timing constants.
+
 Motion should clarify focus and make changing artworks feel intentional.
 
 - Prefer one coordinated transition system over many unrelated micro-animations.

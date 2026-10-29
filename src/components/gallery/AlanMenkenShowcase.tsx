@@ -20,6 +20,13 @@ import {
   getWheelDirection,
   shouldHandleArtworkKeyboardNavigation,
 } from "@/lib/gallery/artwork-interaction";
+import {
+  getCubicBezierProgress,
+  getMotionDuration,
+  getMotionEasing,
+  getMotionStaggerDelay,
+  getSliceStaggerDelay,
+} from "@/lib/motion/motion-tokens";
 
 export interface AlanMenkenShowcaseProps {
   artworks: PublicArtwork[];
@@ -89,29 +96,6 @@ type ArtworkSwipeStart = {
   x: number;
   y: number;
 };
-
-function cubicBezierCoordinate(t: number, point1: number, point2: number): number {
-  const inverse = 1 - t;
-  return 3 * inverse * inverse * t * point1 + 3 * inverse * t * t * point2 + t * t * t;
-}
-
-function cubicBezierProgress(progress: number): number {
-  const x1 = 0.4;
-  const y1 = 0;
-  const x2 = 0.2;
-  const y2 = 1;
-  let low = 0;
-  let high = 1;
-
-  // Solve x(t) = progress by bisection, then evaluate y(t).
-  for (let iteration = 0; iteration < 16; iteration += 1) {
-    const midpoint = (low + high) / 2;
-    if (cubicBezierCoordinate(midpoint, x1, x2) < progress) low = midpoint;
-    else high = midpoint;
-  }
-
-  return cubicBezierCoordinate((low + high) / 2, y1, y2);
-}
 
 function getUniformScale(transform: string): number {
   if (!transform || transform === "none") return 1;
@@ -241,10 +225,17 @@ export function AlanMenkenShowcase({
       return () => window.clearTimeout(timeoutId);
     }
 
-    // Match Ribbon's FLIP timing: previews settle over 980 ms and the focused artwork
-    // over 1100 ms. Its center-first stagger adds at most 168 ms before the focus arrives.
-    // Clear the entrance class only after every panel has reached its resting position.
-    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1350);
+    // Keep the entrance classes until the longest token-based panel delay and
+    // animation have completed, including a small rendering safety buffer.
+    const previewEntranceCompletion =
+      getMotionDuration("--motion-duration-ribbon-enter", 820) +
+      getMotionDuration("--motion-stagger-ribbon-cap", 232);
+    const focusEntranceCompletion =
+      getMotionDuration("--motion-duration-ribbon-focus", 960);
+    const timeoutDelay =
+      Math.max(previewEntranceCompletion, focusEntranceCompletion) +
+      getMotionDuration("--motion-buffer-ribbon-enter", 100);
+    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), timeoutDelay);
     return () => window.clearTimeout(timeoutId);
   }, [isRibbonEntranceActive, total]);
 
@@ -343,11 +334,17 @@ export function AlanMenkenShowcase({
       slicedNavigationLockedRef.current = true;
 
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+      const sliceStep = getMotionDuration("--motion-stagger-slice-step", 60);
+      const sliceTie = getMotionDuration("--motion-stagger-slice-tie", 12);
+      const maximumSliceStagger =
+        Math.floor((SLICE_COUNT - 1) / 2) * sliceStep + sliceTie;
+      const sliceSafety = getMotionDuration("--motion-buffer-slice-safety", 180);
       const navigationCooldown = prefersReducedMotion
-        ? 250
-        : shouldSequenceSliceHandoff
-        ? 1950
-        : 950;
+        ? getMotionDuration("--motion-duration-reduced-navigation", 250)
+        : (shouldSequenceSliceHandoff
+          ? getMotionDuration("--motion-delay-slice-handoff", 920)
+          : 0) + sliceDuration + maximumSliceStagger + sliceSafety;
 
       slicedNavigationUnlockTimerRef.current = window.setTimeout(() => {
         slicedNavigationLockedRef.current = false;
@@ -489,7 +486,17 @@ export function AlanMenkenShowcase({
       transitionSnapshot.viewMode === "sliced" &&
       currentArtworkId !== undefined &&
       delayedSliceArtworkId === currentArtworkId;
-    const cleanupDelay = hasSequentialSliceHandoff ? 1900 : 900;
+    const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+    const sliceStagger =
+      Math.floor((SLICE_COUNT - 1) / 2) *
+        getMotionDuration("--motion-stagger-slice-step", 60) +
+      getMotionDuration("--motion-stagger-slice-tie", 12);
+    const safetyBuffer = getMotionDuration("--motion-buffer-slice-safety", 180);
+    const cleanupDelay = transitionSnapshot.viewMode === "sliced"
+      ? (hasSequentialSliceHandoff
+        ? getMotionDuration("--motion-delay-slice-handoff", 920)
+        : 0) + sliceDuration + sliceStagger + safetyBuffer
+      : getMotionDuration("--motion-duration-image", 720) + safetyBuffer;
 
     const timeoutId = window.setTimeout(() => {
       setTransitionSnapshot((currentSnapshot) =>
@@ -523,8 +530,8 @@ export function AlanMenkenShowcase({
         { transform: "translate3d(" + exitDistance + "px, 0, 0)" },
       ],
       {
-        duration: 760,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        duration: getMotionDuration("--motion-duration-ribbon-far", 800),
+        easing: getMotionEasing("--motion-ease-in", "cubic-bezier(0.7, 0, 0.84, 0)"),
         fill: "both",
       },
     );
@@ -564,7 +571,13 @@ export function AlanMenkenShowcase({
     }
 
     const activeId = displayArtworks[activeIndex]?.id;
-    const easing = "cubic-bezier(0.4, 0, 0.2, 1)";
+    const easing = getMotionEasing(
+      "--motion-ease-ribbon-focus",
+      "cubic-bezier(0.4, 0, 0.2, 1)",
+    );
+    const ribbonStaggerStepMs = getMotionDuration("--motion-stagger-ribbon-step", 58);
+    const ribbonStaggerTieMs = getMotionDuration("--motion-stagger-ribbon-tie", 10);
+    const ribbonStaggerCapMs = getMotionDuration("--motion-stagger-ribbon-cap", 232);
 
     ribbonItemsRef.current.forEach((element, id) => {
       const last = element.getBoundingClientRect();
@@ -626,7 +639,24 @@ export function AlanMenkenShowcase({
 
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
-      const duration = id === activeId ? 1100 : 980;
+      const ribbonOffset = Number(element.dataset.ribbonOffset ?? "0");
+      const ribbonDistance = Math.abs(ribbonOffset);
+      const duration = id === activeId
+        ? getMotionDuration("--motion-duration-ribbon-focus", 1250)
+        : ribbonDistance <= 1
+        ? getMotionDuration("--motion-duration-ribbon-near", 1120)
+        : ribbonDistance === 2
+        ? getMotionDuration("--motion-duration-ribbon-middle", 1000)
+        : getMotionDuration("--motion-duration-ribbon-far", 900);
+      // Let the focus change lead the supporting panels by a short, bounded cascade.
+      // Mirrored panels receive a tiny directional tie so they do not feel mechanically synchronous.
+      const delay = id === activeId
+        ? 0
+        : Math.min(
+          ribbonStaggerCapMs,
+          getMotionStaggerDelay(ribbonDistance, ribbonStaggerStepMs, ribbonStaggerCapMs) +
+            (ribbonOffset > 0 ? ribbonStaggerTieMs : 0),
+        );
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
@@ -651,6 +681,7 @@ export function AlanMenkenShowcase({
         ],
         {
           duration,
+          delay,
           easing,
           fill: "both",
         },
@@ -668,7 +699,7 @@ export function AlanMenkenShowcase({
         const startScale = getUniformScale(first.imageTransform);
         const imageScaleKeyframes: Keyframe[] = Array.from({ length: 33 }, (_, index) => {
           const offset = index / 32;
-          const progress = cubicBezierProgress(offset);
+          const progress = getCubicBezierProgress(offset, easing);
           const frameWidth = fromWidth + (last.width - fromWidth) * progress;
           const frameHeight = fromHeight + (last.height - fromHeight) * progress;
           const frameAspectRatio = frameHeight > 0 ? frameWidth / frameHeight : naturalAspectRatio;
@@ -688,6 +719,7 @@ export function AlanMenkenShowcase({
 
         const imageAnimation = image.animate(imageScaleKeyframes, {
           duration,
+          delay,
           easing: "linear",
           fill: "both",
         });
@@ -877,7 +909,7 @@ export function AlanMenkenShowcase({
         <p className="mb-6 max-w-sm text-sm text-text-muted">Exhibition in Preparation</p>
         <Link
           href="/gallery"
-          className="rounded-xs bg-ink px-5 py-2.5 text-xs uppercase tracking-widest text-surface transition-colors hover:bg-accent"
+          className="rounded-xs bg-ink px-5 py-2.5 text-xs uppercase tracking-widest text-surface transition-colors motion-transition-micro hover:bg-accent"
         >
           Browse Archive
         </Link>
@@ -1035,10 +1067,9 @@ export function AlanMenkenShowcase({
     }
   }
 
-  const maxRibbonOffset = Math.max(
-    ...ribbonEntries.map((entry) => Math.abs(entry.offset)),
-    0
-  );
+  const ribbonStaggerStepMs = getMotionDuration("--motion-stagger-ribbon-step", 58);
+  const ribbonStaggerTieMs = getMotionDuration("--motion-stagger-ribbon-tie", 10);
+  const ribbonStaggerCapMs = getMotionDuration("--motion-stagger-ribbon-cap", 232);
 
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
@@ -1095,7 +1126,7 @@ export function AlanMenkenShowcase({
           href="/"
           aria-label="Karyora home"
           className={
-            "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight transition-colors sm:text-4xl lg:text-[44px] " +
+            "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight transition-colors motion-transition-micro sm:text-4xl lg:text-[44px] " +
             (isNavigationOpen ? "text-paper" : "text-ink hover:text-accent")
           }
         >
@@ -1200,8 +1231,11 @@ export function AlanMenkenShowcase({
                   const ribbonPatternIndex =
                     ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
                     STAGGER_HEIGHTS_RIBBONS.length;
-                  const entranceDelay =
-                    (maxRibbonOffset - Math.abs(offset)) * 42 + (offset > 0 ? 10 : 0);
+                  const entranceDelay = Math.min(
+                    ribbonStaggerCapMs,
+                    Math.abs(offset) * ribbonStaggerStepMs +
+                      (offset > 0 ? ribbonStaggerTieMs : 0),
+                  );
                   const entranceOffset = ribbonPatternIndex % 2 === 0 ? "-120vh" : "120vh";
                   const itemClassName = isActive
                     ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
@@ -1256,7 +1290,7 @@ export function AlanMenkenShowcase({
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
+                          className="absolute inset-0 h-full w-full object-contain transition-[scale] motion-transition-image motion-reduce:transition-none group-hover:scale-[1.025]"
                           style={{ transform: "scale(" + imageScale + ")" }}
                         />
                       ) : (
@@ -1270,7 +1304,7 @@ export function AlanMenkenShowcase({
                         </div>
                       )}
                       {!isActive && (
-                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity motion-transition-micro group-hover:opacity-100">
                           {artwork.title}
                         </span>
                       )}
@@ -1285,7 +1319,7 @@ export function AlanMenkenShowcase({
                 type="button"
                 onClick={handlePrev}
                 aria-label={"Previous artwork: " + previousArtwork.title}
-                className="absolute left-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors hover:border-accent hover:text-accent sm:left-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                className="absolute left-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors motion-transition-micro hover:border-accent hover:text-accent sm:left-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m15 18-6-6 6-6" />
@@ -1312,9 +1346,6 @@ export function AlanMenkenShowcase({
                     verticalOffset;
                   const left = sliceIndex * (slicePanelWidth + sliceGap);
                   const failed = failedImages[current.id];
-                  const staggerIndex = transitionDirection === "next"
-                    ? sliceIndex
-                    : SLICE_COUNT - 1 - sliceIndex;
                   const centeredGroupTop = (stageHeight - sliceGroupHeight) / 2;
                   // Odd-numbered panels (1, 3, 5) begin fully above the stage
                   // and travel down into focus. Even-numbered panels (2, 4)
@@ -1334,7 +1365,16 @@ export function AlanMenkenShowcase({
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
                         animationDelay: (
-                          (shouldDelayCurrentSliceEntrance ? 870 : 20) + staggerIndex * 22
+                          (shouldDelayCurrentSliceEntrance
+                            ? getMotionDuration("--motion-delay-slice-handoff", 920)
+                            : getMotionDuration("--motion-delay-slice-initial", 20)) +
+                          getSliceStaggerDelay(
+                            sliceIndex,
+                            SLICE_COUNT,
+                            transitionDirection,
+                            getMotionDuration("--motion-stagger-slice-step", 60),
+                            getMotionDuration("--motion-stagger-slice-tie", 12),
+                          )
                         ) + "ms",
                         "--slice-enter-y": enterY + "px",
                       } as CSSProperties}
@@ -1376,7 +1416,7 @@ export function AlanMenkenShowcase({
                 type="button"
                 onClick={handleNext}
                 aria-label={"Next artwork: " + nextArtwork.title}
-                className="absolute right-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors hover:border-accent hover:text-accent sm:right-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                className="absolute right-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors motion-transition-micro hover:border-accent hover:text-accent sm:right-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m9 18 6-6-6-6" />
@@ -1409,9 +1449,6 @@ export function AlanMenkenShowcase({
                       verticalOffset;
                     const left = sliceIndex * (outgoingSlicePanelWidth + sliceGap);
                     const failed = failedImages[outgoingArtwork.id];
-                    const staggerIndex = transitionSnapshot.direction === "next"
-                      ? sliceIndex
-                      : SLICE_COUNT - 1 - sliceIndex;
                     const centeredOutgoingGroupTop =
                       (stageHeight - outgoingSliceGroupHeight) / 2;
                     // Continue each panel's entrance direction on exit, travelling
@@ -1430,7 +1467,14 @@ export function AlanMenkenShowcase({
                           top: panelTop + "px",
                           width: outgoingSlicePanelWidth + "px",
                           height: panelHeight + "px",
-                          animationDelay: (staggerIndex * 22) + "ms",
+                          animationDelay: getSliceStaggerDelay(
+                            sliceIndex,
+                            SLICE_COUNT,
+                            transitionSnapshot.direction,
+                            getMotionDuration("--motion-stagger-slice-step", 60),
+                            getMotionDuration("--motion-stagger-slice-tie", 12),
+                            true,
+                          ) + "ms",
                           "--slice-exit-y": exitY + "px",
                         } as CSSProperties}
                       >
@@ -1513,7 +1557,7 @@ export function AlanMenkenShowcase({
               key={`title-${current.id}`}
               className="artwork-caption-title-enter font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl"
             >
-              <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
+              <Link href={"/artworks/" + current.slug} className="transition-colors motion-transition-micro hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
                 {current.title}
               </Link>
             </h1>
@@ -1541,7 +1585,7 @@ export function AlanMenkenShowcase({
         <div className="min-w-0 justify-self-start">
           <Link
             href="/gallery"
-            className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-accent sm:text-xs sm:tracking-[0.18em]"
+            className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-ink-soft transition-colors motion-transition-micro hover:text-accent sm:text-xs sm:tracking-[0.18em]"
           >
             <span className="hidden sm:inline">See All {totalCount} Works</span>
             <span className="sm:hidden">Archive · {totalCount}</span>
@@ -1564,7 +1608,7 @@ export function AlanMenkenShowcase({
               setTransitionSnapshot(null);
               setViewMode("ribbons");
             }}
-            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
+            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-transition-micro motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "ribbons" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
           >
@@ -1587,7 +1631,7 @@ export function AlanMenkenShowcase({
               setTransitionSnapshot(null);
               setViewMode("sliced");
             }}
-            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
+            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-transition-micro motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "sliced" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
           >
@@ -1600,7 +1644,7 @@ export function AlanMenkenShowcase({
 
         <Link
           href={"/commission?ref=" + encodeURIComponent(current.slug)}
-          className="justify-self-end text-[10px] font-mono font-semibold uppercase tracking-[0.16em] text-accent transition-colors hover:text-accent-hover sm:text-xs sm:tracking-[0.2em]"
+          className="justify-self-end text-[10px] font-mono font-semibold uppercase tracking-[0.16em] text-accent transition-colors motion-transition-micro hover:text-accent-hover sm:text-xs sm:tracking-[0.2em]"
         >
           Inquire <span aria-hidden="true">→</span>
         </Link>

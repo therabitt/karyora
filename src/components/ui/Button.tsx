@@ -38,7 +38,7 @@ export function Button({
   return (
     <button
       disabled={disabled}
-      className={`inline-flex items-center justify-center font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+      className={`inline-flex items-center justify-center font-medium transition-colors motion-transition-micro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
         variantStyles[variant]
       } ${sizeStyles[size]} ${fullWidth ? "w-full" : ""} ${className}`}
       {...props}

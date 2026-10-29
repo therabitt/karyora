@@ -73,6 +73,55 @@
   --color-warning: #8A5A12;
   --color-danger: #B42318;
   --color-info: #355C7D;
+
+  /* Canonical motion tokens. Keep docs/design/motion-system.md in sync. */
+  --motion-duration-micro: 180ms;
+  --motion-duration-ui: 280ms;
+  --motion-duration-navigation: 460ms;
+  --motion-duration-image: 720ms;
+  --motion-duration-spotlight: 720ms;
+
+  --motion-duration-ribbon-enter: 820ms;
+  --motion-duration-ribbon-focus: 1250ms;
+  --motion-duration-ribbon-near: 1120ms;
+  --motion-duration-ribbon-middle: 1000ms;
+  --motion-duration-ribbon-far: 900ms;
+  --motion-stagger-ribbon-step: 58ms;
+  --motion-stagger-ribbon-tie: 10ms;
+  --motion-stagger-ribbon-cap: 232ms;
+  --motion-buffer-ribbon-enter: 100ms;
+
+  --motion-duration-slice-panel: 680ms;
+  --motion-stagger-slice-step: 60ms;
+  --motion-stagger-slice-tie: 12ms;
+  --motion-delay-slice-initial: 20ms;
+  --motion-delay-slice-handoff: 920ms;
+  --motion-buffer-slice-safety: 180ms;
+  --motion-duration-caption-title: 340ms;
+  --motion-duration-caption-description: 390ms;
+  --motion-duration-caption-meta: 330ms;
+  --motion-delay-caption-description: 60ms;
+  --motion-delay-caption-meta: 100ms;
+
+  --motion-duration-detail-exit-rear: 430ms;
+  --motion-duration-detail-exit-middle: 470ms;
+  --motion-duration-detail-exit-front: 510ms;
+  --motion-duration-detail-enter-rear: 540ms;
+  --motion-duration-detail-enter-middle: 600ms;
+  --motion-duration-detail-enter-front: 660ms;
+  --motion-stagger-detail-step: 50ms;
+  --motion-duration-detail-exit-total: 680ms;
+  --motion-duration-detail-enter-total: 800ms;
+  --motion-duration-detail-meta: 380ms;
+  --motion-delay-detail-meta: 120ms;
+  --motion-duration-reduced: 120ms;
+  --motion-duration-reduced-navigation: 250ms;
+
+  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-ribbon-focus: cubic-bezier(0.72, 0, 0.28, 1);
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --motion-ease-spring: cubic-bezier(0.22, 1.12, 0.36, 1);
 }
 
 body {
@@ -158,17 +207,18 @@ body {
   backface-visibility: hidden;
   will-change: transform;
   transition:
-    border-color 260ms ease,
-    box-shadow 320ms cubic-bezier(0.2, 0.78, 0.22, 1);
+    border-color var(--motion-duration-ui) var(--motion-ease-standard),
+    box-shadow var(--motion-duration-spotlight) var(--motion-ease-out);
 }
 
 .artwork-ribbon-enter {
-  animation: artwork-ribbon-enter 980ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-ribbon-enter var(--motion-duration-ribbon-enter) var(--motion-ease-standard) both;
 }
 
 /* The focused artwork uses the same 1100 ms settling time as Ribbon's FLIP transition. */
 .artwork-ribbon-enter-active {
-  animation-duration: 1100ms;
+  animation-duration: var(--motion-duration-ribbon-focus);
+  animation-timing-function: var(--motion-ease-ribbon-focus);
 }
 
 .artwork-ribbon-item img {
@@ -184,13 +234,13 @@ body {
 .artwork-slice-enter-panel {
   will-change: transform;
   backface-visibility: hidden;
-  animation: artwork-slice-enter 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-slice-enter var(--motion-duration-slice-panel) var(--motion-ease-standard) both;
 }
 
 .artwork-slice-exit-panel {
   will-change: transform;
   backface-visibility: hidden;
-  animation: artwork-slice-exit 760ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-slice-exit var(--motion-duration-slice-panel) var(--motion-ease-in) both;
 }
 
 .artwork-exit-layer {
@@ -199,49 +249,92 @@ body {
 
 [data-transition-direction="next"] .artwork-caption-title-enter {
   --caption-shift-x: 9px;
-  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-caption-enter var(--motion-duration-caption-title) var(--motion-ease-out) both;
 }
 
 [data-transition-direction="previous"] .artwork-caption-title-enter {
   --caption-shift-x: -9px;
-  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-caption-enter var(--motion-duration-caption-title) var(--motion-ease-out) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-description-enter {
   --caption-shift-x: 6px;
-  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
+  animation: artwork-caption-enter var(--motion-duration-caption-description) var(--motion-ease-out) var(--motion-delay-caption-description) both;
 }
 
 [data-transition-direction="previous"] .artwork-caption-description-enter {
   --caption-shift-x: -6px;
-  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
+  animation: artwork-caption-enter var(--motion-duration-caption-description) var(--motion-ease-out) var(--motion-delay-caption-description) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-meta-enter {
   --caption-shift-x: 4px;
-  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+  animation: artwork-caption-enter var(--motion-duration-caption-meta) var(--motion-ease-out) var(--motion-delay-caption-meta) both;
 }
 
 [data-transition-direction="previous"] .artwork-caption-meta-enter {
   --caption-shift-x: -4px;
-  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+  animation: artwork-caption-enter var(--motion-duration-caption-meta) var(--motion-ease-out) var(--motion-delay-caption-meta) both;
 }
 
 /* Keep the caption with the incoming artwork when a large aspect-ratio
    change uses a sequential sliced handoff. */
 [data-slice-layout-change="true"] .artwork-caption-title-enter {
-  animation-delay: 900ms;
+  animation-delay: var(--motion-delay-slice-handoff);
 }
 
 [data-slice-layout-change="true"] .artwork-caption-description-enter {
-  animation-delay: 960ms;
+  animation-delay: calc(var(--motion-delay-slice-handoff) + var(--motion-delay-caption-description));
 }
 
 [data-slice-layout-change="true"] .artwork-caption-meta-enter {
-  animation-delay: 1000ms;
+  animation-delay: calc(var(--motion-delay-slice-handoff) + var(--motion-delay-caption-meta));
+}
+
+
+/* Semantic interaction utilities: components select a role, not a bespoke timing. */
+.motion-transition-micro {
+  transition-duration: var(--motion-duration-micro);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.motion-transition-ui {
+  transition-duration: var(--motion-duration-ui);
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.motion-transition-image {
+  transition-duration: var(--motion-duration-image);
+  transition-timing-function: var(--motion-ease-standard);
+}
+
+.motion-transition-spotlight {
+  transition-duration: var(--motion-duration-spotlight);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+.motion-fade-in {
+  animation-duration: var(--motion-duration-micro);
+}
+
+.motion-transition-navigation {
+  transition-duration: var(--motion-duration-navigation);
+  transition-timing-function: var(--motion-ease-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .motion-fade-in {
+    animation-duration: var(--motion-duration-reduced);
+  }
+
+  .motion-transition-micro,
+  .motion-transition-ui,
+  .motion-transition-image,
+  .motion-transition-spotlight,
+  .motion-transition-navigation {
+    transition-duration: var(--motion-duration-reduced);
+  }
+
   .artwork-ribbon-enter {
     animation: none;
   }

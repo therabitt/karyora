@@ -79,7 +79,7 @@ export default async function CommissionPage({ searchParams }: CommissionPagePro
                   </div>
                   <div className="col-start-2 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 sm:col-start-auto sm:flex-col sm:items-end sm:justify-center">
                     <p className="text-sm">{formatStartingPrice(offering.price_from, offering.price_currency)}</p>
-                    {!isClosed ? <Link href={"/commission?offering=" + encodeURIComponent(offering.slug) + "#inquiry"} className="text-xs font-medium text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label={"Choose " + offering.title}>Choose offering ↗</Link> : null}
+                    {!isClosed ? <Link href={"/commission?offering=" + encodeURIComponent(offering.slug) + "#inquiry"} className="text-xs font-medium text-accent underline decoration-border-strong underline-offset-4 transition-colors motion-transition-micro hover:text-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label={"Choose " + offering.title}>Choose offering ↗</Link> : null}
                   </div>
                 </article>
               ))}

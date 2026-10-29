@@ -12,6 +12,10 @@ import { getStoragePublicUrl } from "@/lib/storage/urls";
 import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
+import {
+  getMotionDuration,
+  getMotionEasing,
+} from "@/lib/motion/motion-tokens";
 
 interface KernArtworkDetailProps {
   initialArtwork: PublicArtwork;
@@ -464,7 +468,12 @@ export function KernArtworkDetail({
   // Safety fallback in case browser tab is backgrounded and animation events are throttled
   useEffect(() => {
     if (animPhase === "idle") return;
-    const maxSafetyDuration = reducedMotion ? 350 : 750;
+    const maxSafetyDuration = reducedMotion
+      ? getMotionDuration("--motion-duration-reduced", 120) +
+        getMotionDuration("--motion-duration-micro", 180)
+      : animPhase === "throwing-out"
+      ? getMotionDuration("--motion-duration-detail-exit-total", 680)
+      : getMotionDuration("--motion-duration-detail-enter-total", 800);
     const timer = setTimeout(() => {
       if (animPhase === "throwing-out") {
         if (pendingArtworkRef.current) {
@@ -536,81 +545,107 @@ export function KernArtworkDetail({
   // Backward: Throws right, enters from left.
   const isFwd = direction === "forward";
 
+  const detailEaseIn = getMotionEasing(
+    "--motion-ease-in",
+    "cubic-bezier(0.7, 0, 0.84, 0)",
+  );
+  const detailEaseSpring = getMotionEasing(
+    "--motion-ease-spring",
+    "cubic-bezier(0.22, 1.12, 0.36, 1)",
+  );
+  const detailStaggerMs = getMotionDuration("--motion-stagger-detail-step", 50);
+  const reducedFadeMs = getMotionDuration("--motion-duration-reduced", 120);
+
   const getLayer1Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return "throw-fade-out 180ms ease forwards";
-      if (animPhase === "throwing-in") return "throw-fade-in 220ms ease forwards";
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms linear forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms linear forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
+      const duration = getMotionDuration("--motion-duration-detail-exit-rear", 430);
       return isFwd
-        ? "throw-out-rear-fwd 270ms cubic-bezier(0.4, 0, 1, 1) 0ms forwards"
-        : "throw-out-rear-bwd 270ms cubic-bezier(0.4, 0, 1, 1) 0ms forwards";
+        ? `throw-out-rear-fwd ${duration}ms ${detailEaseIn} 0ms forwards`
+        : `throw-out-rear-bwd ${duration}ms ${detailEaseIn} 0ms forwards`;
     }
     if (animPhase === "throwing-in") {
+      const duration = getMotionDuration("--motion-duration-detail-enter-rear", 540);
       return isFwd
-        ? "throw-in-rear-fwd 360ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 0ms forwards"
-        : "throw-in-rear-bwd 360ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 0ms forwards";
+        ? `throw-in-rear-fwd ${duration}ms ${detailEaseSpring} 0ms forwards`
+        : `throw-in-rear-bwd ${duration}ms ${detailEaseSpring} 0ms forwards`;
     }
     return "none";
   };
 
   const getLayer2Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return "throw-fade-out 180ms ease forwards";
-      if (animPhase === "throwing-in") return "throw-fade-in 220ms ease forwards";
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms linear forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms linear forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
+      const duration = getMotionDuration("--motion-duration-detail-exit-middle", 470);
       return isFwd
-        ? "throw-out-mid-fwd 290ms cubic-bezier(0.4, 0, 1, 1) 35ms forwards"
-        : "throw-out-mid-bwd 290ms cubic-bezier(0.4, 0, 1, 1) 35ms forwards";
+        ? `throw-out-mid-fwd ${duration}ms ${detailEaseIn} ${detailStaggerMs}ms forwards`
+        : `throw-out-mid-bwd ${duration}ms ${detailEaseIn} ${detailStaggerMs}ms forwards`;
     }
     if (animPhase === "throwing-in") {
+      const duration = getMotionDuration("--motion-duration-detail-enter-middle", 600);
       return isFwd
-        ? "throw-in-mid-fwd 380ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 45ms forwards"
-        : "throw-in-mid-bwd 380ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 45ms forwards";
+        ? `throw-in-mid-fwd ${duration}ms ${detailEaseSpring} ${detailStaggerMs}ms forwards`
+        : `throw-in-mid-bwd ${duration}ms ${detailEaseSpring} ${detailStaggerMs}ms forwards`;
     }
     return "none";
   };
 
   const getLayer3Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return "throw-fade-out 200ms ease forwards";
-      if (animPhase === "throwing-in") return "throw-fade-in 240ms ease forwards";
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms linear forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms linear forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
+      const duration = getMotionDuration("--motion-duration-detail-exit-front", 510);
+      const delay = detailStaggerMs * 2;
       return isFwd
-        ? "throw-out-front-fwd 310ms cubic-bezier(0.4, 0, 1, 1) 75ms forwards"
-        : "throw-out-front-bwd 310ms cubic-bezier(0.4, 0, 1, 1) 75ms forwards";
+        ? `throw-out-front-fwd ${duration}ms ${detailEaseIn} ${delay}ms forwards`
+        : `throw-out-front-bwd ${duration}ms ${detailEaseIn} ${delay}ms forwards`;
     }
     if (animPhase === "throwing-in") {
+      const duration = getMotionDuration("--motion-duration-detail-enter-front", 660);
+      const delay = detailStaggerMs * 2;
       return isFwd
-        ? "throw-in-front-fwd 400ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 90ms forwards"
-        : "throw-in-front-bwd 400ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 90ms forwards";
+        ? `throw-in-front-fwd ${duration}ms ${detailEaseSpring} ${delay}ms forwards`
+        : `throw-in-front-bwd ${duration}ms ${detailEaseSpring} ${delay}ms forwards`;
     }
     return "none";
   };
 
   // Synchronized metadata reveal style
   const metaStyle: React.CSSProperties = (() => {
+    const microDuration = getMotionDuration("--motion-duration-micro", 180);
+    const standardEase = getMotionEasing(
+      "--motion-ease-standard",
+      "cubic-bezier(0.22, 1, 0.36, 1)",
+    );
     if (reducedMotion) {
       return {
         opacity: animPhase === "throwing-out" ? 0 : 1,
-        transition: "opacity 160ms ease",
+        transition: `opacity ${getMotionDuration("--motion-duration-reduced", 120)}ms linear`,
       };
     }
     if (animPhase === "throwing-out") {
       return {
         opacity: 0,
         transform: "translateY(4px)",
-        transition: "opacity 160ms ease, transform 160ms ease",
+        transition: `opacity ${microDuration}ms ${standardEase}, transform ${microDuration}ms ${standardEase}`,
       };
     }
     if (animPhase === "throwing-in") {
+      const duration = getMotionDuration("--motion-duration-detail-meta", 380);
+      const delay = getMotionDuration("--motion-delay-detail-meta", 120);
       return {
-        animation: "kern-meta-reveal 320ms cubic-bezier(0.18, 1.15, 0.32, 1.0) 80ms forwards",
+        animation: `kern-meta-reveal ${duration}ms ${detailEaseSpring} ${delay}ms forwards`,
       };
     }
     return {
@@ -751,7 +786,9 @@ export function KernArtworkDetail({
                   border: "1px solid rgba(0,0,0,0.08)",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
                   animation: getLayer1Animation(),
-                  transition: animPhase === "idle" ? "background-color 500ms ease" : "none",
+                  transition: animPhase === "idle"
+                    ? `background-color ${getMotionDuration("--motion-duration-image", 720)}ms ${getMotionEasing("--motion-ease-standard", "cubic-bezier(0.22, 1, 0.36, 1)")}`
+                    : "none",
                 }}
               />
 
@@ -797,7 +834,7 @@ export function KernArtworkDetail({
                   shadow-[0_24px_50px_rgba(0,0,0,0.18),0_8px_20px_rgba(0,0,0,0.09)]
                   group-hover:shadow-[0_32px_60px_rgba(0,0,0,0.24),0_10px_24px_rgba(0,0,0,0.11)]
                   group-hover:scale-[1.012]
-                  transition-shadow,transform duration-350 ease-out
+                  transition-shadow,transform motion-transition-image
                 `}
                 style={{
                   zIndex: 2,
@@ -849,7 +886,7 @@ export function KernArtworkDetail({
                   </div>
 
                   {/* Zoom hint (hover only) */}
-                  <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-ink/80 text-white backdrop-blur-xs text-[10px] font-mono tracking-wider rounded-2xs opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none flex items-center gap-1.5 shadow-sm">
+                  <div className="absolute bottom-2 right-2 px-2.5 py-1 bg-ink/80 text-white backdrop-blur-xs text-[10px] font-mono tracking-wider rounded-2xs opacity-0 group-hover:opacity-100 transition-opacity motion-transition-micro pointer-events-none flex items-center gap-1.5 shadow-sm">
                     <span>Zoom</span>
                     <span aria-hidden="true">⤢</span>
                   </div>
@@ -898,10 +935,10 @@ export function KernArtworkDetail({
               {/* Commission CTA */}
               <Link
                 href={`/commission?ref=${encodeURIComponent(currentArtwork.slug)}`}
-                className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover transition-colors group/link"
+                className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover transition-colors motion-transition-micro group/link"
               >
                 <span>Commission Similar</span>
-                <span aria-hidden="true" className="transition-transform group-hover/link:translate-x-1">→</span>
+                <span aria-hidden="true" className="transition-transform motion-transition-micro group-hover/link:translate-x-1">→</span>
               </Link>
             </div>
           </div>
@@ -954,7 +991,7 @@ export function KernArtworkDetail({
                 onClick={handlePrev}
                 disabled={isNavDisabled || totalCount <= 1}
                 aria-label="Previous artwork"
-                className={`transition-colors flex items-center gap-1.5 py-1 px-2 ${
+                className={`transition-colors motion-transition-micro flex items-center gap-1.5 py-1 px-2 ${
                   isNavDisabled
                     ? "opacity-35 cursor-not-allowed text-text-muted"
                     : "hover:text-accent cursor-pointer"
@@ -975,7 +1012,7 @@ export function KernArtworkDetail({
                 onClick={handleNext}
                 disabled={isNavDisabled || totalCount <= 1}
                 aria-label="Next artwork"
-                className={`transition-colors flex items-center gap-1.5 py-1 px-2 ${
+                className={`transition-colors motion-transition-micro flex items-center gap-1.5 py-1 px-2 ${
                   isNavDisabled
                     ? "opacity-35 cursor-not-allowed text-text-muted"
                     : "hover:text-accent cursor-pointer"
@@ -1019,7 +1056,7 @@ export function KernArtworkDetail({
                       triggerCardThrow(artwork, idx, dir);
                     }}
                     aria-label={`Select № ${num}: ${artwork.title}`}
-                    className={`group shrink-0 relative flex items-center gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xs transition-all duration-200 border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
+                    className={`group shrink-0 relative flex items-center gap-3 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xs transition-all motion-transition-micro border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent ${
                       isNavDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
                     } ${
                       isSelected
@@ -1042,7 +1079,7 @@ export function KernArtworkDetail({
                           decoding="async"
                           alt=""
                           onError={() => handleImageError(artwork.id)}
-                          className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.08]"
+                          className="w-full h-full object-cover transition-transform motion-transition-ui group-hover:scale-[1.08]"
                         />
                       ) : (
                         <span className="w-2 h-2 rounded-full bg-accent/60" />
@@ -1068,7 +1105,7 @@ export function KernArtworkDetail({
             role="dialog"
             aria-modal="true"
             aria-label={`Full resolution view: ${currentArtwork.title}`}
-            className="fixed inset-0 z-50 bg-ink/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-8 animate-in fade-in duration-200"
+            className="fixed inset-0 z-50 bg-ink/95 backdrop-blur-md flex flex-col justify-between p-4 sm:p-8 animate-in fade-in motion-fade-in"
           >
             <div className="flex items-center justify-between text-white/80">
               <div className="flex items-center gap-3">
@@ -1082,7 +1119,7 @@ export function KernArtworkDetail({
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
                 aria-label="Close fullscreen view"
-                className="p-2 text-white/70 hover:text-white transition-colors cursor-pointer text-sm font-mono uppercase tracking-wider flex items-center gap-1.5"
+                className="p-2 text-white/70 hover:text-white transition-colors motion-transition-micro cursor-pointer text-sm font-mono uppercase tracking-wider flex items-center gap-1.5"
               >
                 <span>Close</span>
                 <span aria-hidden="true">✕</span>
@@ -1112,7 +1149,7 @@ export function KernArtworkDetail({
                 type="button"
                 onClick={handlePrev}
                 disabled={totalCount <= 1}
-                className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
+                className="hover:text-white transition-colors motion-transition-micro flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
               >
                 <span>← Previous</span>
               </button>
@@ -1123,7 +1160,7 @@ export function KernArtworkDetail({
                 type="button"
                 onClick={handleNext}
                 disabled={totalCount <= 1}
-                className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
+                className="hover:text-white transition-colors motion-transition-micro flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
               >
                 <span>Next →</span>
               </button>
