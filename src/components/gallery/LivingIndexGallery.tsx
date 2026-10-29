@@ -89,7 +89,7 @@ export function LivingIndexGallery({
                       itemRefs.current[idx] = el;
                     }}
                     onMouseEnter={() => setActiveIndex(idx)}
-                    className={`relative transition-colors motion-transition-micro motion-transition-micro group ${
+                    className={`relative transition-colors motion-transition-micro group ${
                       isActive ? "bg-surface-muted/50" : "hover:bg-surface-muted/25"
                     }`}
                   >
@@ -238,7 +238,7 @@ export function LivingIndexGallery({
                 <h3 className="font-artwork-title text-2xl xl:text-3xl text-ink leading-tight font-normal">
                   <Link
                     href={`/artworks/${activeArtwork.slug}`}
-                    className="hover:text-accent transition-colors"
+                    className="hover:text-accent transition-colors motion-transition-micro"
                   >
                     {activeArtwork.title}
                   </Link>
@@ -254,7 +254,7 @@ export function LivingIndexGallery({
                 <div className="pt-1">
                   <Link
                     href={`/artworks/${activeArtwork.slug}`}
-                    className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-0.5 border-b border-accent/40 hover:border-accent transition-all group/link"
+                    className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-0.5 border-b border-accent/40 hover:border-accent transition-all motion-transition-ui group/link"
                   >
                     <span>Explore Case Study</span>
                     <span
@@ -295,7 +295,7 @@ export function LivingIndexGallery({
                 <h2 className="font-artwork-title text-3xl sm:text-4xl text-ink leading-tight font-normal">
                   <Link
                     href={`/artworks/${artwork.slug}`}
-                    className="hover:text-accent transition-colors"
+                    className="hover:text-accent transition-colors motion-transition-micro"
                   >
                     {artwork.title}
                   </Link>
@@ -305,7 +305,7 @@ export function LivingIndexGallery({
                 <Link
                   href={`/artworks/${artwork.slug}`}
                   aria-label={`Open case study: ${artwork.title}`}
-                  className="block relative w-full h-[340px] sm:h-[420px] rounded-xs border border-border/70 bg-paper/70 p-2 sm:p-3 overflow-hidden shadow-2xs hover:border-accent/40 transition-colors"
+                  className="block relative w-full h-[340px] sm:h-[420px] rounded-xs border border-border/70 bg-paper/70 p-2 sm:p-3 overflow-hidden shadow-2xs hover:border-accent/40 transition-colors motion-transition-micro"
                 >
                   <div className="w-full h-full flex items-center justify-center overflow-hidden">
                     {imageUrl && !isFailed ? (
@@ -341,7 +341,7 @@ export function LivingIndexGallery({
                 <div className="pt-1">
                   <Link
                     href={`/artworks/${artwork.slug}`}
-                    className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-0.5 border-b border-accent/40 hover:border-accent transition-colors"
+                    className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover pb-0.5 border-b border-accent/40 hover:border-accent transition-colors motion-transition-micro"
                   >
                     <span>Explore Case Study</span>
                     <span aria-hidden="true">→</span>
