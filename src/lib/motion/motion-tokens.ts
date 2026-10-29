@@ -67,11 +67,7 @@ export function getStaggerDelayExpression(rank: number, token: string): string {
   return terms.length ? `calc(${terms.join(" + ")})` : "0ms";
 }
 
-export function getSliceStaggerRank(
-  index: number,
-  count: number,
-  direction: "next" | "previous",
-): number {
+export function getSliceStaggerRank(index: number, count: number): number {
   if (
     !Number.isInteger(index) ||
     !Number.isInteger(count) ||
@@ -83,16 +79,47 @@ export function getSliceStaggerRank(
   }
 
   const center = (count - 1) / 2;
-  const order = Array.from({ length: count }, (_, itemIndex) => itemIndex)
-    .sort((left, right) => {
-      const distanceDifference =
-        Math.abs(left - center) - Math.abs(right - center);
-      if (distanceDifference !== 0) return distanceDifference;
+  return Math.floor(Math.abs(index - center));
+}
 
-      return direction === "next" ? left - right : right - left;
-    });
+/**
+ * Staggers slices from the center out. A small directional tie-break means the
+ * left/right pair is not perfectly simultaneous, while preserving each ring's
+ * clear 60 ms rhythm. On exit, outer rings leave before inner rings.
+ */
+export function getSliceStaggerDelay(
+  index: number,
+  count: number,
+  direction: "next" | "previous",
+  stepMs: number,
+  tieMs: number,
+  reverse = false,
+): number {
+  if (
+    !Number.isInteger(index) ||
+    !Number.isInteger(count) ||
+    count <= 0 ||
+    index < 0 ||
+    index >= count ||
+    !Number.isFinite(stepMs) ||
+    !Number.isFinite(tieMs)
+  ) {
+    return 0;
+  }
 
-  return order.indexOf(index);
+  const center = (count - 1) / 2;
+  const ring = getSliceStaggerRank(index, count);
+  const outermostRing = Math.floor(center);
+  const ringRank = reverse ? outermostRing - ring : ring;
+  const isLeftOfCenter = index < center;
+  const firstSide = direction === "next" ? "left" : "right";
+  const isFirstSide = index !== center &&
+    ((isLeftOfCenter && firstSide === "left") ||
+      (!isLeftOfCenter && firstSide === "right"));
+  const tieRank = index === center ? 0 : Number(reverse ? isFirstSide : !isFirstSide);
+
+  return Math.max(0, ringRank) * Math.max(0, stepMs) +
+    tieRank * Math.max(0, tieMs);
 }
 
 function cubicBezierCoordinate(t: number, point1: number, point2: number): number {
