@@ -226,13 +226,13 @@ export function AlanMenkenShowcase({
 
     // Keep the entrance classes until the longest token-based panel delay and
     // animation have completed, including a small rendering safety buffer.
-    const entranceDuration = Math.max(
-      getMotionDuration("--motion-duration-ribbon-enter", 820),
-      getMotionDuration("--motion-duration-ribbon-focus", 960),
-    );
+    const previewEntranceCompletion =
+      getMotionDuration("--motion-duration-ribbon-enter", 820) +
+      getMotionDuration("--motion-stagger-ribbon-cap", 232);
+    const focusEntranceCompletion =
+      getMotionDuration("--motion-duration-ribbon-focus", 960);
     const timeoutDelay =
-      entranceDuration +
-      getMotionDuration("--motion-stagger-ribbon-cap", 232) +
+      Math.max(previewEntranceCompletion, focusEntranceCompletion) +
       getMotionDuration("--motion-buffer-ribbon-enter", 100);
     const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), timeoutDelay);
     return () => window.clearTimeout(timeoutId);
