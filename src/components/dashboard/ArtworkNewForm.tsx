@@ -178,7 +178,7 @@ export function ArtworkNewForm() {
           <h2 className="font-sans text-lg text-ink">Publication State</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors">
+            <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors motion-transition-micro">
               <input
                 type="radio"
                 name="status"
@@ -196,7 +196,7 @@ export function ArtworkNewForm() {
               </div>
             </label>
 
-            <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors">
+            <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors motion-transition-micro">
               <input
                 type="radio"
                 name="status"
