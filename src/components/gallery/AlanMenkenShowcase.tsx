@@ -529,8 +529,8 @@ export function AlanMenkenShowcase({
         { transform: "translate3d(" + exitDistance + "px, 0, 0)" },
       ],
       {
-        duration: 760,
-        easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+        duration: getMotionDuration("--motion-duration-ribbon-far", 800),
+        easing: getMotionEasing("--motion-ease-in", "cubic-bezier(0.7, 0, 0.84, 0)"),
         fill: "both",
       },
     );
@@ -1274,7 +1274,7 @@ export function AlanMenkenShowcase({
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
-                          className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
+                          className="absolute inset-0 h-full w-full object-contain transition-[scale] motion-transition-image motion-reduce:transition-none group-hover:scale-[1.025]"
                           style={{ transform: "scale(" + imageScale + ")" }}
                         />
                       ) : (
