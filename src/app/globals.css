@@ -122,6 +122,7 @@
   --motion-ease-out: cubic-bezier(0.72, 0, 0.28, 1);
   --motion-ease-in: cubic-bezier(0.72, 0, 0.28, 1);
   --motion-ease-spring: cubic-bezier(0.72, 0, 0.28, 1);
+  --motion-ease-unified-experiment: cubic-bezier(0.72, 0, 0.28, 1);
 }
 
 body {
