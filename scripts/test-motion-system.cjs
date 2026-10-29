@@ -72,10 +72,14 @@ assert.equal(motionTokens.get("--motion-duration-ribbon-focus"), "1250ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-near"), "1120ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-middle"), "1000ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-far"), "900ms");
-assert.equal(
-  motionTokens.get("--motion-ease-ribbon-focus"),
-  "cubic-bezier(0.4, 0, 0.2, 1)",
-);
+const ribbonFocusEasing = "cubic-bezier(0.72, 0, 0.28, 1)";
+assert.equal(motionTokens.get("--motion-ease-ribbon-focus"), ribbonFocusEasing);
+const ribbonQuarterProgress = getCubicBezierProgress(0.25, ribbonFocusEasing);
+const ribbonMidpointProgress = getCubicBezierProgress(0.5, ribbonFocusEasing);
+const ribbonThreeQuarterProgress = getCubicBezierProgress(0.75, ribbonFocusEasing);
+assert.ok(ribbonQuarterProgress < 0.12, "Ribbon focus should ease into motion deliberately");
+assert.ok(Math.abs(ribbonMidpointProgress - 0.5) < 0.001, "Ribbon focus should accelerate through a balanced midpoint");
+assert.ok(ribbonThreeQuarterProgress > 0.88, "Ribbon focus should settle with a clear ease-out");
 assert.ok(
   parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-focus"), 0) >
     parseCssTimeToMs(motionTokens.get("--motion-duration-ribbon-near"), 0),
