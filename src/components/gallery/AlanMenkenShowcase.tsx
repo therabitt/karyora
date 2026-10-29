@@ -948,7 +948,6 @@ export function AlanMenkenShowcase({
       if (!sources.src) return;
 
       const preloadImage = new window.Image();
-      preloadImage.crossOrigin = "anonymous";
       preloadImage.decoding = "async";
       preloadImage.fetchPriority = "low";
       if (sources.srcSet) preloadImage.srcset = sources.srcSet;
