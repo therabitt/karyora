@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
@@ -1084,11 +1085,14 @@ export function AlanMenkenShowcase({
                   }}
                 >
                   {seamExitSnapshot.imageUrl && !seamExitSnapshot.failed ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
+                      fill
                       draggable={false}
                       src={seamExitSnapshot.imageUrl}
                       alt=""
+                      sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
+                      loading="eager"
+                      fetchPriority="low"
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -1166,16 +1170,20 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
+                          fill
                           data-artwork-image
                           draggable={false}
                           src={imageUrl}
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
+                          sizes={`${Math.max(1, Math.ceil(width * imageScale))}px`}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
                           className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
                           style={{ transform: "scale(" + imageScale + ")" }}
+                          preload={isActive}
+                          loading={isActive ? undefined : "eager"}
+                          fetchPriority={isActive ? undefined : "low"}
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
@@ -1258,11 +1266,15 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           draggable={false}
                           src={currentImageUrl}
                           alt=""
+                          width={Math.max(1, Math.round(current.image_width ?? sliceSize.width))}
+                          height={Math.max(1, Math.round(current.image_height ?? sliceSize.height))}
+                          sizes={`${Math.max(1, Math.ceil(sliceSize.width))}px`}
+                          loading="eager"
+                          fetchPriority={sliceIndex === 2 ? "high" : "low"}
                           onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
                           onError={() => handleImageError(current.id)}
                           className="absolute max-w-none"
@@ -1346,11 +1358,15 @@ export function AlanMenkenShowcase({
                         } as CSSProperties}
                       >
                         {outgoingImageUrl && !failed ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                          draggable={false}
+                          <Image
+                            draggable={false}
                             src={outgoingImageUrl}
                             alt=""
+                            width={Math.max(1, Math.round(outgoingArtwork.image_width ?? outgoingSliceSize.width))}
+                            height={Math.max(1, Math.round(outgoingArtwork.image_height ?? outgoingSliceSize.height))}
+                            sizes={`${Math.max(1, Math.ceil(outgoingSliceSize.width))}px`}
+                            loading="eager"
+                            fetchPriority="low"
                             className="absolute max-w-none"
                             style={{
                               width: outgoingSliceSize.width + "px",
@@ -1379,11 +1395,14 @@ export function AlanMenkenShowcase({
                   }}
                 >
                   {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                          draggable={false}
+                    <Image
+                      fill
+                      draggable={false}
                       src={outgoingImageUrl}
                       alt=""
+                      sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
+                      loading="eager"
+                      fetchPriority="low"
                       className="h-full w-full object-contain"
                     />
                   ) : (

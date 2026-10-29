@@ -8,6 +8,7 @@ import React, {
   useMemo,
 } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
@@ -363,21 +364,6 @@ export function KernArtworkDetail({
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
-  // Preload next and previous artwork images into browser cache to prevent flashes
-  useEffect(() => {
-    if (totalCount <= 1) return;
-    const nextArt = allArtworks[(activeIndex + 1) % totalCount];
-    const prevArt = allArtworks[(activeIndex - 1 + totalCount) % totalCount];
-    [nextArt, prevArt].forEach((art) => {
-      if (art?.public_image_path) {
-        const url = getStoragePublicUrl(art.public_image_path);
-        if (url) {
-          const img = new Image();
-          img.src = url;
-        }
-      }
-    });
-  }, [activeIndex, allArtworks, totalCount]);
 
   const scrollToActiveThumb = useCallback((index: number, smooth = true) => {
     const container = dockContainerRef.current;
@@ -787,11 +773,17 @@ export function KernArtworkDetail({
               >
                 <div className="relative flex items-center justify-center">
                   {imageUrl && !isImageFailed ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       key={currentArtwork.id}
                       src={imageUrl}
                       alt={currentArtwork.alt_text || currentArtwork.title}
+                      width={Math.max(1, currentArtwork.image_width ?? 1600)}
+                      height={Math.max(1, currentArtwork.image_height ?? 1200)}
+                      sizes="(min-width: 1280px) min(660px, 42vw), (min-width: 1024px) min(560px, 38vw), (min-width: 640px) min(440px, 58vw), min(340px, 78vw)"
+                      quality={85}
+                      preload={currentArtwork.id === initialArtwork.id}
+                      loading={currentArtwork.id === initialArtwork.id ? undefined : "eager"}
+                      fetchPriority={currentArtwork.id === initialArtwork.id ? undefined : "high"}
                       crossOrigin="anonymous"
                       onLoad={(e) => {
                         const slugKey = currentArtwork.slug?.toLowerCase().trim();
@@ -999,10 +991,14 @@ export function KernArtworkDetail({
                     {/* Thumbnail with subtle hover-zoom on the image only */}
                     <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-2xs overflow-hidden shrink-0 border border-black/10 bg-surface-muted inline-flex items-center justify-center">
                       {thumbUrl && !thumbFailed ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
+                        <Image
                           src={thumbUrl}
                           alt=""
+                          width={64}
+                          height={64}
+                          sizes="32px"
+                          loading="lazy"
+                          fetchPriority="low"
                           onError={() => handleImageError(artwork.id)}
                           className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.08]"
                         />
@@ -1053,10 +1049,15 @@ export function KernArtworkDetail({
 
             <div className="flex-1 flex items-center justify-center overflow-hidden my-4">
               {imageUrl && !isImageFailed ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={imageUrl}
                   alt={currentArtwork.alt_text || currentArtwork.title}
+                  width={Math.max(1, currentArtwork.image_width ?? 1600)}
+                  height={Math.max(1, currentArtwork.image_height ?? 1200)}
+                  sizes="100vw"
+                  quality={85}
+                  loading="eager"
+                  fetchPriority="high"
                   className="max-w-full max-h-[82vh] object-contain rounded-xs shadow-2xl select-none"
                 />
               ) : null}
