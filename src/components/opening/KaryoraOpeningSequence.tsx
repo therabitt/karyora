@@ -97,8 +97,15 @@ export function KaryoraOpeningSequence({
     if (focusHeadlineOnNextSceneRef.current) {
       focusHeadlineOnNextSceneRef.current = false;
       headlineRef.current?.focus({ preventScroll: true });
+      return;
     }
-  }, [sceneIndex]);
+
+    // Keep keyboard and screen-reader context on the new scene when narration
+    // advances automatically and the previous scene's control disappears.
+    if (sceneIndex > 0 && phase === "intro") {
+      headlineRef.current?.focus({ preventScroll: true });
+    }
+  }, [phase, sceneIndex]);
 
   useLayoutEffect(() => {
     if (phase !== "complete" || !hasPresentedIntroRef.current) return;
