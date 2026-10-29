@@ -1091,6 +1091,7 @@ export function AlanMenkenShowcase({
                       src={seamExitSnapshot.imageUrl}
                       alt=""
                       sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
+                      quality={85}
                       loading="eager"
                       fetchPriority="low"
                       className="h-full w-full object-cover"
@@ -1177,6 +1178,7 @@ export function AlanMenkenShowcase({
                           src={imageUrl}
                           alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           sizes={`${Math.max(1, Math.ceil(width * imageScale))}px`}
+                      quality={85}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
                           className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
@@ -1273,6 +1275,7 @@ export function AlanMenkenShowcase({
                           width={Math.max(1, Math.round(current.image_width ?? sliceSize.width))}
                           height={Math.max(1, Math.round(current.image_height ?? sliceSize.height))}
                           sizes={`${Math.max(1, Math.ceil(sliceSize.width))}px`}
+                      quality={85}
                           loading="eager"
                           fetchPriority={sliceIndex === 2 ? "high" : "low"}
                           onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
@@ -1365,6 +1368,7 @@ export function AlanMenkenShowcase({
                             width={Math.max(1, Math.round(outgoingArtwork.image_width ?? outgoingSliceSize.width))}
                             height={Math.max(1, Math.round(outgoingArtwork.image_height ?? outgoingSliceSize.height))}
                             sizes={`${Math.max(1, Math.ceil(outgoingSliceSize.width))}px`}
+                      quality={85}
                             loading="eager"
                             fetchPriority="low"
                             className="absolute max-w-none"
@@ -1401,6 +1405,7 @@ export function AlanMenkenShowcase({
                       src={outgoingImageUrl}
                       alt=""
                       sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
+                      quality={85}
                       loading="eager"
                       fetchPriority="low"
                       className="h-full w-full object-contain"
