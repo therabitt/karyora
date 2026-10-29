@@ -935,10 +935,10 @@ export function KernArtworkDetail({
               {/* Commission CTA */}
               <Link
                 href={`/commission?ref=${encodeURIComponent(currentArtwork.slug)}`}
-                className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover transition-colors group/link"
+                className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-[0.2em] font-semibold text-accent hover:text-accent-hover transition-colors motion-transition-micro group/link"
               >
                 <span>Commission Similar</span>
-                <span aria-hidden="true" className="transition-transform group-hover/link:translate-x-1">→</span>
+                <span aria-hidden="true" className="transition-transform motion-transition-micro group-hover/link:translate-x-1">→</span>
               </Link>
             </div>
           </div>
@@ -991,7 +991,7 @@ export function KernArtworkDetail({
                 onClick={handlePrev}
                 disabled={isNavDisabled || totalCount <= 1}
                 aria-label="Previous artwork"
-                className={`transition-colors flex items-center gap-1.5 py-1 px-2 ${
+                className={`transition-colors motion-transition-micro flex items-center gap-1.5 py-1 px-2 ${
                   isNavDisabled
                     ? "opacity-35 cursor-not-allowed text-text-muted"
                     : "hover:text-accent cursor-pointer"
@@ -1012,7 +1012,7 @@ export function KernArtworkDetail({
                 onClick={handleNext}
                 disabled={isNavDisabled || totalCount <= 1}
                 aria-label="Next artwork"
-                className={`transition-colors flex items-center gap-1.5 py-1 px-2 ${
+                className={`transition-colors motion-transition-micro flex items-center gap-1.5 py-1 px-2 ${
                   isNavDisabled
                     ? "opacity-35 cursor-not-allowed text-text-muted"
                     : "hover:text-accent cursor-pointer"
@@ -1119,7 +1119,7 @@ export function KernArtworkDetail({
                 type="button"
                 onClick={() => setIsLightboxOpen(false)}
                 aria-label="Close fullscreen view"
-                className="p-2 text-white/70 hover:text-white transition-colors cursor-pointer text-sm font-mono uppercase tracking-wider flex items-center gap-1.5"
+                className="p-2 text-white/70 hover:text-white transition-colors motion-transition-micro cursor-pointer text-sm font-mono uppercase tracking-wider flex items-center gap-1.5"
               >
                 <span>Close</span>
                 <span aria-hidden="true">✕</span>
@@ -1149,7 +1149,7 @@ export function KernArtworkDetail({
                 type="button"
                 onClick={handlePrev}
                 disabled={totalCount <= 1}
-                className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
+                className="hover:text-white transition-colors motion-transition-micro flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
               >
                 <span>← Previous</span>
               </button>
@@ -1160,7 +1160,7 @@ export function KernArtworkDetail({
                 type="button"
                 onClick={handleNext}
                 disabled={totalCount <= 1}
-                className="hover:text-white transition-colors flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
+                className="hover:text-white transition-colors motion-transition-micro flex items-center gap-2 cursor-pointer py-1 px-3 border border-white/20 rounded-xs disabled:opacity-40"
               >
                 <span>Next →</span>
               </button>
