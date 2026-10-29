@@ -23,6 +23,7 @@ Values below must match the tokens in `:root` in `globals.css`.
 |---|---:|---|
 | `--motion-duration-micro` | 180 ms | Hover, icons, color changes |
 | `--motion-duration-ui` | 280 ms | Navigation backdrop and small UI state changes |
+| `--motion-duration-navigation` | 460 ms | Full navigation panel movement |
 | `--motion-duration-image` | 720 ms | Gentle image-scale emphasis |
 | `--motion-duration-spotlight` | 720 ms | Homepage active-panel width and emphasis |
 | `--motion-duration-ribbon-enter` | 820 ms | Ribbon preview entrance |
@@ -99,7 +100,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 ### Homepage, navigation, and archive index
 
 - Homepage spotlight width transitions use the spotlight token; its image scale uses the image token.
-- Navigation panel motion uses the UI easing and duration tokens; backdrop fade uses the smaller UI duration.
+- Navigation panel motion uses the dedicated 460 ms navigation duration and standard easing; backdrop fade uses the 280 ms UI duration.
 - Archive index highlights and arrows use micro motion. Artwork image emphasis remains slower than label changes.
 - Avoid adding new perpetual animations or using large-area layout transitions for tiny hover feedback.
 
