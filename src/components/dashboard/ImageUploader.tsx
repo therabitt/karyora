@@ -184,7 +184,7 @@ export function ImageUploader({
           </div>
           <div className="w-full h-1.5 bg-surface-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-accent transition-all duration-200 rounded-full"
+              className="h-full bg-accent transition-all motion-transition-ui rounded-full"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
