@@ -20,6 +20,12 @@ import {
   getWheelDirection,
   shouldHandleArtworkKeyboardNavigation,
 } from "@/lib/gallery/artwork-interaction";
+import {
+  getCubicBezierProgress,
+  getMotionDuration,
+  getMotionEasing,
+  getSliceStaggerDelay,
+} from "@/lib/motion/motion-tokens";
 
 export interface AlanMenkenShowcaseProps {
   artworks: PublicArtwork[];
@@ -89,29 +95,6 @@ type ArtworkSwipeStart = {
   x: number;
   y: number;
 };
-
-function cubicBezierCoordinate(t: number, point1: number, point2: number): number {
-  const inverse = 1 - t;
-  return 3 * inverse * inverse * t * point1 + 3 * inverse * t * t * point2 + t * t * t;
-}
-
-function cubicBezierProgress(progress: number): number {
-  const x1 = 0.4;
-  const y1 = 0;
-  const x2 = 0.2;
-  const y2 = 1;
-  let low = 0;
-  let high = 1;
-
-  // Solve x(t) = progress by bisection, then evaluate y(t).
-  for (let iteration = 0; iteration < 16; iteration += 1) {
-    const midpoint = (low + high) / 2;
-    if (cubicBezierCoordinate(midpoint, x1, x2) < progress) low = midpoint;
-    else high = midpoint;
-  }
-
-  return cubicBezierCoordinate((low + high) / 2, y1, y2);
-}
 
 function getUniformScale(transform: string): number {
   if (!transform || transform === "none") return 1;
@@ -241,10 +224,17 @@ export function AlanMenkenShowcase({
       return () => window.clearTimeout(timeoutId);
     }
 
-    // Match Ribbon's FLIP timing: previews settle over 980 ms and the focused artwork
-    // over 1100 ms. Its center-first stagger adds at most 168 ms before the focus arrives.
-    // Clear the entrance class only after every panel has reached its resting position.
-    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), 1350);
+    // Keep the entrance classes until the longest token-based panel delay and
+    // animation have completed, including a small rendering safety buffer.
+    const entranceDuration = Math.max(
+      getMotionDuration("--motion-duration-ribbon-enter", 820),
+      getMotionDuration("--motion-duration-ribbon-focus", 960),
+    );
+    const timeoutDelay =
+      entranceDuration +
+      getMotionDuration("--motion-stagger-ribbon-cap", 232) +
+      getMotionDuration("--motion-buffer-ribbon-enter", 100);
+    const timeoutId = window.setTimeout(() => setIsRibbonEntranceActive(false), timeoutDelay);
     return () => window.clearTimeout(timeoutId);
   }, [isRibbonEntranceActive, total]);
 
@@ -343,11 +333,17 @@ export function AlanMenkenShowcase({
       slicedNavigationLockedRef.current = true;
 
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+      const sliceStep = getMotionDuration("--motion-stagger-slice-step", 60);
+      const sliceTie = getMotionDuration("--motion-stagger-slice-tie", 12);
+      const maximumSliceStagger =
+        Math.floor((SLICE_COUNT - 1) / 2) * sliceStep + sliceTie;
+      const sliceSafety = getMotionDuration("--motion-buffer-slice-safety", 180);
       const navigationCooldown = prefersReducedMotion
-        ? 250
-        : shouldSequenceSliceHandoff
-        ? 1950
-        : 950;
+        ? getMotionDuration("--motion-duration-reduced-navigation", 250)
+        : (shouldSequenceSliceHandoff
+          ? getMotionDuration("--motion-delay-slice-handoff", 920)
+          : 0) + sliceDuration + maximumSliceStagger + sliceSafety;
 
       slicedNavigationUnlockTimerRef.current = window.setTimeout(() => {
         slicedNavigationLockedRef.current = false;
@@ -489,7 +485,17 @@ export function AlanMenkenShowcase({
       transitionSnapshot.viewMode === "sliced" &&
       currentArtworkId !== undefined &&
       delayedSliceArtworkId === currentArtworkId;
-    const cleanupDelay = hasSequentialSliceHandoff ? 1900 : 900;
+    const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+    const sliceStagger =
+      Math.floor((SLICE_COUNT - 1) / 2) *
+        getMotionDuration("--motion-stagger-slice-step", 60) +
+      getMotionDuration("--motion-stagger-slice-tie", 12);
+    const safetyBuffer = getMotionDuration("--motion-buffer-slice-safety", 180);
+    const cleanupDelay = transitionSnapshot.viewMode === "sliced"
+      ? (hasSequentialSliceHandoff
+        ? getMotionDuration("--motion-delay-slice-handoff", 920)
+        : 0) + sliceDuration + sliceStagger + safetyBuffer
+      : getMotionDuration("--motion-duration-image", 720) + safetyBuffer;
 
     const timeoutId = window.setTimeout(() => {
       setTransitionSnapshot((currentSnapshot) =>
@@ -564,7 +570,10 @@ export function AlanMenkenShowcase({
     }
 
     const activeId = displayArtworks[activeIndex]?.id;
-    const easing = "cubic-bezier(0.4, 0, 0.2, 1)";
+    const easing = getMotionEasing(
+      "--motion-ease-standard",
+      "cubic-bezier(0.22, 1, 0.36, 1)",
+    );
 
     ribbonItemsRef.current.forEach((element, id) => {
       const last = element.getBoundingClientRect();
@@ -626,7 +635,14 @@ export function AlanMenkenShowcase({
 
       // Animate the layout box itself. The image keeps its own object-fit rendering,
       // rather than being stretched by separate horizontal and vertical scaling.
-      const duration = id === activeId ? 1100 : 980;
+      const ribbonDistance = Math.abs(Number(element.dataset.ribbonOffset ?? "0"));
+      const duration = id === activeId
+        ? getMotionDuration("--motion-duration-ribbon-focus", 960)
+        : ribbonDistance <= 1
+        ? getMotionDuration("--motion-duration-ribbon-near", 920)
+        : ribbonDistance === 2
+        ? getMotionDuration("--motion-duration-ribbon-middle", 860)
+        : getMotionDuration("--motion-duration-ribbon-far", 800);
       const targetStyle = window.getComputedStyle(element);
       const targetOpacity = Number(targetStyle.opacity);
       const targetFilter = targetStyle.filter;
@@ -668,7 +684,7 @@ export function AlanMenkenShowcase({
         const startScale = getUniformScale(first.imageTransform);
         const imageScaleKeyframes: Keyframe[] = Array.from({ length: 33 }, (_, index) => {
           const offset = index / 32;
-          const progress = cubicBezierProgress(offset);
+          const progress = getCubicBezierProgress(offset, easing);
           const frameWidth = fromWidth + (last.width - fromWidth) * progress;
           const frameHeight = fromHeight + (last.height - fromHeight) * progress;
           const frameAspectRatio = frameHeight > 0 ? frameWidth / frameHeight : naturalAspectRatio;
@@ -1035,10 +1051,9 @@ export function AlanMenkenShowcase({
     }
   }
 
-  const maxRibbonOffset = Math.max(
-    ...ribbonEntries.map((entry) => Math.abs(entry.offset)),
-    0
-  );
+  const ribbonStaggerStepMs = getMotionDuration("--motion-stagger-ribbon-step", 58);
+  const ribbonStaggerTieMs = getMotionDuration("--motion-stagger-ribbon-tie", 10);
+  const ribbonStaggerCapMs = getMotionDuration("--motion-stagger-ribbon-cap", 232);
 
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
@@ -1200,8 +1215,11 @@ export function AlanMenkenShowcase({
                   const ribbonPatternIndex =
                     ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
                     STAGGER_HEIGHTS_RIBBONS.length;
-                  const entranceDelay =
-                    (maxRibbonOffset - Math.abs(offset)) * 42 + (offset > 0 ? 10 : 0);
+                  const entranceDelay = Math.min(
+                    ribbonStaggerCapMs,
+                    Math.abs(offset) * ribbonStaggerStepMs +
+                      (offset > 0 ? ribbonStaggerTieMs : 0),
+                  );
                   const entranceOffset = ribbonPatternIndex % 2 === 0 ? "-120vh" : "120vh";
                   const itemClassName = isActive
                     ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
@@ -1312,9 +1330,6 @@ export function AlanMenkenShowcase({
                     verticalOffset;
                   const left = sliceIndex * (slicePanelWidth + sliceGap);
                   const failed = failedImages[current.id];
-                  const staggerIndex = transitionDirection === "next"
-                    ? sliceIndex
-                    : SLICE_COUNT - 1 - sliceIndex;
                   const centeredGroupTop = (stageHeight - sliceGroupHeight) / 2;
                   // Odd-numbered panels (1, 3, 5) begin fully above the stage
                   // and travel down into focus. Even-numbered panels (2, 4)
@@ -1334,7 +1349,16 @@ export function AlanMenkenShowcase({
                         width: slicePanelWidth + "px",
                         height: panelHeight + "px",
                         animationDelay: (
-                          (shouldDelayCurrentSliceEntrance ? 870 : 20) + staggerIndex * 22
+                          (shouldDelayCurrentSliceEntrance
+                            ? getMotionDuration("--motion-delay-slice-handoff", 920)
+                            : getMotionDuration("--motion-delay-slice-initial", 20)) +
+                          getSliceStaggerDelay(
+                            sliceIndex,
+                            SLICE_COUNT,
+                            transitionDirection,
+                            getMotionDuration("--motion-stagger-slice-step", 60),
+                            getMotionDuration("--motion-stagger-slice-tie", 12),
+                          )
                         ) + "ms",
                         "--slice-enter-y": enterY + "px",
                       } as CSSProperties}
@@ -1409,9 +1433,6 @@ export function AlanMenkenShowcase({
                       verticalOffset;
                     const left = sliceIndex * (outgoingSlicePanelWidth + sliceGap);
                     const failed = failedImages[outgoingArtwork.id];
-                    const staggerIndex = transitionSnapshot.direction === "next"
-                      ? sliceIndex
-                      : SLICE_COUNT - 1 - sliceIndex;
                     const centeredOutgoingGroupTop =
                       (stageHeight - outgoingSliceGroupHeight) / 2;
                     // Continue each panel's entrance direction on exit, travelling
@@ -1430,7 +1451,14 @@ export function AlanMenkenShowcase({
                           top: panelTop + "px",
                           width: outgoingSlicePanelWidth + "px",
                           height: panelHeight + "px",
-                          animationDelay: (staggerIndex * 22) + "ms",
+                          animationDelay: getSliceStaggerDelay(
+                            sliceIndex,
+                            SLICE_COUNT,
+                            transitionSnapshot.direction,
+                            getMotionDuration("--motion-stagger-slice-step", 60),
+                            getMotionDuration("--motion-stagger-slice-tie", 12),
+                            true,
+                          ) + "ms",
                           "--slice-exit-y": exitY + "px",
                         } as CSSProperties}
                       >
