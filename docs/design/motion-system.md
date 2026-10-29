@@ -27,10 +27,10 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-duration-image` | 720 ms | Gentle image-scale emphasis |
 | `--motion-duration-spotlight` | 720 ms | Homepage active-panel width and emphasis |
 | `--motion-duration-ribbon-enter` | 820 ms | Ribbon preview entrance |
-| `--motion-duration-ribbon-focus` | 960 ms | Ribbon focused panel entrance |
-| `--motion-duration-ribbon-near` | 920 ms | Artwork transition, panels one offset from focus |
-| `--motion-duration-ribbon-middle` | 860 ms | Artwork transition, panels two offsets from focus |
-| `--motion-duration-ribbon-far` | 800 ms | Artwork transition, panels three or more offsets away |
+| `--motion-duration-ribbon-focus` | 1,250 ms | Focused Ribbon artwork transition and entrance |
+| `--motion-duration-ribbon-near` | 1,120 ms | Artwork transition, panels one offset from focus |
+| `--motion-duration-ribbon-middle` | 1,000 ms | Artwork transition, panels two offsets from focus |
+| `--motion-duration-ribbon-far` | 900 ms | Artwork transition, panels three or more offsets away |
 | `--motion-stagger-ribbon-step` | 58 ms | Per-offset Ribbon delay |
 | `--motion-stagger-ribbon-tie` | 10 ms | Soft directional offset between mirrored Ribbon panels |
 | `--motion-stagger-ribbon-cap` | 232 ms | Maximum Ribbon transition delay |
@@ -64,7 +64,8 @@ Values below must match the tokens in `:root` in `globals.css`.
 
 | Token | Value | Intended use |
 |---|---|---|
-| `--motion-ease-standard` | `cubic-bezier(0.22, 1, 0.36, 1)` | Layout and image transitions with confident deceleration |
+| `--motion-ease-standard` | `cubic-bezier(0.22, 1, 0.36, 1)` | General layout and UI transitions |
+| `--motion-ease-ribbon-focus` | `cubic-bezier(0.4, 0, 0.2, 1)` | Smooth ease-in-out curve for the Ribbon focus and its synchronized crop |
 | `--motion-ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | Entering emphasis and spotlight panels |
 | `--motion-ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` | Exiting elements that gather momentum |
 | `--motion-ease-spring` | `cubic-bezier(0.22, 1.12, 0.36, 1)` | Restrained overshoot on arriving elements |
@@ -76,9 +77,9 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 ### Ribbon
 
 - Initial entrance: centered/focused panel starts first. Other visible panels use a CSS-token-based delay based on their absolute offset from the active artwork. Mirrored panels receive a small 10 ms directional tie, capped by the shared 232 ms maximum.
-- Selection changes: the selected artwork's layout box starts immediately. Adjacent panels follow after 58 ms per offset, capped at 232 ms.
-- Durations vary by distance: focus 960 ms, near 920 ms, middle 860 ms, far 800 ms.
-- The image crop follows the frame's easing progression; do not independently delay or distort the image.
+- Selection changes: the selected artwork's layout box starts immediately. Adjacent panels follow after 58 ms per offset, capped at 232 ms, with a small directional tie for mirrored panels.
+- Durations vary by distance: focus 1,250 ms, near 1,120 ms, middle 1,000 ms, far 900 ms. The focused artwork remains the longest and last to settle.
+- Use the dedicated Ribbon focus ease-in-out curve for the entire FLIP sequence and the focus entrance. The image crop uses the exact same easing progression and delay as its frame; do not let image scale run ahead or behind.
 - Circular-wrap panels still enter from beyond the clipped stage edge, avoiding travel across the entire viewport.
 - Navigation and FLIP remain disabled for reduced-motion preferences only insofar as visual movement is omitted; selection and other functionality remain available.
 
