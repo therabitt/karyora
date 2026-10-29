@@ -128,7 +128,7 @@ export default async function ContactPage() {
             {contactEmail ? (
               <a
                 href={"mailto:" + contactEmail}
-                className="mt-9 inline-flex text-base tracking-tight text-ink-soft underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:mt-11 sm:text-lg"
+                className="mt-9 inline-flex text-base tracking-tight text-ink-soft underline decoration-border-strong underline-offset-4 transition-colors motion-transition-micro hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent sm:mt-11 sm:text-lg"
               >
                 Or just say hello.
               </a>
@@ -144,7 +144,7 @@ export default async function ContactPage() {
               {contactEmail ? (
                 <a
                   href={"mailto:" + contactEmail}
-                  className="group inline-flex max-w-full items-start gap-3 text-[clamp(1.15rem,2vw,1.9rem)] leading-snug tracking-[-0.035em] text-ink underline decoration-border-strong underline-offset-[7px] transition-colors hover:text-accent hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  className="group inline-flex max-w-full items-start gap-3 text-[clamp(1.15rem,2vw,1.9rem)] leading-snug tracking-[-0.035em] text-ink underline decoration-border-strong underline-offset-[7px] transition-colors motion-transition-micro hover:text-accent hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                   <span className="break-all">{contactEmail}</span>
                   <span aria-hidden="true" className="pt-1 text-xs text-accent">↗</span>
@@ -162,10 +162,10 @@ export default async function ContactPage() {
                     href={url as string}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group inline-flex min-h-7 items-center gap-2.5 text-sm text-ink transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    className="group inline-flex min-h-7 items-center gap-2.5 text-sm text-ink transition-colors motion-transition-micro hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                     aria-label={"Open Karyora's " + formatPlatformName(platform) + " profile in a new tab"}
                   >
-                    <span className="flex h-5 w-5 items-center justify-center transition-transform group-hover:-translate-y-0.5">
+                    <span className="flex h-5 w-5 items-center justify-center transition-transform motion-transition-micro group-hover:-translate-y-0.5">
                       <SocialIcon platform={platform} />
                     </span>
                     <span>{formatPlatformName(platform)}</span>
@@ -181,7 +181,7 @@ export default async function ContactPage() {
               ) : null}
               <Link
                 href="/commission"
-                className="inline-flex items-center gap-2 pt-1 text-sm text-accent underline decoration-border-strong underline-offset-4 transition-colors hover:text-accent-hover hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="inline-flex items-center gap-2 pt-1 text-sm text-accent underline decoration-border-strong underline-offset-4 transition-colors motion-transition-micro hover:text-accent-hover hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 Commission details <span aria-hidden="true">↗</span>
               </Link>
