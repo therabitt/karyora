@@ -321,6 +321,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .motion-fade-in {
+    animation-duration: var(--motion-duration-reduced);
+  }
+
   .motion-transition-micro,
   .motion-transition-ui,
   .motion-transition-image,
