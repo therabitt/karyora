@@ -137,6 +137,10 @@ function cubicBezierCoordinate(t: number, point1: number, point2: number): numbe
  */
 export function getCubicBezierProgress(progress: number, easing: string): number {
   const x = Math.max(0, Math.min(1, progress));
+  // Preserve exact endpoints so geometry derived from these samples cannot drift
+  // from the WAAPI frame at the start or finish.
+  if (x === 0 || x === 1) return x;
+
   const match = easing.match(
     /^cubic-bezier\(\s*(-?(?:\d+\.?\d*|\.\d+))\s*,\s*(-?(?:\d+\.?\d*|\.\d+))\s*,\s*(-?(?:\d+\.?\d*|\.\d+))\s*,\s*(-?(?:\d+\.?\d*|\.\d+))\s*\)$/i,
   );
