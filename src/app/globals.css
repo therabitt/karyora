@@ -117,11 +117,11 @@
   --motion-duration-reduced: 120ms;
   --motion-duration-reduced-navigation: 250ms;
 
-  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-standard: cubic-bezier(0.72, 0, 0.28, 1);
   --motion-ease-ribbon-focus: cubic-bezier(0.72, 0, 0.28, 1);
-  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --motion-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --motion-ease-spring: cubic-bezier(0.22, 1.12, 0.36, 1);
+  --motion-ease-out: cubic-bezier(0.72, 0, 0.28, 1);
+  --motion-ease-in: cubic-bezier(0.72, 0, 0.28, 1);
+  --motion-ease-spring: cubic-bezier(0.72, 0, 0.28, 1);
 }
 
 body {
