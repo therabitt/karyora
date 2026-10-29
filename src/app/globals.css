@@ -88,6 +88,7 @@
   --motion-stagger-ribbon-step: 58ms;
   --motion-stagger-ribbon-tie: 10ms;
   --motion-stagger-ribbon-cap: 232ms;
+  --motion-buffer-ribbon-enter: 100ms;
 
   --motion-duration-slice-panel: 680ms;
   --motion-stagger-slice-step: 60ms;
@@ -113,6 +114,7 @@
   --motion-duration-detail-meta: 380ms;
   --motion-delay-detail-meta: 120ms;
   --motion-duration-reduced: 120ms;
+  --motion-duration-reduced-navigation: 250ms;
 
   --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
