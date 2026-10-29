@@ -82,10 +82,10 @@
   --motion-duration-spotlight: 720ms;
 
   --motion-duration-ribbon-enter: 820ms;
-  --motion-duration-ribbon-focus: 960ms;
-  --motion-duration-ribbon-near: 920ms;
-  --motion-duration-ribbon-middle: 860ms;
-  --motion-duration-ribbon-far: 800ms;
+  --motion-duration-ribbon-focus: 1250ms;
+  --motion-duration-ribbon-near: 1120ms;
+  --motion-duration-ribbon-middle: 1000ms;
+  --motion-duration-ribbon-far: 900ms;
   --motion-stagger-ribbon-step: 58ms;
   --motion-stagger-ribbon-tie: 10ms;
   --motion-stagger-ribbon-cap: 232ms;
@@ -118,6 +118,7 @@
   --motion-duration-reduced-navigation: 250ms;
 
   --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-ribbon-focus: cubic-bezier(0.4, 0, 0.2, 1);
   --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
   --motion-ease-spring: cubic-bezier(0.22, 1.12, 0.36, 1);
@@ -217,6 +218,7 @@ body {
 /* The focused artwork uses the same 1100 ms settling time as Ribbon's FLIP transition. */
 .artwork-ribbon-enter-active {
   animation-duration: var(--motion-duration-ribbon-focus);
+  animation-timing-function: var(--motion-ease-ribbon-focus);
 }
 
 .artwork-ribbon-item img {
