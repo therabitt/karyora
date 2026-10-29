@@ -57,7 +57,13 @@ assert.deepEqual(
 assert.equal(getSliceStaggerRank(-1, 5), 0);
 assert.equal(getSliceStaggerDelay(-1, 5, "next", 60, 12), 0);
 
-const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
+const easing = "cubic-bezier(0.72, 0, 0.28, 1)";
+assert.equal(motionTokens.get("--motion-ease-standard"), easing);
+assert.equal(motionTokens.get("--motion-ease-out"), easing);
+assert.equal(motionTokens.get("--motion-ease-in"), easing);
+assert.equal(motionTokens.get("--motion-ease-spring"), easing);
+assert.equal(motionTokens.get("--motion-ease-ribbon-focus"), easing);
+assert.equal(motionTokens.get("--motion-ease-unified-experiment"), easing);
 assert.equal(getCubicBezierProgress(0, easing), 0);
 assert.equal(getCubicBezierProgress(1, easing), 1);
 assert.ok(getCubicBezierProgress(0.25, easing) > 0.25);
