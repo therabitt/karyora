@@ -893,7 +893,7 @@ export function AlanMenkenShowcase({
         <p className="mb-6 max-w-sm text-sm text-text-muted">Exhibition in Preparation</p>
         <Link
           href="/gallery"
-          className="rounded-xs bg-ink px-5 py-2.5 text-xs uppercase tracking-widest text-surface transition-colors hover:bg-accent"
+          className="rounded-xs bg-ink px-5 py-2.5 text-xs uppercase tracking-widest text-surface transition-colors motion-transition-micro hover:bg-accent"
         >
           Browse Archive
         </Link>
@@ -1110,7 +1110,7 @@ export function AlanMenkenShowcase({
           href="/"
           aria-label="Karyora home"
           className={
-            "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight transition-colors sm:text-4xl lg:text-[44px] " +
+            "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 font-brand text-3xl leading-none tracking-tight transition-colors motion-transition-micro sm:text-4xl lg:text-[44px] " +
             (isNavigationOpen ? "text-paper" : "text-ink hover:text-accent")
           }
         >
@@ -1288,7 +1288,7 @@ export function AlanMenkenShowcase({
                         </div>
                       )}
                       {!isActive && (
-                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity group-hover:opacity-100">
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-ink/70 to-transparent p-2 text-left font-artwork-title text-sm leading-tight text-white opacity-0 transition-opacity motion-transition-micro group-hover:opacity-100">
                           {artwork.title}
                         </span>
                       )}
@@ -1303,7 +1303,7 @@ export function AlanMenkenShowcase({
                 type="button"
                 onClick={handlePrev}
                 aria-label={"Previous artwork: " + previousArtwork.title}
-                className="absolute left-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors hover:border-accent hover:text-accent sm:left-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                className="absolute left-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors motion-transition-micro hover:border-accent hover:text-accent sm:left-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m15 18-6-6 6-6" />
@@ -1400,7 +1400,7 @@ export function AlanMenkenShowcase({
                 type="button"
                 onClick={handleNext}
                 aria-label={"Next artwork: " + nextArtwork.title}
-                className="absolute right-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors hover:border-accent hover:text-accent sm:right-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+                className="absolute right-2 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-paper/90 text-ink transition-colors motion-transition-micro hover:border-accent hover:text-accent sm:right-5 sm:h-11 sm:w-11 motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
               >
                 <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m9 18 6-6-6-6" />
@@ -1541,7 +1541,7 @@ export function AlanMenkenShowcase({
               key={`title-${current.id}`}
               className="artwork-caption-title-enter font-artwork-title text-3xl leading-tight tracking-tight text-ink sm:text-4xl lg:text-5xl"
             >
-              <Link href={"/artworks/" + current.slug} className="transition-colors hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
+              <Link href={"/artworks/" + current.slug} className="transition-colors motion-transition-micro hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent">
                 {current.title}
               </Link>
             </h1>
@@ -1569,7 +1569,7 @@ export function AlanMenkenShowcase({
         <div className="min-w-0 justify-self-start">
           <Link
             href="/gallery"
-            className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-ink-soft transition-colors hover:text-accent sm:text-xs sm:tracking-[0.18em]"
+            className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-ink-soft transition-colors motion-transition-micro hover:text-accent sm:text-xs sm:tracking-[0.18em]"
           >
             <span className="hidden sm:inline">See All {totalCount} Works</span>
             <span className="sm:hidden">Archive · {totalCount}</span>
@@ -1592,7 +1592,7 @@ export function AlanMenkenShowcase({
               setTransitionSnapshot(null);
               setViewMode("ribbons");
             }}
-            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
+            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-transition-micro motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "ribbons" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
           >
@@ -1615,7 +1615,7 @@ export function AlanMenkenShowcase({
               setTransitionSnapshot(null);
               setViewMode("sliced");
             }}
-            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
+            className={"inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors motion-transition-micro motion-reduce:transition-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:h-8 sm:w-8 " + (
               viewMode === "sliced" ? "bg-ink text-surface" : "text-text-muted hover:text-ink"
             )}
           >
@@ -1628,7 +1628,7 @@ export function AlanMenkenShowcase({
 
         <Link
           href={"/commission?ref=" + encodeURIComponent(current.slug)}
-          className="justify-self-end text-[10px] font-mono font-semibold uppercase tracking-[0.16em] text-accent transition-colors hover:text-accent-hover sm:text-xs sm:tracking-[0.2em]"
+          className="justify-self-end text-[10px] font-mono font-semibold uppercase tracking-[0.16em] text-accent transition-colors motion-transition-micro hover:text-accent-hover sm:text-xs sm:tracking-[0.2em]"
         >
           Inquire <span aria-hidden="true">→</span>
         </Link>
