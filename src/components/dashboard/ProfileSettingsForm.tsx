@@ -70,7 +70,7 @@ export function ProfileSettingsForm({ profile }: ProfileSettingsFormProps) {
               Availability Mode *
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors">
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors motion-transition-micro">
                 <input
                   type="radio"
                   name="commission_availability"
@@ -87,7 +87,7 @@ export function ProfileSettingsForm({ profile }: ProfileSettingsFormProps) {
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors">
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors motion-transition-micro">
                 <input
                   type="radio"
                   name="commission_availability"
@@ -104,7 +104,7 @@ export function ProfileSettingsForm({ profile }: ProfileSettingsFormProps) {
                 </div>
               </label>
 
-              <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors">
+              <label className="flex items-start gap-3 p-4 rounded-xl border border-border bg-surface cursor-pointer hover:bg-surface-muted/50 transition-colors motion-transition-micro">
                 <input
                   type="radio"
                   name="commission_availability"
