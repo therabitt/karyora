@@ -31,12 +31,14 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-duration-ribbon-middle` | 860 ms | Artwork transition, panels two offsets from focus |
 | `--motion-duration-ribbon-far` | 800 ms | Artwork transition, panels three or more offsets away |
 | `--motion-stagger-ribbon-step` | 58 ms | Per-offset Ribbon delay |
+| `--motion-stagger-ribbon-tie` | 10 ms | Soft directional offset between mirrored Ribbon panels |
 | `--motion-stagger-ribbon-cap` | 232 ms | Maximum Ribbon transition delay |
 | `--motion-duration-slice-panel` | 680 ms | Sliced enter/exit panel motion |
 | `--motion-stagger-slice-step` | 60 ms | Per-ring Sliced delay |
 | `--motion-stagger-slice-tie` | 12 ms | Directional offset between paired side slices |
 | `--motion-delay-slice-initial` | 20 ms | Default Sliced entrance start |
 | `--motion-delay-slice-handoff` | 920 ms | Sliced entry after a large-layout outgoing handoff |
+| `--motion-buffer-slice-safety` | 180 ms | Safety margin after staggered Sliced animation |
 | `--motion-duration-caption-title` | 340 ms | Incoming artwork title |
 | `--motion-duration-caption-description` | 390 ms | Incoming artwork description |
 | `--motion-duration-caption-meta` | 330 ms | Incoming artwork supporting metadata |
@@ -70,7 +72,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 
 ### Ribbon
 
-- Initial entrance: centered/focused panel starts first. Other visible panels use a CSS-token-based delay based on their absolute offset from the active artwork.
+- Initial entrance: centered/focused panel starts first. Other visible panels use a CSS-token-based delay based on their absolute offset from the active artwork. Mirrored panels receive a small 10 ms directional tie, capped by the shared 232 ms maximum.
 - Selection changes: the selected artwork's layout box starts immediately. Adjacent panels follow after 58 ms per offset, capped at 232 ms.
 - Durations vary by distance: focus 960 ms, near 920 ms, middle 860 ms, far 800 ms.
 - The image crop follows the frame's easing progression; do not independently delay or distort the image.
@@ -81,7 +83,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 
 - Five slices reveal in three rings: center at 0 ms, inner pair at 60 ms (plus a 12 ms directional tie), outer pair at 120 ms (plus the same tie).
 - The tie-break is directional: next favors the left panel in each pair; previous favors the right. Outgoing layers deconstruct in reverse ring order, starting at the outside.
-- A major artwork-layout handoff waits until the outgoing slices clear the stage. The transition snapshot cleanup deadline must remain longer than handoff delay + maximum stagger + incoming duration, with a safety margin.
+- A major artwork-layout handoff waits until the outgoing slices clear the stage. The transition snapshot cleanup deadline remains handoff delay + maximum stagger + incoming duration + the shared 180 ms safety margin.
 - Slice crops stay fixed to their shared source artwork. Do not animate per-slice image dimensions independently.
 
 ### Artwork Detail
