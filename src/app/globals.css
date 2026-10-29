@@ -86,6 +86,7 @@
   --motion-duration-ribbon-middle: 860ms;
   --motion-duration-ribbon-far: 800ms;
   --motion-stagger-ribbon-step: 58ms;
+  --motion-stagger-ribbon-tie: 10ms;
   --motion-stagger-ribbon-cap: 232ms;
 
   --motion-duration-slice-panel: 680ms;
@@ -93,6 +94,7 @@
   --motion-stagger-slice-tie: 12ms;
   --motion-delay-slice-initial: 20ms;
   --motion-delay-slice-handoff: 920ms;
+  --motion-buffer-slice-safety: 180ms;
   --motion-duration-caption-title: 340ms;
   --motion-duration-caption-description: 390ms;
   --motion-duration-caption-meta: 330ms;
