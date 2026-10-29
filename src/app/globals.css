@@ -75,11 +75,11 @@
   --color-info: #355C7D;
 
   /* Canonical motion tokens. Keep docs/design/motion-system.md in sync. */
-  --motion-duration-micro: 180ms;
-  --motion-duration-ui: 280ms;
-  --motion-duration-navigation: 460ms;
-  --motion-duration-image: 720ms;
-  --motion-duration-spotlight: 720ms;
+  --motion-duration-micro: 225ms;
+  --motion-duration-ui: 350ms;
+  --motion-duration-navigation: 575ms;
+  --motion-duration-image: 900ms;
+  --motion-duration-spotlight: 900ms;
 
   --motion-duration-ribbon-enter: 820ms;
   --motion-duration-ribbon-focus: 1250ms;
@@ -91,38 +91,37 @@
   --motion-stagger-ribbon-cap: 232ms;
   --motion-buffer-ribbon-enter: 100ms;
 
-  --motion-duration-slice-panel: 680ms;
+  --motion-duration-slice-panel: 850ms;
   --motion-stagger-slice-step: 60ms;
   --motion-stagger-slice-tie: 12ms;
   --motion-delay-slice-initial: 20ms;
   --motion-delay-slice-handoff: 920ms;
   --motion-buffer-slice-safety: 180ms;
-  --motion-duration-caption-title: 340ms;
-  --motion-duration-caption-description: 390ms;
-  --motion-duration-caption-meta: 330ms;
+  --motion-duration-caption-title: 425ms;
+  --motion-duration-caption-description: 490ms;
+  --motion-duration-caption-meta: 410ms;
   --motion-delay-caption-description: 60ms;
   --motion-delay-caption-meta: 100ms;
 
-  --motion-duration-detail-exit-rear: 430ms;
-  --motion-duration-detail-exit-middle: 470ms;
-  --motion-duration-detail-exit-front: 510ms;
-  --motion-duration-detail-enter-rear: 540ms;
-  --motion-duration-detail-enter-middle: 600ms;
-  --motion-duration-detail-enter-front: 660ms;
+  --motion-duration-detail-exit-rear: 540ms;
+  --motion-duration-detail-exit-middle: 590ms;
+  --motion-duration-detail-exit-front: 640ms;
+  --motion-duration-detail-enter-rear: 675ms;
+  --motion-duration-detail-enter-middle: 750ms;
+  --motion-duration-detail-enter-front: 825ms;
   --motion-stagger-detail-step: 50ms;
-  --motion-duration-detail-exit-total: 680ms;
-  --motion-duration-detail-enter-total: 800ms;
-  --motion-duration-detail-meta: 380ms;
+  --motion-duration-detail-exit-total: 850ms;
+  --motion-duration-detail-enter-total: 1000ms;
+  --motion-duration-detail-meta: 475ms;
   --motion-delay-detail-meta: 120ms;
   --motion-duration-reduced: 120ms;
   --motion-duration-reduced-navigation: 250ms;
 
-  --motion-ease-standard: cubic-bezier(0.72, 0, 0.28, 1);
+  --motion-ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-ribbon-focus: cubic-bezier(0.72, 0, 0.28, 1);
-  --motion-ease-out: cubic-bezier(0.72, 0, 0.28, 1);
-  --motion-ease-in: cubic-bezier(0.72, 0, 0.28, 1);
-  --motion-ease-spring: cubic-bezier(0.72, 0, 0.28, 1);
-  --motion-ease-unified-experiment: cubic-bezier(0.72, 0, 0.28, 1);
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --motion-ease-spring: cubic-bezier(0.22, 1.12, 0.36, 1);
 }
 
 body {
