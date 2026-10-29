@@ -1,7 +1,7 @@
 # Karyora Motion System
 
 **Status:** Implemented baseline  
-**Scope:** Public website motion, including Gallery, homepage showcase, navigation, and Artwork Detail.  
+**Scope:** App-wide interface motion, with detailed choreography for Gallery, homepage showcase, navigation, and Artwork Detail. Shared UI controls and relevant dashboard interactions use the same semantic timing tokens.  
 **Source of truth:** Motion custom properties in `src/app/globals.css`. Runtime code that uses the Web Animations API must read these CSS tokens through `src/lib/motion/motion-tokens.ts`. Do not maintain a second independent list of production durations in TypeScript.
 
 ## Intent
@@ -102,6 +102,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 - Homepage spotlight width transitions use the spotlight token; its image scale uses the image token.
 - Navigation panel motion uses the dedicated 460 ms navigation duration and standard easing; backdrop fade uses the 280 ms UI duration.
 - Archive index highlights and arrows use micro motion. Artwork image emphasis remains slower than label changes.
+- Buttons, inputs, textareas, contact/commission links, the admin sidebar, and image-upload progress use the same micro/UI roles rather than component-specific durations.
 - Avoid adding new perpetual animations or using large-area layout transitions for tiny hover feedback.
 
 ## Reduced motion
