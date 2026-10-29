@@ -64,11 +64,11 @@ Values below must match the tokens in `:root` in `globals.css`.
 
 | Token | Value | Intended use |
 |---|---|---|
-| `--motion-ease-standard` | `cubic-bezier(0.22, 1, 0.36, 1)` | General layout and UI transitions |
+| `--motion-ease-standard` | `cubic-bezier(0.72, 0, 0.28, 1)` | General layout and UI transitions |
 | `--motion-ease-ribbon-focus` | `cubic-bezier(0.72, 0, 0.28, 1)` | Pronounced but smooth symmetric ease-in-out for Ribbon focus and synchronized crop |
-| `--motion-ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | Entering emphasis and spotlight panels |
-| `--motion-ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` | Exiting elements that gather momentum |
-| `--motion-ease-spring` | `cubic-bezier(0.22, 1.12, 0.36, 1)` | Restrained overshoot on arriving elements |
+| `--motion-ease-out` | `cubic-bezier(0.72, 0, 0.28, 1)` | Entering emphasis and spotlight panels |
+| `--motion-ease-in` | `cubic-bezier(0.72, 0, 0.28, 1)` | Exiting elements that gather momentum |
+| `--motion-ease-spring` | `cubic-bezier(0.72, 0, 0.28, 1)` | Restrained overshoot on arriving elements |
 
 CSS keyframes and JavaScript animations must use the same easing token when they describe the same geometric transition. When the Ribbon image crop is interpolated independently from its frame, calculate its crop keyframes against that same easing curve.
 
@@ -120,3 +120,8 @@ Honor `prefers-reduced-motion: reduce`. Use the existing reduced-motion branch w
 - [ ] Verify Artwork Detail completes in both directions and its safety fallback cannot interrupt a normal animation.
 - [ ] Verify navigation, hover, and archive index still respond promptly.
 - [ ] Verify reduced-motion behavior and keyboard operation.
+
+
+## Unified easing experiment
+
+The experimental branch `experiment/unified-easing` intentionally assigns `cubic-bezier(0.72, 0, 0.28, 1)` to every easing role, including standard, in, out, spring, Ribbon focus, and reduced-motion fades. This is an experiment for visual comparison, not the recommended permanent motion system. Durations and stagger delays remain semantic and unchanged. Reduced-motion still uses shorter transitions and does not enable full-motion choreography.
