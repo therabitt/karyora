@@ -268,12 +268,12 @@ export function ArtworkStageShowcase({
                       <div className="shrink-0 flex items-center gap-3">
                         <Link
                           href={`/artworks/${artwork.slug}`}
-                          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-semibold px-3.5 py-1.5 bg-ink text-surface hover:bg-accent hover:text-white rounded-xs transition-all shadow-xs group/link"
+                          className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-semibold px-3.5 py-1.5 bg-ink text-surface hover:bg-accent hover:text-white rounded-xs transition-all motion-transition-ui shadow-xs group/link"
                         >
                           <span>Case Study</span>
                           <span
                             aria-hidden="true"
-                            className="motion-safe:transition-transform group-hover/link:translate-x-1"
+                            className="motion-safe:transition-transform motion-transition-micro group-hover/link:translate-x-1"
                           >
                             →
                           </span>
@@ -434,7 +434,7 @@ export function ArtworkStageShowcase({
                 <span>Explore Full Case Study & Palette</span>
                 <span
                   aria-hidden="true"
-                  className="motion-safe:transition-transform group-hover:translate-x-1"
+                  className="motion-safe:transition-transform motion-transition-micro group-hover:translate-x-1"
                 >
                   →
                 </span>
