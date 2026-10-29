@@ -5,6 +5,9 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as Re
 import Link from "next/link";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
 import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
+
+const RIBBON_ACTIVE_IMAGE_SIZES = "(min-width: 1280px) min(780px, 58vw), (min-width: 640px) 54vw, 76vw";
+const RIBBON_PREVIEW_IMAGE_SIZES = "(min-width: 1280px) 17vw, (min-width: 640px) 20vw, 24vw";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 import {
@@ -1110,7 +1113,7 @@ export function AlanMenkenShowcase({
                         seamExitSnapshot.artwork.image_width ?? 1600,
                         seamExitSnapshot.artwork.image_height ?? 1200,
                       ).srcSet}
-                      sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
+                      sizes={RIBBON_ACTIVE_IMAGE_SIZES}
                       width={seamExitSnapshot.artwork.image_width ?? 1600}
                       height={seamExitSnapshot.artwork.image_height ?? 1200}
                       loading="eager"
@@ -1205,7 +1208,7 @@ export function AlanMenkenShowcase({
                           draggable={false}
                           src={imageSources.src ?? imageUrl}
                           srcSet={imageSources.srcSet}
-                          sizes={`${Math.max(1, Math.ceil(width * imageScale))}px`}
+                          sizes={isActive ? RIBBON_ACTIVE_IMAGE_SIZES : RIBBON_PREVIEW_IMAGE_SIZES}
                           width={artwork.image_width ?? 1600}
                           height={artwork.image_height ?? 1200}
                           loading="eager"
@@ -1303,7 +1306,7 @@ export function AlanMenkenShowcase({
                           draggable={false}
                           src={currentResponsiveSources.src ?? currentImageUrl}
                           srcSet={currentResponsiveSources.srcSet}
-                          sizes={`${Math.max(1, Math.ceil(sliceSize.width))}px`}
+                          sizes={RIBBON_ACTIVE_IMAGE_SIZES}
                           width={current.image_width ?? 1600}
                           height={current.image_height ?? 1200}
                           loading="eager"
@@ -1398,7 +1401,7 @@ export function AlanMenkenShowcase({
                             draggable={false}
                             src={outgoingResponsiveSources?.src ?? outgoingImageUrl}
                             srcSet={outgoingResponsiveSources?.srcSet}
-                            sizes={`${Math.max(1, Math.ceil(outgoingSliceSize.width))}px`}
+                            sizes={RIBBON_ACTIVE_IMAGE_SIZES}
                             width={outgoingArtwork.image_width ?? 1600}
                             height={outgoingArtwork.image_height ?? 1200}
                             loading="eager"
@@ -1438,7 +1441,7 @@ export function AlanMenkenShowcase({
                       draggable={false}
                       src={outgoingResponsiveSources?.src ?? outgoingImageUrl}
                       srcSet={outgoingResponsiveSources?.srcSet}
-                      sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
+                      sizes={RIBBON_ACTIVE_IMAGE_SIZES}
                       width={outgoingArtwork.image_width ?? 1600}
                       height={outgoingArtwork.image_height ?? 1200}
                       loading="eager"
