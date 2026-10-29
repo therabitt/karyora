@@ -33,6 +33,7 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-stagger-ribbon-step` | 58 ms | Per-offset Ribbon delay |
 | `--motion-stagger-ribbon-tie` | 10 ms | Soft directional offset between mirrored Ribbon panels |
 | `--motion-stagger-ribbon-cap` | 232 ms | Maximum Ribbon transition delay |
+| `--motion-buffer-ribbon-enter` | 100 ms | Keeps the initial Ribbon animation class through its final frame |
 | `--motion-duration-slice-panel` | 680 ms | Sliced enter/exit panel motion |
 | `--motion-stagger-slice-step` | 60 ms | Per-ring Sliced delay |
 | `--motion-stagger-slice-tie` | 12 ms | Directional offset between paired side slices |
@@ -56,6 +57,7 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-duration-detail-meta` | 380 ms | Metadata reveal |
 | `--motion-delay-detail-meta` | 120 ms | Metadata reveal after artwork starts arriving |
 | `--motion-duration-reduced` | 120 ms | Minimal fallback for reduced-motion changes |
+| `--motion-duration-reduced-navigation` | 250 ms | Brief state lock when animated slices are disabled |
 
 ### Easing tokens
 
