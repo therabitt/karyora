@@ -531,7 +531,7 @@ export function AlanMenkenShowcase({
       ],
       {
         duration: getMotionDuration("--motion-duration-ribbon-far", 800),
-        easing: getMotionEasing("--motion-ease-in", "cubic-bezier(0.7, 0, 0.84, 0)"),
+        easing: getMotionEasing("--motion-ease-in", "cubic-bezier(0.72, 0, 0.28, 1)"),
         fill: "both",
       },
     );
@@ -573,7 +573,7 @@ export function AlanMenkenShowcase({
     const activeId = displayArtworks[activeIndex]?.id;
     const easing = getMotionEasing(
       "--motion-ease-ribbon-focus",
-      "cubic-bezier(0.4, 0, 0.2, 1)",
+      "cubic-bezier(0.72, 0, 0.28, 1)",
     );
     const ribbonStaggerStepMs = getMotionDuration("--motion-stagger-ribbon-step", 58);
     const ribbonStaggerTieMs = getMotionDuration("--motion-stagger-ribbon-tie", 10);
