@@ -57,6 +57,11 @@ assert.deepEqual(
 assert.equal(getSliceStaggerRank(-1, 5), 0);
 assert.equal(getSliceStaggerDelay(-1, 5, "next", 60, 12), 0);
 
+const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
+const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
+const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
+const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
+
 const easing = "cubic-bezier(0.72, 0, 0.28, 1)";
 assert.equal(motionTokens.get("--motion-ease-standard"), easing);
 assert.equal(motionTokens.get("--motion-ease-out"), easing);
@@ -70,10 +75,6 @@ assert.ok(getCubicBezierProgress(0.25, easing) > 0.25);
 assert.ok(getCubicBezierProgress(0.75, easing) > getCubicBezierProgress(0.25, easing));
 assert.equal(getCubicBezierProgress(0.4, "linear"), 0.4);
 
-const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
-const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
-const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
-const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
 assert.equal(motionTokens.get("--motion-duration-ribbon-focus"), "1250ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-near"), "1120ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-middle"), "1000ms");
