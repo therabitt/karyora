@@ -298,6 +298,9 @@ body {
   pointer-events: none;
   animation: karyora-opening-fade-out 680ms cubic-bezier(0.4, 0, 0.8, 1) both;
 }
+.karyora-opening[data-exit-action="skip"][data-exiting="true"] {
+  animation-duration: 150ms;
+}
 .karyora-opening-progress-fill {
   transform-origin: left center;
   transition: width 420ms cubic-bezier(0.2, 0.72, 0.24, 1);
