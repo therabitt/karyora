@@ -1205,7 +1205,7 @@ export function AlanMenkenShowcase({
                     STAGGER_HEIGHTS_RIBBONS.length;
                   const entranceDelay = getRibbonCascadeDelay(offset);
                   const entranceOriginX = getRibbonEntranceOriginX(stageWidth, left, width);
-                  const entranceOffset = (ribbonPatternIndex % 2 === 0 ? -1 : 1) * Math.max(stageHeight, 1) * 0.22;
+                  const entranceOriginY = Math.round(stageHeight / 2 - (top + height / 2));
                   const itemClassName = isActive
                     ? "artwork-ribbon-item group absolute z-20 shrink-0 overflow-hidden bg-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
                     : "artwork-ribbon-item artwork-ribbon-preview group absolute shrink-0 overflow-hidden rounded-xs border border-border/70 bg-surface-muted opacity-45 grayscale hover:opacity-90 hover:grayscale-0 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent";
@@ -1240,7 +1240,7 @@ export function AlanMenkenShowcase({
                         transform: "translate3d(0px, " + staggerOffset + "px, 0)",
                         animationDelay: entranceDelay + "ms",
                         "--ribbon-enter-x": entranceOriginX + "px",
-                        "--ribbon-enter-y": entranceOffset + "px",
+                        "--ribbon-enter-y": entranceOriginY + "px",
                         "--ribbon-stagger-y": staggerOffset + "px",
                       } as CSSProperties}
                     >
