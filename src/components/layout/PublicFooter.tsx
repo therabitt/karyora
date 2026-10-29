@@ -20,19 +20,19 @@ export function PublicFooter() {
           </div>
 
           <nav aria-label="Footer Navigation" className="flex flex-wrap items-center justify-center gap-6 text-xs uppercase tracking-wider font-mono text-text-muted">
-            <Link href="/gallery" className="hover:text-accent transition-colors">
+            <Link href="/gallery" className="hover:text-accent transition-colors motion-transition-micro">
               Gallery
             </Link>
-            <Link href="/commission" className="hover:text-accent transition-colors">
+            <Link href="/commission" className="hover:text-accent transition-colors motion-transition-micro">
               Commissions
             </Link>
-            <Link href="/contact" className="hover:text-accent transition-colors">
+            <Link href="/contact" className="hover:text-accent transition-colors motion-transition-micro">
               Contact
             </Link>
-            <Link href="/terms" className="hover:text-accent transition-colors">
+            <Link href="/terms" className="hover:text-accent transition-colors motion-transition-micro">
               Terms
             </Link>
-            <Link href="/login" className="hover:text-accent transition-colors opacity-40 hover:opacity-100">
+            <Link href="/login" className="hover:text-accent transition-colors motion-transition-micro opacity-40 hover:opacity-100">
               Admin
             </Link>
           </nav>
