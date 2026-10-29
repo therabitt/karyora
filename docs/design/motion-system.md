@@ -69,7 +69,6 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | Entering emphasis and spotlight panels |
 | `--motion-ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` | Exiting elements that gather momentum |
 | `--motion-ease-spring` | `cubic-bezier(0.22, 1.12, 0.36, 1)` | Restrained overshoot on arriving elements |
-| `--motion-ease-unified-experiment` | `cubic-bezier(0.72, 0, 0.28, 1)` | Temporary canonical token for the unified-easing experiment only |
 
 CSS keyframes and JavaScript animations must use the same easing token when they describe the same geometric transition. When the Ribbon image crop is interpolated independently from its frame, calculate its crop keyframes against that same easing curve.
 
