@@ -62,6 +62,7 @@ type RibbonSeamExitSnapshot = {
   top: number;
   width: number;
   height: number;
+  sizes: string;
   direction: "next" | "previous";
   sequence: number;
 };
@@ -75,6 +76,7 @@ type RibbonLayoutEntry = {
   failed: boolean;
   imageScale: number;
   aspectRatio: number;
+  sourceSize: number;
   width: number;
   height: number;
   left: number;
@@ -393,6 +395,7 @@ export function AlanMenkenShowcase({
           : undefined;
 
         if (edge && edgeArtwork) {
+          const edgeImage = edge.element.querySelector<HTMLImageElement>("[data-artwork-image]");
           nextSeamExit = {
             artwork: edgeArtwork,
             imageUrl: getStoragePublicUrl(edgeArtwork.public_image_path),
@@ -401,6 +404,7 @@ export function AlanMenkenShowcase({
             top: edge.rect.top - stageRect.top,
             width: edge.rect.width,
             height: edge.rect.height,
+            sizes: edgeImage?.getAttribute("sizes") ?? "100vw",
             direction,
             sequence: ++transitionSequenceRef.current,
           };
@@ -828,12 +832,24 @@ export function AlanMenkenShowcase({
     const height = image.naturalHeight;
     if (width <= 0 || height <= 0) return;
 
-    setMeasuredDimensions((previous) => {
-      const current = previous[id];
-      if (current?.width === width && current?.height === height) return previous;
-      return { ...previous, [id]: { width, height } };
-    });
-  }, []);
+    const artwork = displayArtworks.find((item) => item.id === id);
+    const hasCanonicalDimensions = Boolean(
+      artwork &&
+      Number.isFinite(artwork.image_width) &&
+      Number.isFinite(artwork.image_height) &&
+      (artwork.image_width ?? 0) > 0 &&
+      (artwork.image_height ?? 0) > 0
+    );
+
+    // Publish/backfill stores canonical dimensions. A srcset candidate's naturalWidth
+    // changes with resolution, so using it to rewrite layout state on each load is redundant.
+    if (hasCanonicalDimensions) return;
+
+    // Legacy records without dimensions only need the first trustworthy measurement.
+    setMeasuredDimensions((previous) =>
+      previous[id] ? previous : { ...previous, [id]: { width, height } }
+    );
+  }, [displayArtworks]);
 
   const getDimensions = useCallback((artwork: PublicArtwork): ArtworkDimensions => {
     // Prefer the loaded image's natural pixel dimensions. Database dimensions may be
@@ -956,6 +972,29 @@ export function AlanMenkenShowcase({
       ? previewWidth / previewHeight
       : aspectRatio;
     const coverScale = Math.max(aspectRatio / frameAspectRatio, frameAspectRatio / aspectRatio);
+    const artworkPreferredActiveWidth =
+      stageWidth < 640
+        ? stageWidth * (aspectRatio >= 1.2 ? 0.76 : 0.54)
+        : stageWidth * (
+            aspectRatio >= 1.3 ? 0.54 : aspectRatio >= 0.85 ? 0.42 : 0.36
+          );
+    const artworkActiveSize = fitArtworkWithinBounds(
+      dimensions.width,
+      dimensions.height,
+      artworkPreferredActiveWidth,
+      stageHeight * 0.86
+    );
+
+    // A Ribbon tile may become the focused artwork. Pick a source size that covers
+    // both its focused display and the largest possible preview crop at this stage
+    // height, independent of which artwork is active. This prevents low-res previews
+    // from being promoted first and upgraded only after the animation has finished.
+    const sourceSize = Math.max(
+      1,
+      Math.ceil(artworkActiveSize.width),
+      Math.ceil(maxPreviewWidth),
+      Math.ceil(aspectRatio * stageHeight)
+    );
 
     return {
       index,
@@ -966,6 +1005,7 @@ export function AlanMenkenShowcase({
       failed: Boolean(failedImages[artwork.id]),
       imageScale: isActive ? 1 : coverScale,
       aspectRatio,
+      sourceSize,
       width: isActive ? activeSize.width : previewWidth,
       height: isActive ? activeSize.height : previewHeight,
       left: 0,
@@ -1111,7 +1151,7 @@ export function AlanMenkenShowcase({
                         seamExitSnapshot.artwork.image_width ?? 1600,
                         seamExitSnapshot.artwork.image_height ?? 1200,
                       ).srcSet}
-                      sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
+                      sizes={seamExitSnapshot.sizes}
                       width={seamExitSnapshot.artwork.image_width ?? 1600}
                       height={seamExitSnapshot.artwork.image_height ?? 1200}
                       loading="eager"
@@ -1144,6 +1184,7 @@ export function AlanMenkenShowcase({
                     failed,
                     imageScale,
                     aspectRatio,
+                    sourceSize,
                     width,
                     height,
                     left,
@@ -1206,7 +1247,7 @@ export function AlanMenkenShowcase({
                           draggable={false}
                           src={imageSources.src ?? imageUrl}
                           srcSet={imageSources.srcSet}
-                          sizes={`${Math.max(1, Math.ceil(width * imageScale))}px`}
+                          sizes={`${sourceSize}px`}
                           width={artwork.image_width ?? 1600}
                           height={artwork.image_height ?? 1200}
                           loading="eager"
