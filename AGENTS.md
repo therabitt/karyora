@@ -1825,6 +1825,10 @@ Forms, dialogs, menus, tables, and status badges must remain usable on narrow sc
 
 Respect reduced-motion preferences.
 
+Canonical durations, easing curves, stagger patterns, handoff delays, and animation safety buffers MUST follow `docs/design/motion-system.md`. CSS/WAAPI code MUST reuse the tokens in `src/app/globals.css` and `src/lib/motion/motion-tokens.ts`; do not introduce a parallel hardcoded interval where a semantic token already exists.
+
+When changing motion, update the motion documentation and run `npm run test:motion-system`. Preserve reduced-motion support, keyboard/touch access, and synchronization between animation completion events and any safety timers.
+
 Do not introduce unnecessary motion that interferes with readability, focus, or task completion.
 
 ---
