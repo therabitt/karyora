@@ -241,6 +241,7 @@ export function KaryoraOpeningSequence({
           onWheel={(event) => event.preventDefault()}
           className="karyora-opening fixed inset-0 z-[200] grid min-h-[100dvh] grid-rows-[auto_1fr_auto] overflow-hidden bg-paper px-6 py-6 text-ink sm:px-10 sm:py-8 lg:px-14"
           data-exiting={isExiting ? "true" : "false"}
+          data-exit-action={exitAction}
           data-reduced-motion={reducedMotion ? "true" : "false"}
         >
           <div className="flex items-start justify-between gap-6">
