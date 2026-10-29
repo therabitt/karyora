@@ -781,7 +781,7 @@ export function AlanMenkenShowcase({
     wheelLockedRef.current = true;
     if (direction === "next") handleNext();
     else handlePrev();
-  }, [handleNext, handlePrev, isNavigationOpen, total]);
+  }, [handleNext, handlePrev, isNavigationOpen, isOpeningSequenceActive, total]);
 
   const handleStagePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
     if (event.pointerType !== "touch" || isNavigationOpen || total <= 1) {
@@ -1041,11 +1041,6 @@ export function AlanMenkenShowcase({
       entry.top = (stageHeight - entry.height) / 2;
     }
   }
-
-  const maxRibbonOffset = Math.max(
-    ...ribbonEntries.map((entry) => Math.abs(entry.offset)),
-    0
-  );
 
   const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
   const sliceControlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
