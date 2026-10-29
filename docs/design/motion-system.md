@@ -33,8 +33,15 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-stagger-ribbon-step` | 58 ms | Per-offset Ribbon delay |
 | `--motion-stagger-ribbon-cap` | 232 ms | Maximum Ribbon transition delay |
 | `--motion-duration-slice-panel` | 680 ms | Sliced enter/exit panel motion |
-| `--motion-stagger-slice-step` | 60 ms | Per-rank Sliced delay |
+| `--motion-stagger-slice-step` | 60 ms | Per-ring Sliced delay |
+| `--motion-stagger-slice-tie` | 12 ms | Directional offset between paired side slices |
+| `--motion-delay-slice-initial` | 20 ms | Default Sliced entrance start |
 | `--motion-delay-slice-handoff` | 920 ms | Sliced entry after a large-layout outgoing handoff |
+| `--motion-duration-caption-title` | 340 ms | Incoming artwork title |
+| `--motion-duration-caption-description` | 390 ms | Incoming artwork description |
+| `--motion-duration-caption-meta` | 330 ms | Incoming artwork supporting metadata |
+| `--motion-delay-caption-description` | 60 ms | Description start after title |
+| `--motion-delay-caption-meta` | 100 ms | Metadata start after title |
 | `--motion-duration-detail-exit-rear` | 430 ms | Rear card exit |
 | `--motion-duration-detail-exit-middle` | 470 ms | Middle card exit |
 | `--motion-duration-detail-exit-front` | 510 ms | Front card exit |
@@ -72,8 +79,8 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 
 ### Sliced
 
-- Five slices reveal from the center toward each side. Ties alternate according to navigation direction: next starts left-inner before right-inner; previous reverses that tie order.
-- Each step adds 60 ms. Outgoing layers deconstruct in the reverse order.
+- Five slices reveal in three rings: center at 0 ms, inner pair at 60 ms (plus a 12 ms directional tie), outer pair at 120 ms (plus the same tie).
+- The tie-break is directional: next favors the left panel in each pair; previous favors the right. Outgoing layers deconstruct in reverse ring order, starting at the outside.
 - A major artwork-layout handoff waits until the outgoing slices clear the stage. The transition snapshot cleanup deadline must remain longer than handoff delay + maximum stagger + incoming duration, with a safety margin.
 - Slice crops stay fixed to their shared source artwork. Do not animate per-slice image dimensions independently.
 
@@ -98,7 +105,7 @@ Honor `prefers-reduced-motion: reduce`. Use the existing reduced-motion branch w
 
 ## Verification checklist
 
-- [ ] Run the motion token and choreography regression test.
+- [ ] Run `npm run test:motion-system` for token coverage, directional slice order, and easing progress.
 - [ ] Run artwork layout and interaction regression tests.
 - [ ] Run ESLint and production build.
 - [ ] Verify Ribbon transitions with 2, 5, and 9 artworks at 360, 768, and 1280 CSS px.
