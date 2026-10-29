@@ -77,6 +77,7 @@
   /* Canonical motion tokens. Keep docs/design/motion-system.md in sync. */
   --motion-duration-micro: 180ms;
   --motion-duration-ui: 280ms;
+  --motion-duration-navigation: 460ms;
   --motion-duration-image: 720ms;
   --motion-duration-spotlight: 720ms;
 
@@ -251,7 +252,7 @@ body {
 
 [data-transition-direction="previous"] .artwork-caption-title-enter {
   --caption-shift-x: -9px;
-  animation: artwork-caption-enter 340ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: artwork-caption-enter var(--motion-duration-caption-title) var(--motion-ease-out) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-description-enter {
@@ -261,7 +262,7 @@ body {
 
 [data-transition-direction="previous"] .artwork-caption-description-enter {
   --caption-shift-x: -6px;
-  animation: artwork-caption-enter 390ms cubic-bezier(0.4, 0, 0.2, 1) 60ms both;
+  animation: artwork-caption-enter var(--motion-duration-caption-description) var(--motion-ease-out) var(--motion-delay-caption-description) both;
 }
 
 [data-transition-direction="next"] .artwork-caption-meta-enter {
@@ -271,7 +272,7 @@ body {
 
 [data-transition-direction="previous"] .artwork-caption-meta-enter {
   --caption-shift-x: -4px;
-  animation: artwork-caption-enter 330ms cubic-bezier(0.4, 0, 0.2, 1) 100ms both;
+  animation: artwork-caption-enter var(--motion-duration-caption-meta) var(--motion-ease-out) var(--motion-delay-caption-meta) both;
 }
 
 /* Keep the caption with the incoming artwork when a large aspect-ratio
@@ -310,8 +311,12 @@ body {
   transition-timing-function: var(--motion-ease-out);
 }
 
+.motion-fade-in {
+  animation-duration: var(--motion-duration-micro);
+}
+
 .motion-transition-navigation {
-  transition-duration: var(--motion-duration-ui);
+  transition-duration: var(--motion-duration-navigation);
   transition-timing-function: var(--motion-ease-standard);
 }
 
