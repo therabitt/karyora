@@ -65,7 +65,7 @@ Values below must match the tokens in `:root` in `globals.css`.
 | Token | Value | Intended use |
 |---|---|---|
 | `--motion-ease-standard` | `cubic-bezier(0.22, 1, 0.36, 1)` | General layout and UI transitions |
-| `--motion-ease-ribbon-focus` | `cubic-bezier(0.4, 0, 0.2, 1)` | Smooth ease-in-out curve for the Ribbon focus and its synchronized crop |
+| `--motion-ease-ribbon-focus` | `cubic-bezier(0.72, 0, 0.28, 1)` | Pronounced but smooth symmetric ease-in-out for Ribbon focus and synchronized crop |
 | `--motion-ease-out` | `cubic-bezier(0.16, 1, 0.3, 1)` | Entering emphasis and spotlight panels |
 | `--motion-ease-in` | `cubic-bezier(0.7, 0, 0.84, 0)` | Exiting elements that gather momentum |
 | `--motion-ease-spring` | `cubic-bezier(0.22, 1.12, 0.36, 1)` | Restrained overshoot on arriving elements |
@@ -79,7 +79,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 - Initial entrance: centered/focused panel starts first. Other visible panels use a CSS-token-based delay based on their absolute offset from the active artwork. Mirrored panels receive a small 10 ms directional tie, capped by the shared 232 ms maximum.
 - Selection changes: the selected artwork's layout box starts immediately. Adjacent panels follow after 58 ms per offset, capped at 232 ms, with a small directional tie for mirrored panels.
 - Durations vary by distance: focus 1,250 ms, near 1,120 ms, middle 1,000 ms, far 900 ms. The focused artwork remains the longest and last to settle.
-- Use the dedicated Ribbon focus ease-in-out curve for the entire FLIP sequence and the focus entrance. The image crop uses the exact same easing progression and delay as its frame; do not let image scale run ahead or behind.
+- Use the dedicated Ribbon focus ease-in-out curve for the entire FLIP sequence and the focus entrance. Its stronger symmetric profile keeps the opening quarter deliberate, gives the center of the motion a clearer sense of momentum, and eases into the final position. The image crop uses the exact same easing progression and delay as its frame; do not let image scale run ahead or behind.
 - Circular-wrap panels still enter from beyond the clipped stage edge, avoiding travel across the entire viewport.
 - Navigation and FLIP remain disabled for reduced-motion preferences only insofar as visual movement is omitted; selection and other functionality remain available.
 
