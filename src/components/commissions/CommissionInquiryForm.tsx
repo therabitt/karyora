@@ -62,13 +62,13 @@ export function CommissionInquiryForm({
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
           <Link
             href="/gallery"
-            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors motion-transition-micro"
           >
             Browse Gallery
           </Link>
           <Link
             href="/contact"
-            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm text-ink-soft hover:text-ink transition-colors"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm text-ink-soft hover:text-ink transition-colors motion-transition-micro"
           >
             Contact Information
           </Link>
@@ -98,14 +98,14 @@ export function CommissionInquiryForm({
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
           <Link
             href="/gallery"
-            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm bg-accent text-white hover:bg-accent-hover transition-colors"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm bg-accent text-white hover:bg-accent-hover transition-colors motion-transition-micro"
           >
             Browse Gallery
           </Link>
           <button
             type="button"
             onClick={() => setDismissedTimestamp(state?.timestamp ?? Date.now())}
-            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors cursor-pointer"
+            className="inline-flex items-center justify-center text-xs uppercase tracking-wider font-semibold px-5 py-2.5 rounded-sm border border-border-strong text-ink hover:bg-surface-muted transition-colors motion-transition-micro cursor-pointer"
           >
             Submit Another Inquiry
           </button>
@@ -240,7 +240,7 @@ export function CommissionInquiryForm({
         <button
           type="submit"
           disabled={isPending}
-          className="inline-flex min-h-12 w-full items-center justify-between gap-8 border-b border-ink bg-transparent px-0 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
+          className="inline-flex min-h-12 w-full items-center justify-between gap-8 border-b border-ink bg-transparent px-0 py-3 text-sm font-medium text-ink transition-colors motion-transition-micro hover:border-accent hover:text-accent-hover disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-64"
         >
           <span>
             {isPending
