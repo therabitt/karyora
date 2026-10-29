@@ -155,7 +155,7 @@ export function AdminSidebar() {
 
       {/* ─── Mobile Drawer Panel ─── */}
       <aside
-        className={`lg:hidden fixed top-14 left-0 bottom-0 z-40 w-72 bg-ink text-surface flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${
+        className={`lg:hidden fixed top-14 left-0 bottom-0 z-40 w-72 bg-ink text-surface flex flex-col shadow-2xl transition-transform motion-transition-ui ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
         aria-label="Mobile Admin Navigation"
