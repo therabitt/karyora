@@ -1,0 +1,69 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const Module = require("node:module");
+const ts = require("typescript");
+
+const sourcePath = path.join(__dirname, "../src/lib/motion/motion-tokens.ts");
+const source = fs.readFileSync(sourcePath, "utf8");
+const compiled = ts.transpileModule(source, {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2020,
+  },
+}).outputText;
+const loaded = new Module(sourcePath, module);
+loaded.filename = sourcePath;
+loaded.paths = Module._nodeModulePaths(path.dirname(sourcePath));
+loaded._compile(compiled, sourcePath);
+const {
+  parseCssTimeToMs,
+  getMotionStaggerDelay,
+  getStaggerDelayExpression,
+  getSliceStaggerRank,
+  getCubicBezierProgress,
+} = loaded.exports;
+
+assert.equal(parseCssTimeToMs("180ms", 0), 180);
+assert.equal(parseCssTimeToMs("0.72s", 0), 720);
+assert.equal(parseCssTimeToMs("invalid", 123), 123);
+assert.equal(parseCssTimeToMs("-20ms", 123), 123);
+assert.equal(getMotionStaggerDelay(0, 58, 232), 0);
+assert.equal(getMotionStaggerDelay(1, 58, 232), 58);
+assert.equal(getMotionStaggerDelay(4, 58, 232), 232);
+assert.equal(getMotionStaggerDelay(9, 58, 232), 232);
+assert.equal(getMotionStaggerDelay(Number.NaN, 58, 232), 0);
+assert.equal(getStaggerDelayExpression(0, "--motion-stagger-slice-step"), "0ms");
+assert.equal(
+  getStaggerDelayExpression(3, "--motion-stagger-slice-step"),
+  "calc(var(--motion-stagger-slice-step) + var(--motion-stagger-slice-step) + var(--motion-stagger-slice-step))",
+);
+
+const nextOrder = [0, 1, 2, 3, 4].sort((a, b) =>
+  getSliceStaggerRank(a, 5, "next") - getSliceStaggerRank(b, 5, "next")
+);
+const previousOrder = [0, 1, 2, 3, 4].sort((a, b) =>
+  getSliceStaggerRank(a, 5, "previous") - getSliceStaggerRank(b, 5, "previous")
+);
+assert.deepEqual(nextOrder, [2, 1, 3, 0, 4]);
+assert.deepEqual(previousOrder, [2, 3, 1, 4, 0]);
+assert.equal(getSliceStaggerRank(-1, 5, "next"), 0);
+
+const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
+assert.equal(getCubicBezierProgress(0, easing), 0);
+assert.equal(getCubicBezierProgress(1, easing), 1);
+assert.ok(getCubicBezierProgress(0.25, easing) > 0.25);
+assert.ok(getCubicBezierProgress(0.75, easing) > getCubicBezierProgress(0.25, easing));
+assert.equal(getCubicBezierProgress(0.4, "linear"), 0.4);
+
+const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
+const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
+const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
+assert.ok(tokenLines.length >= 20, "Expected a documented set of canonical motion tokens");
+for (const [, token, value] of tokenLines) {
+  assert.ok(doc.includes("`" + token + "`"), "Missing documentation for " + token);
+  assert.ok(value.trim(), "Empty motion token: " + token);
+}
+
+console.log("Motion system checks passed: token parsing, stagger sequence, easing progress, and documentation coverage.");
