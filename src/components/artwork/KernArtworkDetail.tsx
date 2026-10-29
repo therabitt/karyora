@@ -547,19 +547,19 @@ export function KernArtworkDetail({
 
   const detailEaseIn = getMotionEasing(
     "--motion-ease-in",
-    "cubic-bezier(0.7, 0, 0.84, 0)",
+    "cubic-bezier(0.72, 0, 0.28, 1)",
   );
   const detailEaseSpring = getMotionEasing(
     "--motion-ease-spring",
-    "cubic-bezier(0.22, 1.12, 0.36, 1)",
+    "cubic-bezier(0.72, 0, 0.28, 1)",
   );
   const detailStaggerMs = getMotionDuration("--motion-stagger-detail-step", 50);
   const reducedFadeMs = getMotionDuration("--motion-duration-reduced", 120);
 
   const getLayer1Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms linear forwards`;
-      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms linear forwards`;
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${standardEase} forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${standardEase} forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
@@ -579,8 +579,8 @@ export function KernArtworkDetail({
 
   const getLayer2Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms linear forwards`;
-      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms linear forwards`;
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${standardEase} forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${standardEase} forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
@@ -600,8 +600,8 @@ export function KernArtworkDetail({
 
   const getLayer3Animation = () => {
     if (reducedMotion) {
-      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms linear forwards`;
-      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms linear forwards`;
+      if (animPhase === "throwing-out") return `throw-fade-out ${reducedFadeMs}ms ${standardEase} forwards`;
+      if (animPhase === "throwing-in") return `throw-fade-in ${reducedFadeMs}ms ${standardEase} forwards`;
       return "none";
     }
     if (animPhase === "throwing-out") {
@@ -626,12 +626,12 @@ export function KernArtworkDetail({
     const microDuration = getMotionDuration("--motion-duration-micro", 180);
     const standardEase = getMotionEasing(
       "--motion-ease-standard",
-      "cubic-bezier(0.22, 1, 0.36, 1)",
+      "cubic-bezier(0.72, 0, 0.28, 1)",
     );
     if (reducedMotion) {
       return {
         opacity: animPhase === "throwing-out" ? 0 : 1,
-        transition: `opacity ${getMotionDuration("--motion-duration-reduced", 120)}ms linear`,
+        transition: `opacity ${getMotionDuration("--motion-duration-reduced", 120)}ms ${standardEase}`,
       };
     }
     if (animPhase === "throwing-out") {
