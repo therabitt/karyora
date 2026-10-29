@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:artwork-layout": "node scripts/test-artwork-layout.cjs",
     "test:artwork-interaction": "node scripts/test-artwork-interaction.cjs",
-    "prebuild": "node --check scripts/backfill-artwork-responsive-images.mjs"
+    "prebuild": "node --check scripts/backfill-artwork-responsive-images.mjs",
+    "test:opening-sequence": "node scripts/test-opening-sequence.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
