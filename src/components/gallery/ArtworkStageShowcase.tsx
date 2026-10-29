@@ -160,7 +160,7 @@ export function ArtworkStageShowcase({
                 onClick={() => setActiveIndex(idx)}
                 aria-label={`Select artwork ${itemNumber}: ${artwork.title}`}
                 aria-current={isActive ? "true" : undefined}
-                className={`relative overflow-hidden text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-safe:transition-all motion-safe:duration-700 motion-safe:ease-[cubic-bezier(0.25,1,0.5,1)] group ${
+                className={`relative overflow-hidden text-left focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 motion-safe:transition-all motion-transition-spotlight group ${
                   isActive
                     ? isPortrait
                       ? "flex-[2.8] lg:flex-[3.2] xl:flex-[3.6] rounded-xs border-2 border-accent shadow-2xl z-10 cursor-default"
@@ -195,7 +195,7 @@ export function ArtworkStageShowcase({
                       }
                     }}
                     onError={() => handleImageError(artwork.id)}
-                    className={`w-full h-full motion-safe:transition-transform motion-safe:duration-700 motion-safe:ease-out ${
+                    className={`w-full h-full motion-safe:transition-transform motion-transition-image ${
                       isPortrait ? "object-cover object-top" : "object-cover object-center"
                     } ${isActive ? "scale-100" : "scale-105"}`}
                   />
