@@ -62,13 +62,9 @@ type RibbonSeamExitSnapshot = {
   top: number;
   width: number;
   height: number;
+  sizes: string;
   direction: "next" | "previous";
   sequence: number;
-};
-
-type RibbonImageSizesLock = {
-  byArtworkId: Record<string, string>;
-  fallbackSize: string;
 };
 
 type RibbonLayoutEntry = {
@@ -80,6 +76,7 @@ type RibbonLayoutEntry = {
   failed: boolean;
   imageScale: number;
   aspectRatio: number;
+  sourceSize: number;
   width: number;
   height: number;
   left: number;
@@ -183,9 +180,6 @@ export function AlanMenkenShowcase({
   // restart when the outgoing snapshot is cleaned up.
   const [delayedSliceArtworkId, setDelayedSliceArtworkId] = useState<string | null>(null);
   const [seamExitSnapshot, setSeamExitSnapshot] = useState<RibbonSeamExitSnapshot | null>(null);
-  // Keep responsive candidates stable while Ribbon's FLIP animation is moving panels.
-  const [ribbonImageSizesLock, setRibbonImageSizesLock] = useState<RibbonImageSizesLock | null>(null);
-  const ribbonImageSizesUnlockTimerRef = useRef<number | null>(null);
   const transitionSequenceRef = useRef(0);
   const ribbonItemsRef = useRef(new Map<string, HTMLButtonElement>());
   const previousRibbonRectsRef = useRef<Map<string, RibbonRect> | null>(null);
@@ -401,6 +395,7 @@ export function AlanMenkenShowcase({
           : undefined;
 
         if (edge && edgeArtwork) {
+          const edgeImage = edge.element.querySelector<HTMLImageElement>("[data-artwork-image]");
           nextSeamExit = {
             artwork: edgeArtwork,
             imageUrl: getStoragePublicUrl(edgeArtwork.public_image_path),
@@ -409,41 +404,11 @@ export function AlanMenkenShowcase({
             top: edge.rect.top - stageRect.top,
             width: edge.rect.width,
             height: edge.rect.height,
+            sizes: edgeImage?.getAttribute("sizes") ?? "100vw",
             direction,
             sequence: ++transitionSequenceRef.current,
           };
         }
-      }
-
-      // Capture the current responsive source-size hints before changing active roles.
-      // A size change can make the browser swap srcset candidates while FLIP is animating.
-      if (ribbonImageSizesUnlockTimerRef.current !== null) {
-        window.clearTimeout(ribbonImageSizesUnlockTimerRef.current);
-        ribbonImageSizesUnlockTimerRef.current = null;
-      }
-
-      const sizesByArtworkId: Record<string, string> = {};
-      let fallbackSize = "";
-      ribbonItemsRef.current.forEach((element, id) => {
-        const image = element.querySelector<HTMLImageElement>("[data-artwork-image]");
-        const sizes = image?.getAttribute("sizes")?.trim();
-        if (!sizes) return;
-        sizesByArtworkId[id] = sizes;
-        if (!fallbackSize && element.dataset.artworkActive !== "true") {
-          fallbackSize = sizes;
-        }
-      });
-      if (!fallbackSize) fallbackSize = Object.values(sizesByArtworkId)[0] ?? "100vw";
-
-      if (!reduceMotion && Object.keys(sizesByArtworkId).length > 0) {
-        setRibbonImageSizesLock({ byArtworkId: sizesByArtworkId, fallbackSize });
-        // The active card runs for 1100ms; release after it has settled.
-        ribbonImageSizesUnlockTimerRef.current = window.setTimeout(() => {
-          setRibbonImageSizesLock(null);
-          ribbonImageSizesUnlockTimerRef.current = null;
-        }, 1160);
-      } else {
-        setRibbonImageSizesLock(null);
       }
 
       setSeamExitSnapshot(nextSeamExit);
@@ -856,9 +821,6 @@ export function AlanMenkenShowcase({
     if (slicedNavigationUnlockTimerRef.current !== null) {
       window.clearTimeout(slicedNavigationUnlockTimerRef.current);
     }
-    if (ribbonImageSizesUnlockTimerRef.current !== null) {
-      window.clearTimeout(ribbonImageSizesUnlockTimerRef.current);
-    }
   }, []);
 
   const handleImageError = useCallback((id: string) => {
@@ -907,55 +869,6 @@ export function AlanMenkenShowcase({
 
     return resolveArtworkDimensions(null, null);
   }, [measuredDimensions]);
-
-  useEffect(() => {
-    if (viewMode !== "sliced" || total <= 1 || stageSize.width <= 0 || stageSize.height <= 0) {
-      return;
-    }
-
-    const stageWidth = stageSize.width;
-    const stageHeight = stageSize.height;
-    const sliceGap = stageWidth < 640 ? 3 : stageWidth < 1024 ? 6 : 8;
-    const controlsGutter = stageWidth < 640 ? 46 : Math.min(112, stageWidth * 0.08);
-    const maxGroupWidth = Math.max(
-      120,
-      Math.min(
-        stageWidth * (stageWidth < 640 ? 0.78 : 0.8),
-        stageWidth - 2 * controlsGutter - sliceGap * (SLICE_COUNT - 1)
-      )
-    );
-    const adjacentIndices = new Set([
-      (activeIndex + 1) % total,
-      (activeIndex - 1 + total) % total,
-    ]);
-
-    adjacentIndices.forEach((index) => {
-      const artwork = displayArtworks[index];
-      if (!artwork?.public_image_path) return;
-
-      const dimensions = getDimensions(artwork);
-      const displaySize = fitArtworkWithinBounds(
-        dimensions.width,
-        dimensions.height,
-        maxGroupWidth,
-        stageHeight * 0.82
-      );
-      const sources = getArtworkResponsiveImageSources(
-        artwork.public_image_path,
-        artwork.image_width ?? dimensions.width,
-        artwork.image_height ?? dimensions.height
-      );
-      if (!sources.src) return;
-
-      const preloadImage = new window.Image();
-      preloadImage.decoding = "async";
-      preloadImage.fetchPriority = "low";
-      if (sources.srcSet) preloadImage.srcset = sources.srcSet;
-      preloadImage.sizes = `${Math.max(1, Math.ceil(displaySize.width))}px`;
-      preloadImage.src = sources.src;
-      void preloadImage.decode().catch(() => undefined);
-    });
-  }, [activeIndex, displayArtworks, getDimensions, stageSize.height, stageSize.width, total, viewMode]);
 
   if (total === 0) {
     return (
@@ -1059,6 +972,29 @@ export function AlanMenkenShowcase({
       ? previewWidth / previewHeight
       : aspectRatio;
     const coverScale = Math.max(aspectRatio / frameAspectRatio, frameAspectRatio / aspectRatio);
+    const artworkPreferredActiveWidth =
+      stageWidth < 640
+        ? stageWidth * (aspectRatio >= 1.2 ? 0.76 : 0.54)
+        : stageWidth * (
+            aspectRatio >= 1.3 ? 0.54 : aspectRatio >= 0.85 ? 0.42 : 0.36
+          );
+    const artworkActiveSize = fitArtworkWithinBounds(
+      dimensions.width,
+      dimensions.height,
+      artworkPreferredActiveWidth,
+      stageHeight * 0.86
+    );
+
+    // A Ribbon tile may become the focused artwork. Pick a source size that covers
+    // both its focused display and the largest possible preview crop at this stage
+    // height, independent of which artwork is active. This prevents low-res previews
+    // from being promoted first and upgraded only after the animation has finished.
+    const sourceSize = Math.max(
+      1,
+      Math.ceil(artworkActiveSize.width),
+      Math.ceil(maxPreviewWidth),
+      Math.ceil(aspectRatio * stageHeight)
+    );
 
     return {
       index,
@@ -1069,6 +1005,7 @@ export function AlanMenkenShowcase({
       failed: Boolean(failedImages[artwork.id]),
       imageScale: isActive ? 1 : coverScale,
       aspectRatio,
+      sourceSize,
       width: isActive ? activeSize.width : previewWidth,
       height: isActive ? activeSize.height : previewHeight,
       left: 0,
@@ -1214,11 +1151,7 @@ export function AlanMenkenShowcase({
                         seamExitSnapshot.artwork.image_width ?? 1600,
                         seamExitSnapshot.artwork.image_height ?? 1200,
                       ).srcSet}
-                      sizes={
-                      ribbonImageSizesLock?.byArtworkId[seamExitSnapshot.artwork.id] ??
-                      ribbonImageSizesLock?.fallbackSize ??
-                      `${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`
-                    }
+                      sizes={seamExitSnapshot.sizes}
                       width={seamExitSnapshot.artwork.image_width ?? 1600}
                       height={seamExitSnapshot.artwork.image_height ?? 1200}
                       loading="eager"
@@ -1313,11 +1246,7 @@ export function AlanMenkenShowcase({
                           draggable={false}
                           src={imageSources.src ?? imageUrl}
                           srcSet={imageSources.srcSet}
-                          sizes={
-                            ribbonImageSizesLock?.byArtworkId[artwork.id] ??
-                            ribbonImageSizesLock?.fallbackSize ??
-                            `${Math.max(1, Math.ceil(isActive ? width : maxPreviewWidth))}px`
-                          }
+                          sizes={`${sourceSize}px`}
                           width={artwork.image_width ?? 1600}
                           height={artwork.image_height ?? 1200}
                           loading="eager"
