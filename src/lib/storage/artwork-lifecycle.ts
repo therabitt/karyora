@@ -3,9 +3,12 @@ import "server-only";
 import { createServiceClient } from "@/lib/supabase/service";
 import { enqueueCleanupItem } from "@/lib/storage/cleanup";
 import {
-  createPublicDerivative,
+  createPublicResponsiveDerivatives,
+  getArtworkResponsiveTargetEdges,
+  validateSourceImageMetadata,
   type ProcessedImageResult,
 } from "@/lib/storage/image-processor";
+import { getArtworkResponsiveObjectPaths } from "@/lib/storage/artwork-image-variants";
 import { extractImageColorAnalysis } from "@/lib/storage/palette-extractor";
 import { generateArtworkHarmoniousPalette } from "@/lib/color/palette-engine";
 import { revalidatePath } from "next/cache";
@@ -55,40 +58,57 @@ export async function downloadPrivateSource(objectPath: string): Promise<Buffer>
 export async function generateAndUploadArtworkDerivative(
   artworkId: string,
   sourceBuffer: Buffer
-): Promise<{ derivativePath: string; result: ProcessedImageResult }> {
+): Promise<{ derivativePath: string; result: ProcessedImageResult; objectPaths: string[] }> {
   const supabase = createServiceClient();
+  const sourceMetadata = await validateSourceImageMetadata(sourceBuffer);
+  const targetEdges = getArtworkResponsiveTargetEdges(
+    sourceMetadata.effectiveWidth,
+    sourceMetadata.effectiveHeight
+  );
   const derivativeId = crypto.randomUUID();
-  const derivativePath = `artworks-public/artworks/${artworkId}/${derivativeId}.webp`;
-  const storagePath = `artworks/${artworkId}/${derivativeId}.webp`;
+  const storageBase = `artworks/${artworkId}/${derivativeId}`;
+  const responsiveDirectory = `${storageBase}/responsive`;
+  const publicDirectory = `artworks-public/${responsiveDirectory}`;
+  const objectPaths = targetEdges.map((edge) => `${publicDirectory}/${edge}.webp`);
 
-  // 1. Register rollback cleanup intent before generating/uploading (Section 4.8.4)
-  const processAfter = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes in the future
-  await enqueueCleanupItem({
+  // Register rollback cleanup intents before processing or uploading every variant.
+  const processAfter = new Date(Date.now() + 10 * 60 * 1000);
+  await Promise.all(objectPaths.map((objectPath) => enqueueCleanupItem({
     bucketId: "artworks-public",
-    objectPath: derivativePath,
+    objectPath,
     reason: "rollback",
     processAfter,
-  });
+  })));
 
-  // 2. Process orientation-corrected, metadata-stripped WebP derivative (max 1600px)
-  const result = await createPublicDerivative(sourceBuffer, 1600);
-
-  // 3. Upload to artworks-public (path relative to bucket)
-  const { error: uploadError } = await supabase.storage
-    .from("artworks-public")
-    .upload(storagePath, result.buffer, {
-      contentType: "image/webp",
-      upsert: true,
-    });
-
-  if (uploadError) {
-    console.error("Failed to upload public artwork derivative:", uploadError);
-    throw new Error("Failed to store exhibition image derivative.");
+  const variants = await createPublicResponsiveDerivatives(sourceBuffer);
+  if (
+    variants.length !== targetEdges.length ||
+    variants.some((variant, index) => variant.maxEdge !== targetEdges[index])
+  ) {
+    throw new Error("Responsive artwork variants did not match their planned dimensions.");
   }
 
-  return { derivativePath, result };
-}
+  const uploads = await Promise.all(variants.map(async (variant) => {
+    const path = `${responsiveDirectory}/${variant.maxEdge}.webp`;
+    const { error } = await supabase.storage
+      .from("artworks-public")
+      .upload(path, variant.buffer, {
+        contentType: "image/webp",
+        upsert: false,
+      });
+    return { path, error };
+  }));
 
+  const failedUpload = uploads.find((upload) => upload.error);
+  if (failedUpload?.error) {
+    console.error("Failed to upload responsive artwork variants:", failedUpload.error);
+    throw new Error("Failed to store the optimized exhibition image set.");
+  }
+
+  const primary = variants[variants.length - 1];
+  const derivativePath = `${publicDirectory}/${primary.maxEdge}.webp`;
+  return { derivativePath, result: primary, objectPaths };
+}
 /**
  * Publishes a draft artwork, generating an exhibition WebP derivative and updating status.
  */
@@ -126,7 +146,7 @@ export async function publishArtwork({
     const sourceBuffer = await downloadPrivateSource(artwork.private_image_path);
 
     // 3. Generate derivative and upload with rollback intent
-    const { derivativePath, result: derivative } = await generateAndUploadArtworkDerivative(
+    const { derivativePath, result: derivative, objectPaths } = await generateAndUploadArtworkDerivative(
       artwork.id,
       sourceBuffer
     );
@@ -207,7 +227,7 @@ export async function publishArtwork({
       .from("storage_cleanup_queue")
       .delete()
       .eq("bucket_id", "artworks-public")
-      .eq("object_path", derivativePath)
+      .in("object_path", objectPaths)
       .eq("reason", "rollback");
 
     // 6. Revalidate public and admin pages
@@ -254,6 +274,7 @@ export async function unpublishArtwork({
   }
 
   const oldPublicPath = artwork.public_image_path;
+  const oldPublicPaths = getArtworkResponsiveObjectPaths(oldPublicPath);
 
   // 1. Transactionally update artwork to draft
   const now = new Date().toISOString();
@@ -274,35 +295,33 @@ export async function unpublishArtwork({
     return { error: "Failed to unpublish artwork in database." };
   }
 
-  // 2. Enqueue cleanup for former public derivative
+  // 2. Enqueue and synchronously attempt cleanup for every public image variant.
   let cleanupPending = false;
-  if (oldPublicPath) {
+  if (oldPublicPaths.length > 0) {
     try {
-      await enqueueCleanupItem({
+      await Promise.all(oldPublicPaths.map((objectPath) => enqueueCleanupItem({
         bucketId: "artworks-public",
-        objectPath: oldPublicPath,
+        objectPath,
         reason: "unpublish",
         processAfter: new Date(),
-      });
+      })));
 
-      // Best-effort synchronous deletion attempt
-      const pathInBucket = getPathInBucket("artworks-public", oldPublicPath);
+      const pathsInBucket = oldPublicPaths.map((path) => getPathInBucket("artworks-public", path));
       const { error: removeError } = await supabase.storage
         .from("artworks-public")
-        .remove([pathInBucket, oldPublicPath]);
+        .remove(pathsInBucket);
 
       if (!removeError) {
-        // Resolve queue item immediately if deletion succeeded
         await supabase
           .from("storage_cleanup_queue")
           .delete()
           .eq("bucket_id", "artworks-public")
-          .eq("object_path", oldPublicPath);
+          .in("object_path", oldPublicPaths);
       } else {
         cleanupPending = true;
       }
     } catch (cleanupErr) {
-      console.warn("Immediate cleanup attempt failed, queued for retry:", cleanupErr);
+      console.warn("Immediate responsive image cleanup failed, queued for retry:", cleanupErr);
       cleanupPending = true;
     }
   }
@@ -342,6 +361,7 @@ export async function deleteArtwork({
 
   const privatePath = artwork.private_image_path;
   const publicPath = artwork.public_image_path;
+  const publicPaths = getArtworkResponsiveObjectPaths(publicPath);
 
   // 1. Enqueue private source cleanup
   if (privatePath) {
@@ -353,15 +373,13 @@ export async function deleteArtwork({
     });
   }
 
-  // 2. Enqueue public derivative cleanup
-  if (publicPath) {
-    await enqueueCleanupItem({
-      bucketId: "artworks-public",
-      objectPath: publicPath,
-      reason: "delete",
-      processAfter: new Date(),
-    });
-  }
+  // 2. Enqueue every public responsive variant for cleanup.
+  await Promise.all(publicPaths.map((objectPath) => enqueueCleanupItem({
+    bucketId: "artworks-public",
+    objectPath,
+    reason: "delete",
+    processAfter: new Date(),
+  })));
 
   // 3. Delete artwork row from database
   const { error: deleteError } = await supabase
@@ -375,23 +393,23 @@ export async function deleteArtwork({
     return { error: "Failed to delete artwork." };
   }
 
-  // 4. Best-effort synchronous deletion of public derivative
-  if (publicPath) {
+  // 4. Best-effort synchronous deletion of all public responsive variants.
+  if (publicPaths.length > 0) {
     try {
-      const pathInBucket = getPathInBucket("artworks-public", publicPath);
+      const pathsInBucket = publicPaths.map((path) => getPathInBucket("artworks-public", path));
       const { error: removeError } = await supabase.storage
         .from("artworks-public")
-        .remove([pathInBucket, publicPath]);
+        .remove(pathsInBucket);
 
       if (!removeError) {
         await supabase
           .from("storage_cleanup_queue")
           .delete()
           .eq("bucket_id", "artworks-public")
-          .eq("object_path", publicPath);
+          .in("object_path", publicPaths);
       }
     } catch {
-      // Retained in queue for retry
+      // Retained in queue for retry.
     }
   }
 

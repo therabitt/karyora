@@ -3,8 +3,8 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
+import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 import {
@@ -911,6 +911,18 @@ export function AlanMenkenShowcase({
   const outgoingImageUrl = outgoingArtwork
     ? getStoragePublicUrl(outgoingArtwork.public_image_path)
     : null;
+  const currentResponsiveSources = getArtworkResponsiveImageSources(
+    current.public_image_path,
+    current.image_width ?? activeDimensions.width,
+    current.image_height ?? activeDimensions.height,
+  );
+  const outgoingResponsiveSources = outgoingArtwork
+    ? getArtworkResponsiveImageSources(
+        outgoingArtwork.public_image_path,
+        outgoingArtwork.image_width ?? outgoingDimensions?.width ?? 1600,
+        outgoingArtwork.image_height ?? outgoingDimensions?.height ?? 1200,
+      )
+    : null;
   const availablePreviewWidth = previewPanelCount > 0
     ? (stageWidth - activeSize.width - previewPanelCount * ribbonGap - 12) / previewPanelCount
     : 0;
@@ -1085,15 +1097,26 @@ export function AlanMenkenShowcase({
                   }}
                 >
                   {seamExitSnapshot.imageUrl && !seamExitSnapshot.failed ? (
-                    <Image
-                      fill
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       draggable={false}
-                      src={seamExitSnapshot.imageUrl}
-                      alt=""
+                      src={getArtworkResponsiveImageSources(
+                        seamExitSnapshot.artwork.public_image_path,
+                        seamExitSnapshot.artwork.image_width ?? 1600,
+                        seamExitSnapshot.artwork.image_height ?? 1200,
+                      ).src ?? seamExitSnapshot.imageUrl}
+                      srcSet={getArtworkResponsiveImageSources(
+                        seamExitSnapshot.artwork.public_image_path,
+                        seamExitSnapshot.artwork.image_width ?? 1600,
+                        seamExitSnapshot.artwork.image_height ?? 1200,
+                      ).srcSet}
                       sizes={`${Math.max(1, Math.ceil(seamExitSnapshot.width))}px`}
-                      quality={85}
+                      width={seamExitSnapshot.artwork.image_width ?? 1600}
+                      height={seamExitSnapshot.artwork.image_height ?? 1200}
                       loading="eager"
                       fetchPriority="low"
+                      decoding="async"
+                      alt=""
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -1126,6 +1149,11 @@ export function AlanMenkenShowcase({
                     top,
                     staggerOffset,
                   } = entry;
+                  const imageSources = getArtworkResponsiveImageSources(
+                    artwork.public_image_path,
+                    artwork.image_width ?? 1600,
+                    artwork.image_height ?? 1200,
+                  );
                   const visibility = isActive ? "flex" : getPanelVisibilityClass(offset);
                   const ribbonPatternIndex =
                     ((offset + 4) % STAGGER_HEIGHTS_RIBBONS.length + STAGGER_HEIGHTS_RIBBONS.length) %
@@ -1171,21 +1199,23 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {imageUrl && !failed ? (
-                        <Image
-                          fill
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           data-artwork-image
                           draggable={false}
-                          src={imageUrl}
-                          alt={isActive ? (artwork.alt_text || artwork.title) : ""}
+                          src={imageSources.src ?? imageUrl}
+                          srcSet={imageSources.srcSet}
                           sizes={`${Math.max(1, Math.ceil(width * imageScale))}px`}
-                      quality={85}
+                          width={artwork.image_width ?? 1600}
+                          height={artwork.image_height ?? 1200}
+                          loading="eager"
+                          fetchPriority={isActive ? "high" : "low"}
+                          decoding="async"
+                          alt={isActive ? (artwork.alt_text || artwork.title) : ""}
                           onLoad={(event) => handleImageLoad(artwork.id, event.currentTarget)}
                           onError={() => handleImageError(artwork.id)}
                           className="absolute inset-0 h-full w-full object-contain transition-[scale] duration-700 motion-reduce:transition-none group-hover:scale-[1.025]"
                           style={{ transform: "scale(" + imageScale + ")" }}
-                          preload={isActive}
-                          loading={isActive ? undefined : "eager"}
-                          fetchPriority={isActive ? undefined : "low"}
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-surface-muted p-2 text-center">
@@ -1268,16 +1298,18 @@ export function AlanMenkenShowcase({
                       } as CSSProperties}
                     >
                       {currentImageUrl && !failed ? (
-                        <Image
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           draggable={false}
-                          src={currentImageUrl}
-                          alt=""
-                          width={Math.max(1, Math.round(current.image_width ?? sliceSize.width))}
-                          height={Math.max(1, Math.round(current.image_height ?? sliceSize.height))}
+                          src={currentResponsiveSources.src ?? currentImageUrl}
+                          srcSet={currentResponsiveSources.srcSet}
                           sizes={`${Math.max(1, Math.ceil(sliceSize.width))}px`}
-                      quality={85}
+                          width={current.image_width ?? 1600}
+                          height={current.image_height ?? 1200}
                           loading="eager"
                           fetchPriority={sliceIndex === 2 ? "high" : "low"}
+                          decoding="async"
+                          alt=""
                           onLoad={(event) => handleImageLoad(current.id, event.currentTarget)}
                           onError={() => handleImageError(current.id)}
                           className="absolute max-w-none"
@@ -1361,16 +1393,18 @@ export function AlanMenkenShowcase({
                         } as CSSProperties}
                       >
                         {outgoingImageUrl && !failed ? (
-                          <Image
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
                             draggable={false}
-                            src={outgoingImageUrl}
-                            alt=""
-                            width={Math.max(1, Math.round(outgoingArtwork.image_width ?? outgoingSliceSize.width))}
-                            height={Math.max(1, Math.round(outgoingArtwork.image_height ?? outgoingSliceSize.height))}
+                            src={outgoingResponsiveSources?.src ?? outgoingImageUrl}
+                            srcSet={outgoingResponsiveSources?.srcSet}
                             sizes={`${Math.max(1, Math.ceil(outgoingSliceSize.width))}px`}
-                      quality={85}
+                            width={outgoingArtwork.image_width ?? 1600}
+                            height={outgoingArtwork.image_height ?? 1200}
                             loading="eager"
                             fetchPriority="low"
+                            decoding="async"
+                            alt=""
                             className="absolute max-w-none"
                             style={{
                               width: outgoingSliceSize.width + "px",
@@ -1399,15 +1433,18 @@ export function AlanMenkenShowcase({
                   }}
                 >
                   {outgoingImageUrl && !failedImages[outgoingArtwork.id] ? (
-                    <Image
-                      fill
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       draggable={false}
-                      src={outgoingImageUrl}
-                      alt=""
+                      src={outgoingResponsiveSources?.src ?? outgoingImageUrl}
+                      srcSet={outgoingResponsiveSources?.srcSet}
                       sizes={`${Math.max(1, Math.ceil(outgoingSize.width))}px`}
-                      quality={85}
+                      width={outgoingArtwork.image_width ?? 1600}
+                      height={outgoingArtwork.image_height ?? 1200}
                       loading="eager"
                       fetchPriority="low"
+                      decoding="async"
+                      alt=""
                       className="h-full w-full object-contain"
                     />
                   ) : (

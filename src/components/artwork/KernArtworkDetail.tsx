@@ -8,8 +8,8 @@ import React, {
   useMemo,
 } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { getStoragePublicUrl } from "@/lib/storage/urls";
+import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 import type { PublicArtwork } from "@/lib/data/artworks";
 import { PublicNavigationMenu } from "@/components/layout/PublicNavigationMenu";
 
@@ -17,6 +17,8 @@ interface KernArtworkDetailProps {
   initialArtwork: PublicArtwork;
   allArtworks: PublicArtwork[];
 }
+
+const DETAIL_ARTWORK_IMAGE_SIZES = "(min-width: 1280px) min(660px, 42vw), (min-width: 1024px) min(560px, 38vw), (min-width: 640px) min(440px, 58vw), min(340px, 78vw)";
 
 // ─── ARTWORK STACK THEME & ABSTRACT PATTERNS ─────────────────────────────────
 // Each artwork has its own unique 3-layer identity:
@@ -353,6 +355,11 @@ export function KernArtworkDetail({
 
   const imageUrl = getStoragePublicUrl(currentArtwork.public_image_path);
   const isImageFailed = failedImages[currentArtwork.id];
+  const currentResponsiveSources = getArtworkResponsiveImageSources(
+    currentArtwork.public_image_path,
+    currentArtwork.image_width ?? 1600,
+    currentArtwork.image_height ?? 1200,
+  );
 
   // Artwork-specific stack theme for the currently active artwork
   const currentTheme = useMemo(
@@ -364,6 +371,32 @@ export function KernArtworkDetail({
     setFailedImages((prev) => ({ ...prev, [id]: true }));
   };
 
+  // Preload only the browser-selected responsive variant for adjacent artworks.
+  // This preserves card-throw continuity without forcing full-resolution files on small screens.
+  useEffect(() => {
+    if (totalCount <= 1) return;
+    const adjacent = [
+      allArtworks[(activeIndex + 1) % totalCount],
+      allArtworks[(activeIndex - 1 + totalCount) % totalCount],
+    ];
+
+    adjacent.forEach((artwork) => {
+      if (!artwork?.public_image_path) return;
+      const sources = getArtworkResponsiveImageSources(
+        artwork.public_image_path,
+        artwork.image_width ?? 1600,
+        artwork.image_height ?? 1200,
+      );
+      if (!sources.src) return;
+
+      const image = new window.Image();
+      if (sources.srcSet) image.srcset = sources.srcSet;
+      image.sizes = DETAIL_ARTWORK_IMAGE_SIZES;
+      image.fetchPriority = "low";
+      image.decoding = "async";
+      image.src = sources.src;
+    });
+  }, [activeIndex, allArtworks, totalCount]);
 
   const scrollToActiveThumb = useCallback((index: number, smooth = true) => {
     const container = dockContainerRef.current;
@@ -773,17 +806,18 @@ export function KernArtworkDetail({
               >
                 <div className="relative flex items-center justify-center">
                   {imageUrl && !isImageFailed ? (
-                    <Image
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
                       key={currentArtwork.id}
-                      src={imageUrl}
+                      src={currentResponsiveSources.src ?? imageUrl}
+                      srcSet={currentResponsiveSources.srcSet}
+                      sizes={DETAIL_ARTWORK_IMAGE_SIZES}
+                      width={currentArtwork.image_width ?? 1600}
+                      height={currentArtwork.image_height ?? 1200}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                       alt={currentArtwork.alt_text || currentArtwork.title}
-                      width={Math.max(1, currentArtwork.image_width ?? 1600)}
-                      height={Math.max(1, currentArtwork.image_height ?? 1200)}
-                      sizes="(min-width: 1280px) min(660px, 42vw), (min-width: 1024px) min(560px, 38vw), (min-width: 640px) min(440px, 58vw), min(340px, 78vw)"
-                      quality={85}
-                      preload={currentArtwork.id === initialArtwork.id}
-                      loading={currentArtwork.id === initialArtwork.id ? undefined : "eager"}
-                      fetchPriority={currentArtwork.id === initialArtwork.id ? undefined : "high"}
                       crossOrigin="anonymous"
                       onLoad={(e) => {
                         const slugKey = currentArtwork.slug?.toLowerCase().trim();
@@ -965,6 +999,11 @@ export function KernArtworkDetail({
                 const isSelected = artwork.id === currentArtwork.id;
                 const num = String(idx + 1).padStart(2, "0");
                 const thumbUrl = getStoragePublicUrl(artwork.public_image_path);
+                const thumbSources = getArtworkResponsiveImageSources(
+                  artwork.public_image_path,
+                  artwork.image_width ?? 1600,
+                  artwork.image_height ?? 1200,
+                );
                 const thumbFailed = failedImages[artwork.id];
                 return (
                   <button
@@ -991,14 +1030,17 @@ export function KernArtworkDetail({
                     {/* Thumbnail with subtle hover-zoom on the image only */}
                     <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-2xs overflow-hidden shrink-0 border border-black/10 bg-surface-muted inline-flex items-center justify-center">
                       {thumbUrl && !thumbFailed ? (
-                        <Image
-                          src={thumbUrl}
-                          alt=""
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={thumbSources.src ?? thumbUrl}
+                          srcSet={thumbSources.srcSet}
+                          sizes="32px"
                           width={64}
                           height={64}
-                          sizes="32px"
                           loading="lazy"
                           fetchPriority="low"
+                          decoding="async"
+                          alt=""
                           onError={() => handleImageError(artwork.id)}
                           className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.08]"
                         />
@@ -1049,15 +1091,17 @@ export function KernArtworkDetail({
 
             <div className="flex-1 flex items-center justify-center overflow-hidden my-4">
               {imageUrl && !isImageFailed ? (
-                <Image
-                  src={imageUrl}
-                  alt={currentArtwork.alt_text || currentArtwork.title}
-                  width={Math.max(1, currentArtwork.image_width ?? 1600)}
-                  height={Math.max(1, currentArtwork.image_height ?? 1200)}
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={currentResponsiveSources.src ?? imageUrl}
+                  srcSet={currentResponsiveSources.srcSet}
                   sizes="100vw"
-                  quality={85}
+                  width={currentArtwork.image_width ?? 1600}
+                  height={currentArtwork.image_height ?? 1200}
                   loading="eager"
                   fetchPriority="high"
+                  decoding="async"
+                  alt={currentArtwork.alt_text || currentArtwork.title}
                   className="max-w-full max-h-[82vh] object-contain rounded-xs shadow-2xl select-none"
                 />
               ) : null}
