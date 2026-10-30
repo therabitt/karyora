@@ -334,7 +334,7 @@ export function AlanMenkenShowcase({
       slicedNavigationLockedRef.current = true;
 
       const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+      const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 850);
       const sliceStep = getMotionDuration("--motion-stagger-slice-step", 60);
       const sliceTie = getMotionDuration("--motion-stagger-slice-tie", 12);
       const maximumSliceStagger =
@@ -486,7 +486,7 @@ export function AlanMenkenShowcase({
       transitionSnapshot.viewMode === "sliced" &&
       currentArtworkId !== undefined &&
       delayedSliceArtworkId === currentArtworkId;
-    const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 680);
+    const sliceDuration = getMotionDuration("--motion-duration-slice-panel", 850);
     const sliceStagger =
       Math.floor((SLICE_COUNT - 1) / 2) *
         getMotionDuration("--motion-stagger-slice-step", 60) +
@@ -496,7 +496,7 @@ export function AlanMenkenShowcase({
       ? (hasSequentialSliceHandoff
         ? getMotionDuration("--motion-delay-slice-handoff", 920)
         : 0) + sliceDuration + sliceStagger + safetyBuffer
-      : getMotionDuration("--motion-duration-image", 720) + safetyBuffer;
+      : getMotionDuration("--motion-duration-image", 900) + safetyBuffer;
 
     const timeoutId = window.setTimeout(() => {
       setTransitionSnapshot((currentSnapshot) =>
@@ -573,7 +573,7 @@ export function AlanMenkenShowcase({
     const activeId = displayArtworks[activeIndex]?.id;
     const easing = getMotionEasing(
       "--motion-ease-ribbon-focus",
-      "cubic-bezier(0.4, 0, 0.2, 1)",
+      "cubic-bezier(0.72, 0, 0.28, 1)",
     );
     const ribbonStaggerStepMs = getMotionDuration("--motion-stagger-ribbon-step", 58);
     const ribbonStaggerTieMs = getMotionDuration("--motion-stagger-ribbon-tie", 10);
@@ -1429,7 +1429,7 @@ export function AlanMenkenShowcase({
             <div
               key={transitionSnapshot.sequence}
               aria-hidden="true"
-              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 flex items-center justify-center ${isSliceLayoutChange ? "z-30" : "z-10"}`}
               data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
             >
               {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (

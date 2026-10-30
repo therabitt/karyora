@@ -470,10 +470,10 @@ export function KernArtworkDetail({
     if (animPhase === "idle") return;
     const maxSafetyDuration = reducedMotion
       ? getMotionDuration("--motion-duration-reduced", 120) +
-        getMotionDuration("--motion-duration-micro", 180)
+        getMotionDuration("--motion-duration-micro", 225)
       : animPhase === "throwing-out"
-      ? getMotionDuration("--motion-duration-detail-exit-total", 680)
-      : getMotionDuration("--motion-duration-detail-enter-total", 800);
+      ? getMotionDuration("--motion-duration-detail-exit-total", 850)
+      : getMotionDuration("--motion-duration-detail-enter-total", 1000);
     const timer = setTimeout(() => {
       if (animPhase === "throwing-out") {
         if (pendingArtworkRef.current) {
@@ -563,13 +563,13 @@ export function KernArtworkDetail({
       return "none";
     }
     if (animPhase === "throwing-out") {
-      const duration = getMotionDuration("--motion-duration-detail-exit-rear", 430);
+      const duration = getMotionDuration("--motion-duration-detail-exit-rear", 540);
       return isFwd
         ? `throw-out-rear-fwd ${duration}ms ${detailEaseIn} 0ms forwards`
         : `throw-out-rear-bwd ${duration}ms ${detailEaseIn} 0ms forwards`;
     }
     if (animPhase === "throwing-in") {
-      const duration = getMotionDuration("--motion-duration-detail-enter-rear", 540);
+      const duration = getMotionDuration("--motion-duration-detail-enter-rear", 675);
       return isFwd
         ? `throw-in-rear-fwd ${duration}ms ${detailEaseSpring} 0ms forwards`
         : `throw-in-rear-bwd ${duration}ms ${detailEaseSpring} 0ms forwards`;
@@ -584,13 +584,13 @@ export function KernArtworkDetail({
       return "none";
     }
     if (animPhase === "throwing-out") {
-      const duration = getMotionDuration("--motion-duration-detail-exit-middle", 470);
+      const duration = getMotionDuration("--motion-duration-detail-exit-middle", 590);
       return isFwd
         ? `throw-out-mid-fwd ${duration}ms ${detailEaseIn} ${detailStaggerMs}ms forwards`
         : `throw-out-mid-bwd ${duration}ms ${detailEaseIn} ${detailStaggerMs}ms forwards`;
     }
     if (animPhase === "throwing-in") {
-      const duration = getMotionDuration("--motion-duration-detail-enter-middle", 600);
+      const duration = getMotionDuration("--motion-duration-detail-enter-middle", 750);
       return isFwd
         ? `throw-in-mid-fwd ${duration}ms ${detailEaseSpring} ${detailStaggerMs}ms forwards`
         : `throw-in-mid-bwd ${duration}ms ${detailEaseSpring} ${detailStaggerMs}ms forwards`;
@@ -605,14 +605,14 @@ export function KernArtworkDetail({
       return "none";
     }
     if (animPhase === "throwing-out") {
-      const duration = getMotionDuration("--motion-duration-detail-exit-front", 510);
+      const duration = getMotionDuration("--motion-duration-detail-exit-front", 640);
       const delay = detailStaggerMs * 2;
       return isFwd
         ? `throw-out-front-fwd ${duration}ms ${detailEaseIn} ${delay}ms forwards`
         : `throw-out-front-bwd ${duration}ms ${detailEaseIn} ${delay}ms forwards`;
     }
     if (animPhase === "throwing-in") {
-      const duration = getMotionDuration("--motion-duration-detail-enter-front", 660);
+      const duration = getMotionDuration("--motion-duration-detail-enter-front", 825);
       const delay = detailStaggerMs * 2;
       return isFwd
         ? `throw-in-front-fwd ${duration}ms ${detailEaseSpring} ${delay}ms forwards`
@@ -623,7 +623,7 @@ export function KernArtworkDetail({
 
   // Synchronized metadata reveal style
   const metaStyle: React.CSSProperties = (() => {
-    const microDuration = getMotionDuration("--motion-duration-micro", 180);
+    const microDuration = getMotionDuration("--motion-duration-micro", 225);
     const standardEase = getMotionEasing(
       "--motion-ease-standard",
       "cubic-bezier(0.22, 1, 0.36, 1)",
@@ -642,7 +642,7 @@ export function KernArtworkDetail({
       };
     }
     if (animPhase === "throwing-in") {
-      const duration = getMotionDuration("--motion-duration-detail-meta", 380);
+      const duration = getMotionDuration("--motion-duration-detail-meta", 475);
       const delay = getMotionDuration("--motion-delay-detail-meta", 120);
       return {
         animation: `kern-meta-reveal ${duration}ms ${detailEaseSpring} ${delay}ms forwards`,
@@ -787,7 +787,7 @@ export function KernArtworkDetail({
                   boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
                   animation: getLayer1Animation(),
                   transition: animPhase === "idle"
-                    ? `background-color ${getMotionDuration("--motion-duration-image", 720)}ms ${getMotionEasing("--motion-ease-standard", "cubic-bezier(0.22, 1, 0.36, 1)")}`
+                    ? `background-color ${getMotionDuration("--motion-duration-image", 900)}ms ${getMotionEasing("--motion-ease-standard", "cubic-bezier(0.22, 1, 0.36, 1)")}`
                     : "none",
                 }}
               />

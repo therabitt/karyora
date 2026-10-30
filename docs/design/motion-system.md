@@ -21,11 +21,11 @@ Values below must match the tokens in `:root` in `globals.css`.
 
 | Token | Baseline | Intended use |
 |---|---:|---|
-| `--motion-duration-micro` | 180 ms | Hover, icons, color changes |
-| `--motion-duration-ui` | 280 ms | Navigation backdrop and small UI state changes |
-| `--motion-duration-navigation` | 460 ms | Full navigation panel movement |
-| `--motion-duration-image` | 720 ms | Gentle image-scale emphasis |
-| `--motion-duration-spotlight` | 720 ms | Homepage active-panel width and emphasis |
+| `--motion-duration-micro` | 225 ms | Hover, icons, color changes |
+| `--motion-duration-ui` | 350 ms | Navigation backdrop and small UI state changes |
+| `--motion-duration-navigation` | 575 ms | Full navigation panel movement |
+| `--motion-duration-image` | 900 ms | Gentle image-scale emphasis |
+| `--motion-duration-spotlight` | 900 ms | Homepage active-panel width and emphasis |
 | `--motion-duration-ribbon-enter` | 820 ms | Ribbon preview entrance |
 | `--motion-duration-ribbon-focus` | 1,250 ms | Focused Ribbon artwork transition and entrance |
 | `--motion-duration-ribbon-near` | 1,120 ms | Artwork transition, panels one offset from focus |
@@ -35,27 +35,27 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-stagger-ribbon-tie` | 10 ms | Soft directional offset between mirrored Ribbon panels |
 | `--motion-stagger-ribbon-cap` | 232 ms | Maximum Ribbon transition delay |
 | `--motion-buffer-ribbon-enter` | 100 ms | Keeps the initial Ribbon animation class through its final frame |
-| `--motion-duration-slice-panel` | 680 ms | Sliced enter/exit panel motion |
+| `--motion-duration-slice-panel` | 850 ms | Sliced enter/exit panel motion |
 | `--motion-stagger-slice-step` | 60 ms | Per-ring Sliced delay |
 | `--motion-stagger-slice-tie` | 12 ms | Directional offset between paired side slices |
 | `--motion-delay-slice-initial` | 20 ms | Default Sliced entrance start |
-| `--motion-delay-slice-handoff` | 920 ms | Sliced entry after a large-layout outgoing handoff |
+| `--motion-delay-slice-handoff` | 1,050 ms | Sliced entry after a large-layout outgoing handoff |
 | `--motion-buffer-slice-safety` | 180 ms | Safety margin after staggered Sliced animation |
-| `--motion-duration-caption-title` | 340 ms | Incoming artwork title |
-| `--motion-duration-caption-description` | 390 ms | Incoming artwork description |
-| `--motion-duration-caption-meta` | 330 ms | Incoming artwork supporting metadata |
+| `--motion-duration-caption-title` | 425 ms | Incoming artwork title |
+| `--motion-duration-caption-description` | 490 ms | Incoming artwork description |
+| `--motion-duration-caption-meta` | 410 ms | Incoming artwork supporting metadata |
 | `--motion-delay-caption-description` | 60 ms | Description start after title |
 | `--motion-delay-caption-meta` | 100 ms | Metadata start after title |
-| `--motion-duration-detail-exit-rear` | 430 ms | Rear card exit |
-| `--motion-duration-detail-exit-middle` | 470 ms | Middle card exit |
-| `--motion-duration-detail-exit-front` | 510 ms | Front card exit |
-| `--motion-duration-detail-enter-rear` | 540 ms | Rear card entrance |
-| `--motion-duration-detail-enter-middle` | 600 ms | Middle card entrance |
-| `--motion-duration-detail-enter-front` | 660 ms | Front card entrance |
+| `--motion-duration-detail-exit-rear` | 540 ms | Rear card exit |
+| `--motion-duration-detail-exit-middle` | 590 ms | Middle card exit |
+| `--motion-duration-detail-exit-front` | 640 ms | Front card exit |
+| `--motion-duration-detail-enter-rear` | 675 ms | Rear card entrance |
+| `--motion-duration-detail-enter-middle` | 750 ms | Middle card entrance |
+| `--motion-duration-detail-enter-front` | 825 ms | Front card entrance |
 | `--motion-stagger-detail-step` | 50 ms | Detail stack layer delay |
-| `--motion-duration-detail-exit-total` | 680 ms | Safety deadline for outgoing stack |
-| `--motion-duration-detail-enter-total` | 800 ms | Safety deadline for incoming stack |
-| `--motion-duration-detail-meta` | 380 ms | Metadata reveal |
+| `--motion-duration-detail-exit-total` | 850 ms | Safety deadline for outgoing stack |
+| `--motion-duration-detail-enter-total` | 1,000 ms | Safety deadline for incoming stack |
+| `--motion-duration-detail-meta` | 475 ms | Metadata reveal |
 | `--motion-delay-detail-meta` | 120 ms | Metadata reveal after artwork starts arriving |
 | `--motion-duration-reduced` | 120 ms | Minimal fallback for reduced-motion changes |
 | `--motion-duration-reduced-navigation` | 250 ms | Brief state lock when animated slices are disabled |
@@ -87,7 +87,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 
 - Five slices reveal in three rings: center at 0 ms, inner pair at 60 ms (plus a 12 ms directional tie), outer pair at 120 ms (plus the same tie).
 - The tie-break is directional: next favors the left panel in each pair; previous favors the right. Outgoing layers deconstruct in reverse ring order, starting at the outside.
-- A major artwork-layout handoff waits until the outgoing slices clear the stage. The transition snapshot cleanup deadline remains handoff delay + maximum stagger + incoming duration + the shared 180 ms safety margin.
+- A major artwork-layout handoff waits until the outgoing slices clear the stage. With 850 ms panel motion and up to 132 ms exit stagger, the 1,050 ms handoff leaves a 68 ms clearance margin before incoming slices begin. The transition snapshot cleanup deadline remains handoff delay + maximum stagger + incoming duration + the shared 180 ms safety margin.
 - Slice crops stay fixed to their shared source artwork. Do not animate per-slice image dimensions independently.
 
 ### Artwork Detail
@@ -120,3 +120,8 @@ Honor `prefers-reduced-motion: reduce`. Use the existing reduced-motion branch w
 - [ ] Verify Artwork Detail completes in both directions and its safety fallback cannot interrupt a normal animation.
 - [ ] Verify navigation, hover, and archive index still respond promptly.
 - [ ] Verify reduced-motion behavior and keyboard operation.
+
+
+## Smooth-duration experiment
+
+The experimental branch `experiment/unified-easing` tests a roughly 1.25× increase to non-Ribbon animation durations so transitions feel more deliberate and closer in pace to Ribbon. Ribbon timings, easing curves, stagger delays, and reduced-motion durations remain unchanged. Detail stack safety deadlines are increased to match the longer exit and entrance choreography. This is a visual experiment, not a permanent baseline until reviewed in the preview.

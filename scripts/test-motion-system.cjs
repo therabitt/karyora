@@ -57,17 +57,47 @@ assert.deepEqual(
 assert.equal(getSliceStaggerRank(-1, 5), 0);
 assert.equal(getSliceStaggerDelay(-1, 5, "next", 60, 12), 0);
 
+const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
+const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
+const slicedShowcase = fs.readFileSync(
+  path.join(__dirname, "../src/components/gallery/AlanMenkenShowcase.tsx"),
+  "utf8",
+);
+assert.match(
+  slicedShowcase,
+  /isSliceLayoutChange\s*\?\s*"z-30"\s*:\s*"z-10"/,
+  "Same-layout Sliced transitions must render incoming strips above outgoing strips so old panels cannot mask the shared timing",
+);
+const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
+const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
+
 const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
+assert.equal(motionTokens.get("--motion-ease-standard"), easing);
+assert.equal(motionTokens.get("--motion-ease-out"), "cubic-bezier(0.16, 1, 0.3, 1)");
+assert.equal(motionTokens.get("--motion-ease-in"), "cubic-bezier(0.7, 0, 0.84, 0)");
+assert.equal(motionTokens.get("--motion-ease-spring"), "cubic-bezier(0.22, 1.12, 0.36, 1)");
+assert.equal(motionTokens.has("--motion-ease-unified-experiment"), false);
 assert.equal(getCubicBezierProgress(0, easing), 0);
 assert.equal(getCubicBezierProgress(1, easing), 1);
 assert.ok(getCubicBezierProgress(0.25, easing) > 0.25);
 assert.ok(getCubicBezierProgress(0.75, easing) > getCubicBezierProgress(0.25, easing));
 assert.equal(getCubicBezierProgress(0.4, "linear"), 0.4);
 
-const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
-const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
-const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
-const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
+assert.equal(motionTokens.get("--motion-duration-micro"), "225ms");
+assert.equal(motionTokens.get("--motion-duration-ui"), "350ms");
+assert.equal(motionTokens.get("--motion-duration-navigation"), "575ms");
+assert.equal(motionTokens.get("--motion-duration-slice-panel"), "850ms");
+assert.equal(motionTokens.get("--motion-delay-slice-handoff"), "1050ms");
+assert.ok(
+  parseCssTimeToMs(motionTokens.get("--motion-delay-slice-handoff"), 0) >=
+    parseCssTimeToMs(motionTokens.get("--motion-duration-slice-panel"), 0) +
+      Math.floor((5 - 1) / 2) * parseCssTimeToMs(motionTokens.get("--motion-stagger-slice-step"), 0) +
+      parseCssTimeToMs(motionTokens.get("--motion-stagger-slice-tie"), 0) + 60,
+  "Sliced incoming panels must wait until outgoing panels finish plus a clearance margin",
+);
+assert.equal(motionTokens.get("--motion-duration-detail-exit-total"), "850ms");
+assert.equal(motionTokens.get("--motion-duration-detail-enter-total"), "1000ms");
+assert.equal(motionTokens.get("--motion-duration-reduced"), "120ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-focus"), "1250ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-near"), "1120ms");
 assert.equal(motionTokens.get("--motion-duration-ribbon-middle"), "1000ms");
