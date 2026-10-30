@@ -59,6 +59,15 @@ assert.equal(getSliceStaggerDelay(-1, 5, "next", 60, 12), 0);
 
 const css = fs.readFileSync(path.join(__dirname, "../src/app/globals.css"), "utf8");
 const doc = fs.readFileSync(path.join(__dirname, "../docs/design/motion-system.md"), "utf8");
+const slicedShowcase = fs.readFileSync(
+  path.join(__dirname, "../src/components/gallery/AlanMenkenShowcase.tsx"),
+  "utf8",
+);
+assert.match(
+  slicedShowcase,
+  /isSliceLayoutChange\s*\?\s*"z-30"\s*:\s*"z-10"/,
+  "Same-layout Sliced transitions must render incoming strips above outgoing strips so old panels cannot mask the shared timing",
+);
 const tokenLines = [...css.matchAll(/^\s*(--motion-[\w-]+):\s*([^;]+);/gm)];
 const motionTokens = new Map(tokenLines.map(([, token, value]) => [token, value.trim()]));
 
