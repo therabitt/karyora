@@ -1444,7 +1444,7 @@ export function AlanMenkenShowcase({
             <div
               key={transitionSnapshot.sequence}
               aria-hidden="true"
-              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 z-30 flex items-center justify-center`}
+              className={`artwork-exit-layer artwork-exit-${transitionSnapshot.direction} pointer-events-none absolute inset-0 flex items-center justify-center ${isSliceLayoutChange ? "z-30" : "z-10"}`}
               data-slice-layout-change={isSliceLayoutChange ? "true" : undefined}
             >
               {transitionSnapshot.viewMode === "sliced" && outgoingSliceSize ? (
