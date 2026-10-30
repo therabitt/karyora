@@ -39,7 +39,7 @@ Values below must match the tokens in `:root` in `globals.css`.
 | `--motion-stagger-slice-step` | 60 ms | Per-ring Sliced delay |
 | `--motion-stagger-slice-tie` | 12 ms | Directional offset between paired side slices |
 | `--motion-delay-slice-initial` | 20 ms | Default Sliced entrance start |
-| `--motion-delay-slice-handoff` | 920 ms | Sliced entry after a large-layout outgoing handoff |
+| `--motion-delay-slice-handoff` | 1,050 ms | Sliced entry after a large-layout outgoing handoff |
 | `--motion-buffer-slice-safety` | 180 ms | Safety margin after staggered Sliced animation |
 | `--motion-duration-caption-title` | 425 ms | Incoming artwork title |
 | `--motion-duration-caption-description` | 490 ms | Incoming artwork description |
@@ -87,7 +87,7 @@ CSS keyframes and JavaScript animations must use the same easing token when they
 
 - Five slices reveal in three rings: center at 0 ms, inner pair at 60 ms (plus a 12 ms directional tie), outer pair at 120 ms (plus the same tie).
 - The tie-break is directional: next favors the left panel in each pair; previous favors the right. Outgoing layers deconstruct in reverse ring order, starting at the outside.
-- A major artwork-layout handoff waits until the outgoing slices clear the stage. The transition snapshot cleanup deadline remains handoff delay + maximum stagger + incoming duration + the shared 180 ms safety margin.
+- A major artwork-layout handoff waits until the outgoing slices clear the stage. With 850 ms panel motion and up to 132 ms exit stagger, the 1,050 ms handoff leaves a 68 ms clearance margin before incoming slices begin. The transition snapshot cleanup deadline remains handoff delay + maximum stagger + incoming duration + the shared 180 ms safety margin.
 - Slice crops stay fixed to their shared source artwork. Do not animate per-slice image dimensions independently.
 
 ### Artwork Detail
