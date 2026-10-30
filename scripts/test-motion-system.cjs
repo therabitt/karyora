@@ -78,6 +78,14 @@ assert.equal(motionTokens.get("--motion-duration-micro"), "225ms");
 assert.equal(motionTokens.get("--motion-duration-ui"), "350ms");
 assert.equal(motionTokens.get("--motion-duration-navigation"), "575ms");
 assert.equal(motionTokens.get("--motion-duration-slice-panel"), "850ms");
+assert.equal(motionTokens.get("--motion-delay-slice-handoff"), "1050ms");
+assert.ok(
+  parseCssTimeToMs(motionTokens.get("--motion-delay-slice-handoff"), 0) >=
+    parseCssTimeToMs(motionTokens.get("--motion-duration-slice-panel"), 0) +
+      Math.floor((5 - 1) / 2) * parseCssTimeToMs(motionTokens.get("--motion-stagger-slice-step"), 0) +
+      parseCssTimeToMs(motionTokens.get("--motion-stagger-slice-tie"), 0) + 60,
+  "Sliced incoming panels must wait until outgoing panels finish plus a clearance margin",
+);
 assert.equal(motionTokens.get("--motion-duration-detail-exit-total"), "850ms");
 assert.equal(motionTokens.get("--motion-duration-detail-enter-total"), "1000ms");
 assert.equal(motionTokens.get("--motion-duration-reduced"), "120ms");
