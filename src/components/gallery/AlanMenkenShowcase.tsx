@@ -292,7 +292,7 @@ export function AlanMenkenShowcase({
         return resolveArtworkDimensions(null, null);
       };
 
-      const getSliceGroupWidth = (artwork: PublicArtwork) => {
+      const getSliceGroupSize = (artwork: PublicArtwork) => {
         const dimensions = getTransitionDimensions(artwork);
         const fittedSize = fitArtworkWithinBounds(
           dimensions.width,
@@ -300,16 +300,27 @@ export function AlanMenkenShowcase({
           transitionSliceMaxWidth,
           transitionStageHeight * 0.82
         );
-        return fittedSize.width + transitionSliceGap * (SLICE_COUNT - 1);
+        return {
+          width: fittedSize.width + transitionSliceGap * (SLICE_COUNT - 1),
+          height: fittedSize.height,
+          aspectRatio: dimensions.width / dimensions.height,
+        };
       };
 
-      const outgoingWidth = getSliceGroupWidth(outgoingArtwork);
-      const incomingWidth = getSliceGroupWidth(incomingArtwork);
+      const outgoingSize = getSliceGroupSize(outgoingArtwork);
+      const incomingSize = getSliceGroupSize(incomingArtwork);
+
       // Groups are centered independently. Across five strips, the largest
       // horizontal shift for a matching panel is 30% of the total width delta.
       // Once that drift exceeds the inter-panel gap, strips from neighboring
       // indices can share the same horizontal lane and cross in opposite directions.
-      const maximumPanelDrift = Math.abs(outgoingWidth - incomingWidth) * 0.3;
+      const maximumPanelDrift = Math.abs(outgoingSize.width - incomingSize.width) * 0.3;
+      const relativeAspectChange =
+        Math.abs(outgoingSize.aspectRatio - incomingSize.aspectRatio) /
+        Math.max(outgoingSize.aspectRatio, incomingSize.aspectRatio);
+      const significantHeightChange =
+        Math.abs(outgoingSize.height - incomingSize.height) >
+        Math.max(48, transitionStageHeight * 0.08);
       const hasReliableDimensions = (artwork: PublicArtwork) => {
         const measured = measuredDimensions[artwork.id];
         if (measured && measured.width > 0 && measured.height > 0) return true;
@@ -321,10 +332,14 @@ export function AlanMenkenShowcase({
         );
       };
 
-      // If either image's true dimensions are not known yet, prefer the safe
-      // sequential handoff rather than risk an unexpected overlap after load.
+      // Sequentially hand off when either width, height, or aspect ratio can
+      // materially change the five-strip composition. Width alone misses some
+      // portrait/landscape transitions whose horizontal drift remains under the
+      // small inter-panel gap but whose vertical geometry visibly changes.
       shouldSequenceSliceHandoff =
         maximumPanelDrift > transitionSliceGap ||
+        relativeAspectChange >= 0.18 ||
+        significantHeightChange ||
         !hasReliableDimensions(outgoingArtwork) ||
         !hasReliableDimensions(incomingArtwork);
     }
