@@ -204,6 +204,29 @@ assert.ok(
   "cluster boundaries should be represented in the composition",
 );
 
+// The artwork must occupy clearly different vertical bands, not a single row.
+const verticalCenters = desktop.pieces.map((piece) => piece.centerY / desktop.stageHeight);
+assert.ok(
+  Math.max(...verticalCenters) - Math.min(...verticalCenters) >= 0.45,
+  "the Salon Wall must span upper, middle, and lower hanging positions",
+);
+for (const clusterId of new Set(desktop.pieces.map((piece) => piece.clusterId))) {
+  const clusterPieces = desktop.pieces.filter((piece) => piece.clusterId === clusterId);
+  const clusterCenters = clusterPieces.map((piece) => piece.centerY / desktop.stageHeight);
+  assert.ok(
+    Math.max(...clusterCenters) - Math.min(...clusterCenters) >= 0.2,
+    `cluster ${clusterId} must have visible vertical composition`,
+  );
+}
+assert.ok(
+  desktop.pieces.some((piece) => piece.centerY / desktop.stageHeight < 0.3),
+  "at least one work should hang in the upper band",
+);
+assert.ok(
+  desktop.pieces.some((piece) => piece.centerY / desktop.stageHeight > 0.7),
+  "at least one work should hang in the lower band",
+);
+
 // New work gets a deterministic fallback, without a schema change.
 const newArtwork = makeArtwork(99, 1200, 1600, "a-new-published-work");
 const fallbackA = buildCameraWallLayout([...artworks, newArtwork], {
