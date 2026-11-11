@@ -30,11 +30,11 @@ const {
   getWallCamera,
 } = loaded.exports;
 
-function makeArtwork(index, width, height) {
+function makeArtwork(index, width, height, slug = `artwork-${index}`) {
   return {
     id: `art-${index}`,
     title: `Artwork ${index}`,
-    slug: `artwork-${index}`,
+    slug,
     image_width: width,
     image_height: height,
     public_image_path: `artworks-public/artworks/art-${index}/v1.webp`,
@@ -65,100 +65,177 @@ const aspects = [
   [1059, 1600],
   [689, 1600],
 ];
+const slugs = [
+  "mafia-bikini-bottom",
+  "monochrome-rose",
+  "moonlit-netrunner",
+  "the-blue-messenger",
+  "a-distant-moon",
+  "sunlit-melancholy",
+  "pastel-selfie",
+  "unleashed-madness",
+  "eyes-on-the-rearview",
+  "an-elegy-for-innocence",
+  "the-forest-spirits-gaze",
+  "witch-underworld",
+  "lilith",
+  "frieren",
+  "solitude-in-crimson",
+  "princess-of-fantasy-world",
+  "super-woman",
+  "butterfly-woman",
+  "desert-woman",
+  "girls",
+  "beautiful-woman",
+  "beautiful-rythm",
+];
 const artworks = aspects.map(([width, height], index) =>
-  makeArtwork(index + 1, width, height),
+  makeArtwork(index + 1, width, height, slugs[index]),
 );
 
-const stage = { stageWidth: 1440, stageHeight: 828 };
-const layout = buildCameraWallLayout(artworks, stage);
+function verifyLayoutAt(stageWidth, stageHeight) {
+  const stage = { stageWidth, stageHeight };
+  const layout = buildCameraWallLayout(artworks, stage);
 
-// The complete archive is one continuous wall.
-assert.equal(layout.pieces.length, 22);
-assert.ok(layout.sceneWidth > layout.stageWidth, "wall must be wider than the stage");
-assert.ok(layout.panMax > layout.panMin, "camera must have a pan range");
-assert.equal(layout.panMin, 0);
-assert.equal(layout.panMax, layout.sceneWidth - stage.stageWidth);
-assert.equal(layout.initialPan, 0);
+  assert.equal(layout.pieces.length, artworks.length);
+  assert.ok(layout.sceneWidth > layout.stageWidth);
+  assert.ok(layout.panMax > layout.panMin);
+  assert.equal(layout.panMin, 0);
+  assert.equal(layout.panMax, layout.sceneWidth - stage.stageWidth);
+  assert.equal(layout.initialPan, 0);
 
-// Every frame stays inside the stage vertically and preserves its artwork ratio.
-for (const piece of layout.pieces) {
-  assert.ok(piece.top >= 0, `${piece.artwork.id} top is inside the stage`);
-  assert.ok(
-    piece.top + piece.height <= stage.stageHeight,
-    `${piece.artwork.id} bottom is inside the stage`,
+  for (const piece of layout.pieces) {
+    assert.ok(Number.isFinite(piece.left) && Number.isFinite(piece.top));
+    assert.ok(Number.isFinite(piece.width) && Number.isFinite(piece.height));
+    assert.ok(piece.top >= 0, `${piece.artwork.id} top is inside the stage`);
+    assert.ok(
+      piece.top + piece.height <= stage.stageHeight + 0.001,
+      `${piece.artwork.id} bottom is inside the stage`,
+    );
+    assert.ok(piece.mediaWidth > 0 && piece.mediaHeight > 0);
+    assert.ok(
+      Math.abs(piece.mediaWidth / piece.mediaHeight - piece.aspect) < 0.001,
+      `${piece.artwork.id} media keeps the artwork aspect ratio`,
+    );
+    assert.ok(piece.width > 0 && piece.height > 0);
+    assert.ok(["anchor", "supporting", "accent"].includes(piece.role));
+    assert.ok(piece.clusterId.length > 0);
+  }
+
+  for (let index = 1; index < layout.pieces.length; index += 1) {
+    const previous = layout.pieces[index - 1];
+    const current = layout.pieces[index];
+    assert.ok(
+      current.left >= previous.left + previous.width,
+      "frames must not overlap horizontally",
+    );
+    assert.ok(current.left - (previous.left + previous.width) >= 16);
+  }
+
+  assert.equal(
+    JSON.stringify(buildCameraWallLayout(artworks, stage)),
+    JSON.stringify(layout),
+    "curated placement must be deterministic",
   );
-  assert.ok(piece.mediaWidth > 0 && piece.mediaHeight > 0);
+
+  const centeredIndex = Math.min(4, layout.pieces.length - 1);
+  const centered = getWallCamera(layout, getPanForIndex(layout, centeredIndex));
+  assert.equal(centered.scale, 1);
   assert.ok(
-    Math.abs(piece.mediaWidth / piece.mediaHeight - piece.aspect) < 0.001,
-    `${piece.artwork.id} media keeps the artwork aspect ratio`,
+    Math.abs(
+      layout.pieces[centeredIndex].centerX +
+        centered.tx -
+        stage.stageWidth / 2,
+    ) < 0.001,
   );
-  assert.ok(piece.width > 0 && piece.height > 0);
+  assert.equal(getWallCamera(layout, -100000).pan, layout.panMin);
+  assert.equal(getWallCamera(layout, 100000).pan, layout.panMax);
+
+  for (const index of [0, 5, 8, layout.pieces.length - 1]) {
+    const piece = layout.pieces[index];
+    const camera = getFocusCamera(layout, index);
+    assert.ok(camera.scale >= 1.02);
+    const focalX = stage.stageWidth * (stage.stageWidth < 1280 ? 0.5 : 0.59);
+    const focalY = stage.stageHeight * (stage.stageWidth < 1280 ? 0.26 : 0.46);
+    assert.ok(
+      Math.abs(piece.centerX * camera.scale + camera.tx - focalX) < 0.5,
+    );
+    assert.ok(
+      Math.abs(piece.centerY * camera.scale + camera.ty - focalY) < 0.5,
+    );
+    const maxWidth = stage.stageWidth * (stage.stageWidth < 1280 ? 0.9 : 0.56);
+    const maxHeight = stage.stageHeight * (stage.stageWidth < 1280 ? 0.48 : 0.76);
+    assert.ok(piece.width * camera.scale <= maxWidth + 0.5);
+    assert.ok(piece.height * camera.scale <= maxHeight + 0.5);
+  }
+
+  return layout;
 }
 
-// The row is ordered, non-overlapping, and deterministic.
-for (let index = 1; index < layout.pieces.length; index += 1) {
-  const previous = layout.pieces[index - 1];
-  const current = layout.pieces[index];
-  assert.ok(
-    current.left >= previous.left + previous.width,
-    "frames must not overlap horizontally",
-  );
-  assert.ok(current.left - (previous.left + previous.width) >= 16);
-}
-assert.equal(
-  JSON.stringify(buildCameraWallLayout(artworks, stage)),
-  JSON.stringify(layout),
+// Test all specified widths, including both sides of the compact breakpoint.
+const viewports = [
+  [360, 700],
+  [390, 772],
+  [768, 900],
+  [1024, 768],
+  [1279, 820],
+  [1280, 820],
+  [1440, 828],
+];
+const layouts = viewports.map(([width, height]) =>
+  verifyLayoutAt(width, height),
 );
 
-// The hang is varied, not a uniform grid.
-assert.ok(new Set(layout.pieces.map((piece) => Math.round(piece.height))).size > 4);
-assert.ok(new Set(layout.pieces.map((piece) => piece.rotation)).size > 2);
-assert.ok(new Set(layout.pieces.map((piece) => piece.frameColor)).size === 3);
-
-// The camera centers a chosen frame and clamps to the ends of the wall.
-const centered = getWallCamera(layout, getPanForIndex(layout, 4));
-assert.equal(centered.scale, 1);
-assert.ok(Math.abs(layout.pieces[4].centerX + centered.tx - stage.stageWidth / 2) < 0.001);
-assert.equal(getWallCamera(layout, -100000).pan, layout.panMin);
-assert.equal(getWallCamera(layout, 100000).pan, layout.panMax);
-
-// Zoom targets the frame at the camera's focal point and never shrinks it.
-for (const index of [0, 5, 8, 21]) {
-  const piece = layout.pieces[index];
-  const camera = getFocusCamera(layout, index);
-  assert.ok(camera.scale >= 1.02);
-  assert.ok(Math.abs(piece.centerX * camera.scale + camera.tx - stage.stageWidth * 0.59) < 0.5);
-  assert.ok(Math.abs(piece.centerY * camera.scale + camera.ty - stage.stageHeight * 0.46) < 0.5);
-  assert.ok(piece.width * camera.scale <= stage.stageWidth * 0.56 + 0.5);
-  assert.ok(piece.height * camera.scale <= stage.stageHeight * 0.76 + 0.5);
-}
-
-// Mobile uses the compact focal point and keeps a usable foot.
-const mobile = { stageWidth: 390, stageHeight: 772 };
-const mobileLayout = buildCameraWallLayout(artworks, mobile);
-const mobileFocus = getFocusCamera(mobileLayout, 5);
+// Curated metadata must create visual chapters and role hierarchy.
+const desktop = layouts[layouts.length - 1];
+assert.equal(new Set(desktop.pieces.map((piece) => piece.clusterId)).size, 6);
+assert.ok(desktop.pieces.some((piece) => piece.role === "anchor"));
+assert.ok(desktop.pieces.some((piece) => piece.role === "supporting"));
+assert.ok(desktop.pieces.some((piece) => piece.role === "accent"));
 assert.ok(
-  Math.abs(
-    mobileLayout.pieces[5].centerX * mobileFocus.scale +
-      mobileFocus.tx -
-      mobile.stageWidth / 2,
-  ) < 0.5,
+  new Set(desktop.pieces.map((piece) => piece.height.toFixed(1))).size > 8,
+  "the wall should have a clear range of artwork scales",
 );
 assert.ok(
-  mobileLayout.pieces[5].width * mobileFocus.scale <=
-    mobile.stageWidth * 0.9 + 0.5,
+  desktop.pieces.some(
+    (piece, index) =>
+      index > 0 && piece.clusterId !== desktop.pieces[index - 1].clusterId,
+  ),
+  "cluster boundaries should be represented in the composition",
 );
 
-// Legacy rows without dimensions use the natural aspect fallback.
+// New work gets a deterministic fallback, without a schema change.
+const newArtwork = makeArtwork(99, 1200, 1600, "a-new-published-work");
+const fallbackA = buildCameraWallLayout([...artworks, newArtwork], {
+  stageWidth: 1440,
+  stageHeight: 828,
+});
+const fallbackB = buildCameraWallLayout([...artworks, newArtwork], {
+  stageWidth: 1440,
+  stageHeight: 828,
+});
+assert.deepEqual(
+  fallbackA.pieces.at(-1),
+  fallbackB.pieces.at(-1),
+  "new-work fallback must be stable between renders",
+);
+assert.equal(fallbackA.pieces.at(-1).clusterId, "new-arrivals");
+assert.ok(["anchor", "supporting", "accent"].includes(fallbackA.pieces.at(-1).role));
+
+// Natural dimensions remain the fallback for legacy rows.
 assert.equal(getCameraAspectRatio(makeArtwork(1, 1600, 800)), 2);
 assert.equal(getCameraAspectRatio(makeArtwork(1, null, null), 1.5), 1.5);
 assert.equal(getCameraAspectRatio(makeArtwork(1, null, null)), 0.72);
 const legacy = buildCameraWallLayout(
   [{ ...makeArtwork(1, null, null) }],
-  { ...stage, naturalAspects: { "art-1": 1.25 } },
+  {
+    stageWidth: 1440,
+    stageHeight: 828,
+    naturalAspects: { "art-1": 1.25 },
+  },
 );
 assert.equal(legacy.pieces[0].aspect, 1.25);
 
 console.log(
-  "Camera wall checks passed: continuous row, frame geometry, pan bounds, zoom focal point, mobile, and natural-aspect fallback.",
+  "Salon Wall checks passed: curated clusters and roles, deterministic new-work fallback, preserved ratios, non-overlap, 7 viewport sizes, pan bounds, and focus camera.",
 );
