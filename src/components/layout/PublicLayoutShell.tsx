@@ -8,9 +8,10 @@ export function PublicLayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isArtworkDetail = pathname.startsWith("/artworks/");
   const isHome = pathname === "/";
+  const isGallery = pathname === "/gallery";
   const isEditorialPage = pathname === "/contact" || pathname === "/commission";
 
-  if (isArtworkDetail || isHome || isEditorialPage) {
+  if (isArtworkDetail || isHome || isGallery || isEditorialPage) {
     return <div className="min-h-screen flex flex-col bg-paper">{children}</div>;
   }
 

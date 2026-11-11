@@ -261,3 +261,19 @@ The selected artwork must never be stretched or cropped to fit a fixed portrait 
 
 Keep the artwork viewport full-width, keep preview gaps bounded, reduce the number of visible neighboring panels on narrower screens, and keep the active artwork centered. Place the title, description, and medium/category metadata below the viewport. The bottom bar contains the archive link, the two-mode control, and the commission inquiry link; avoid decorative audio icons and redundant showcase captions.
 Image dimensions are stored as nullable image_width/image_height presentation metadata, extracted after orientation is applied. Existing published rows without dimensions must fall back to the browser's natural image dimensions after load. This metadata does not change private-image access rules.
+
+## Gallery: The Salon Wall camera room
+
+The public gallery at `/gallery` is a single continuous horizontal wall seen through a camera, not a scrolling catalog.
+
+- All published works are loaded into one wall. There is no pagination, filtering, search, sort, counter, wall plaque, or footer.
+- A centered **The Salon Wall** title and the shared hamburger navigation replace the old gallery masthead and navbar.
+- The layout is deterministic and computed in `src/lib/gallery/camera-wall-layout.ts`: varied frame sizes, vertical offsets, small rotations, and tonal frames. Artwork is `object-contain` inside a correctly proportioned mat and is never cropped.
+- The wall starts at its left edge with a small gutter and ends at the last work. Vertical wheel and horizontal trackpad movement, pointer drag, touch swipe, and arrow keys pan the camera. The camera never wraps or loops.
+- Clicking or pressing Enter on a frame zooms the camera toward it. On wide screens the title/description sit in a fixed left caption panel; below 1280 px the caption becomes a bottom sheet. The camera's focal point sits close to the viewport centre while leaving the caption clear of the artwork.
+- While focused, previous/next moves to the adjacent work and stops at the ends. `Escape`, the close control, or clicking the wall outside the caption returns to the wall view. Focus is restored to the originating frame.
+- `prefers-reduced-motion` removes camera and caption travel animations.
+- Each frame remains a real `/artworks/[slug]` link. A normal click is upgraded to the camera zoom; Ctrl/Cmd/Shift/Alt clicks navigate normally.
+- Public data still comes from `getAllPublishedArtworks` and only `public_image_path` is used. Responsive variants are selected through `getArtworkResponsiveImageSources`; legacy rows without dimensions fall back to natural image dimensions after load; failed images use the designed “Image unavailable” frame.
+
+Verification for this surface includes the wall at 360, 390, 768, 1024, 1279, 1280, and 1440 px; wheel, drag, touch swipe, arrow keys, Tab focus, `?item=`, both wall ends, zoom in/out, next/previous, outside-click close, the navigation menu, long caption content on mobile, and `npm run test:camera-wall-layout`. Do not claim a check that did not run.

@@ -5,6 +5,7 @@ Karyora is an artist portfolio and commission inquiry management application.
 ## Design documentation
 
 - [Visual direction and homepage redesign brief](design/visual-direction.md): the intended public-facing design language, analysis of the current implementation, reference-site observations, non-negotiable constraints, and an implementation/verification plan.
+- [The Salon Wall camera room](design/visual-direction.md#gallery-the-salon-wall-camera-room): the gallery's continuous horizontal wall, camera pan and zoom model, fixed caption, and input behavior.
 
 ## Agent rule
 
