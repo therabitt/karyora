@@ -1,68 +1,36 @@
 export default function GalleryLoading() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 md:py-14 w-full space-y-8 sm:space-y-10 animate-pulse">
-      {/* Masthead Skeleton */}
-      <div className="border-b border-border pb-6 sm:pb-8 space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div className="space-y-2">
-            <div className="h-3 w-36 bg-surface-muted rounded-2xs" />
-            <div className="h-10 w-64 sm:w-80 bg-surface-muted rounded-xs" />
-          </div>
-          <div className="h-7 w-40 bg-surface-muted rounded-xs" />
-        </div>
-        <div className="h-4 w-full max-w-xl bg-surface-muted rounded-2xs" />
-      </div>
+    <div className="camera-room relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink">
+      <header className="flex h-16 shrink-0 items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
+        <div className="h-3 w-12 animate-pulse rounded-2xs bg-surface-muted" />
+        <div className="absolute left-1/2 top-1/2 h-7 w-52 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-xs bg-surface-muted sm:h-8 sm:w-64" />
+        <div className="h-10 w-10 animate-pulse rounded-full bg-surface-muted" />
+      </header>
 
-      {/* Filter Bar Skeleton */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border pb-4">
-        <div className="flex items-center gap-2 overflow-x-auto py-1">
-          <div className="h-8 w-24 bg-surface-muted rounded-xs shrink-0" />
-          <div className="h-8 w-28 bg-surface-muted rounded-xs shrink-0" />
-          <div className="h-8 w-24 bg-surface-muted rounded-xs shrink-0" />
-          <div className="h-8 w-24 bg-surface-muted rounded-xs shrink-0" />
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-48 bg-surface-muted rounded-xs" />
-          <div className="h-8 w-32 bg-surface-muted rounded-xs" />
-        </div>
-      </div>
-
-      {/* Living Index Skeleton (Desktop split: 7 cols list, 5 cols preview) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 xl:gap-14 items-start">
-        {/* Left: List Skeleton */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="border-t border-b border-border divide-y divide-border">
-            <div className="py-6 px-4 space-y-2">
-              <div className="h-3 w-28 bg-surface-muted rounded-2xs" />
-              <div className="h-8 w-64 bg-surface-muted rounded-xs" />
-              <div className="h-4 w-40 bg-surface-muted rounded-2xs" />
-            </div>
-            <div className="py-6 px-4 space-y-2">
-              <div className="h-3 w-28 bg-surface-muted rounded-2xs" />
-              <div className="h-8 w-56 bg-surface-muted rounded-xs" />
-              <div className="h-4 w-40 bg-surface-muted rounded-2xs" />
-            </div>
-            <div className="py-6 px-4 space-y-2">
-              <div className="h-3 w-28 bg-surface-muted rounded-2xs" />
-              <div className="h-8 w-72 bg-surface-muted rounded-xs" />
-              <div className="h-4 w-40 bg-surface-muted rounded-2xs" />
-            </div>
+      <main className="relative min-h-0 flex-1 overflow-hidden">
+        <div className="absolute inset-0 flex items-center">
+          <div className="flex min-w-max items-center gap-10 px-[12vw] sm:gap-16 sm:px-[10vw]">
+            {[
+              "h-[48vh] w-[34vw] max-w-[360px]",
+              "h-[58vh] w-[39vw] max-w-[430px]",
+              "h-[40vh] w-[28vw] max-w-[300px]",
+              "h-[52vh] w-[36vw] max-w-[390px]",
+              "h-[44vh] w-[31vw] max-w-[330px]",
+            ].map((size, index) => (
+              <div
+                key={index}
+                className={`shrink-0 animate-pulse border border-border/60 bg-surface-muted/70 p-3 sm:p-4 ${size}`}
+              >
+                <div className="h-full w-full bg-paper/60" />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Right: Preview Skeleton */}
-        <div className="hidden lg:block lg:col-span-5 space-y-4">
-          <div className="border border-border bg-surface p-5 rounded-xs space-y-4">
-            <div className="aspect-4/3 w-full bg-surface-muted rounded-2xs" />
-            <div className="space-y-2 pt-1">
-              <div className="h-3 w-32 bg-surface-muted rounded-2xs" />
-              <div className="h-7 w-48 bg-surface-muted rounded-xs" />
-              <div className="h-4 w-full bg-surface-muted rounded-2xs" />
-              <div className="h-10 w-full bg-surface-muted rounded-xs pt-2" />
-            </div>
-          </div>
+        <div className="absolute bottom-7 left-1/2 -translate-x-1/2">
+          <div className="h-3 w-64 animate-pulse rounded-2xs bg-surface-muted sm:w-80" />
         </div>
-      </div>
+      </main>
     </div>
   );
 }
