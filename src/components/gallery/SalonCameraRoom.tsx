@@ -301,6 +301,7 @@ export function SalonCameraRoom({
     };
     setAnimateCamera(false);
     dismissHint();
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -318,6 +319,9 @@ export function SalonCameraRoom({
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     if (drag.moved) {
       suppressClickRef.current = true;
       window.setTimeout(() => {
