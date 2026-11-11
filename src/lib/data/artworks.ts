@@ -216,6 +216,11 @@ export async function getPublishedArtworkBySlug(slug: string): Promise<PublicArt
 /**
  * Retrieves all published artworks in chronological publication order for interactive
  * exhibition showcases, catalogs, and the detail-view dock.
+ *
+ * Unlike the legacy gallery queries, this loader intentionally does not substitute
+ * seed artwork when the production collection is empty or the database query fails.
+ * The Salon Wall needs to distinguish a genuinely empty exhibition from a failed
+ * data source.
  */
 export async function getAllPublishedArtworks(): Promise<PublicArtwork[]> {
   try {
@@ -225,17 +230,17 @@ export async function getAllPublishedArtworks(): Promise<PublicArtwork[]> {
       .select("*")
       .order("published_at", { ascending: false });
 
-    if (error || !data || data.length === 0) {
-      return DEFAULT_ARTWORKS;
+    if (error) {
+      throw error;
     }
 
-    return data;
+    return data ?? [];
   } catch (err) {
     if (isNextInternalBailout(err)) {
       throw err;
     }
-    console.warn("Could not fetch all published artworks, using fallback:", err);
-    return DEFAULT_ARTWORKS;
+    console.error("Could not fetch all published artworks:", err);
+    throw err;
   }
 }
 
