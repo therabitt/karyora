@@ -3,9 +3,9 @@ import type { PublicArtwork } from "@/lib/data/artworks";
 /**
  * Pure geometry and art direction for the horizontal Salon Wall.
  *
- * Curated works receive an explicit role and cluster. New published works use
- * a stable slug-based fallback so the wall remains deterministic without
- * requiring a database migration or an admin layout editor.
+ * The camera travels horizontally through one continuous scene, while the
+ * artwork itself is hung across several vertical bands. Curated positions
+ * create asymmetrical clusters instead of a single strip of frames.
  */
 export type SalonWallRole = "anchor" | "supporting" | "accent";
 
@@ -57,7 +57,7 @@ interface CuratedArtworkDirection {
   clusterId: string;
   role: SalonWallRole;
   heightScale: number;
-  verticalOffset: number;
+  centerY: number;
   rotation: number;
 }
 
@@ -98,171 +98,172 @@ const ROLE_FRAME_STYLE: Record<
 };
 
 /**
- * This manifest follows the published artwork order so the visual journey,
- * numeric labels, focus stepping, and legacy ?item= links remain aligned.
+ * Positions are normalized vertical frame-centres, not small offsets from a
+ * shared centre line. Each chapter deliberately uses upper, middle, and lower
+ * placements so the wall reads as a salon hang when viewed at normal scale.
  *
- * Clusters are intentionally consecutive. A wider inter-cluster gap creates
- * visual chapters without adding plaques or UI labels to the wall.
+ * The manifest follows published order to preserve labels, focus stepping,
+ * and the legacy ?item= mapping.
  */
 const CURATED_WALL_MANIFEST: Record<string, CuratedArtworkDirection> = {
   "mafia-bikini-bottom": {
     clusterId: "arrival",
     role: "anchor",
     heightScale: 1.12,
-    verticalOffset: -0.012,
-    rotation: -0.12,
+    centerY: 0.43,
+    rotation: -0.35,
   },
   "monochrome-rose": {
     clusterId: "arrival",
     role: "supporting",
     heightScale: 0.84,
-    verticalOffset: 0.026,
-    rotation: 0.42,
+    centerY: 0.73,
+    rotation: 0.95,
   },
   "moonlit-netrunner": {
     clusterId: "arrival",
     role: "accent",
     heightScale: 0.69,
-    verticalOffset: -0.06,
-    rotation: -0.62,
+    centerY: 0.23,
+    rotation: -1.2,
   },
   "the-blue-messenger": {
     clusterId: "arrival",
     role: "supporting",
     heightScale: 0.9,
-    verticalOffset: 0.018,
-    rotation: 0.24,
+    centerY: 0.56,
+    rotation: 0.55,
   },
 
   "a-distant-moon": {
     clusterId: "nocturnes",
     role: "anchor",
     heightScale: 1.14,
-    verticalOffset: -0.026,
-    rotation: 0.08,
+    centerY: 0.58,
+    rotation: 0.25,
   },
   "sunlit-melancholy": {
     clusterId: "nocturnes",
     role: "supporting",
     heightScale: 0.88,
-    verticalOffset: 0.046,
-    rotation: -0.36,
+    centerY: 0.25,
+    rotation: -0.85,
   },
   "pastel-selfie": {
     clusterId: "nocturnes",
     role: "accent",
     heightScale: 0.72,
-    verticalOffset: -0.05,
-    rotation: 0.58,
+    centerY: 0.78,
+    rotation: 1.15,
   },
   "unleashed-madness": {
     clusterId: "nocturnes",
     role: "anchor",
     heightScale: 1.1,
-    verticalOffset: 0.012,
-    rotation: -0.1,
+    centerY: 0.38,
+    rotation: -0.3,
   },
 
   "eyes-on-the-rearview": {
     clusterId: "reflections",
     role: "anchor",
     heightScale: 1.08,
-    verticalOffset: -0.022,
-    rotation: 0.12,
+    centerY: 0.42,
+    rotation: 0.3,
   },
   "an-elegy-for-innocence": {
     clusterId: "reflections",
     role: "accent",
     heightScale: 0.68,
-    verticalOffset: 0.064,
-    rotation: -0.66,
+    centerY: 0.78,
+    rotation: -1.25,
   },
   "the-forest-spirits-gaze": {
     clusterId: "reflections",
     role: "supporting",
     heightScale: 0.87,
-    verticalOffset: -0.018,
-    rotation: 0.34,
+    centerY: 0.24,
+    rotation: 0.8,
   },
   "witch-underworld": {
     clusterId: "reflections",
     role: "accent",
     heightScale: 0.73,
-    verticalOffset: 0.044,
-    rotation: -0.48,
+    centerY: 0.61,
+    rotation: -0.95,
   },
 
   lilith: {
     clusterId: "fantasy",
     role: "supporting",
     heightScale: 0.88,
-    verticalOffset: 0.03,
-    rotation: 0.28,
+    centerY: 0.72,
+    rotation: 0.7,
   },
   frieren: {
     clusterId: "fantasy",
     role: "accent",
     heightScale: 0.7,
-    verticalOffset: -0.056,
-    rotation: -0.56,
+    centerY: 0.22,
+    rotation: -1.1,
   },
   "solitude-in-crimson": {
     clusterId: "fantasy",
     role: "supporting",
     heightScale: 0.87,
-    verticalOffset: 0.042,
-    rotation: 0.38,
+    centerY: 0.48,
+    rotation: 1.05,
   },
   "princess-of-fantasy-world": {
     clusterId: "fantasy",
     role: "anchor",
     heightScale: 1.12,
-    verticalOffset: -0.012,
-    rotation: -0.08,
+    centerY: 0.39,
+    rotation: -0.25,
   },
 
   "super-woman": {
     clusterId: "figures",
     role: "accent",
     heightScale: 0.7,
-    verticalOffset: -0.052,
-    rotation: 0.64,
+    centerY: 0.25,
+    rotation: 1.2,
   },
   "butterfly-woman": {
     clusterId: "figures",
     role: "anchor",
     heightScale: 1.12,
-    verticalOffset: 0.006,
-    rotation: -0.14,
+    centerY: 0.59,
+    rotation: -0.4,
   },
   "desert-woman": {
     clusterId: "figures",
     role: "supporting",
     heightScale: 0.9,
-    verticalOffset: 0.038,
-    rotation: 0.32,
+    centerY: 0.74,
+    rotation: 0.8,
   },
 
   girls: {
     clusterId: "portraits",
     role: "anchor",
     heightScale: 1.08,
-    verticalOffset: -0.02,
-    rotation: 0.1,
+    centerY: 0.43,
+    rotation: 0.25,
   },
   "beautiful-woman": {
     clusterId: "portraits",
     role: "supporting",
     heightScale: 0.86,
-    verticalOffset: 0.034,
-    rotation: -0.34,
+    centerY: 0.72,
+    rotation: -0.85,
   },
   "beautiful-rythm": {
     clusterId: "portraits",
     role: "accent",
     heightScale: 0.72,
-    verticalOffset: -0.044,
-    rotation: 0.56,
+    centerY: 0.22,
+    rotation: 1.1,
   },
 };
 
@@ -299,16 +300,21 @@ function resolveArtworkDirection(
     "supporting",
   ];
   const role = rolePattern[hash % rolePattern.length];
-  const verticalStep = ((hash >>> 8) % 7) - 3;
-  const rotationStep = ((hash >>> 16) % 7) - 3;
+  const verticalPositions: Record<SalonWallRole, number[]> = {
+    anchor: [0.38, 0.48, 0.62],
+    supporting: [0.24, 0.38, 0.52, 0.66, 0.76],
+    accent: [0.2, 0.34, 0.66, 0.8],
+  };
+  const positionPattern = verticalPositions[role];
+  const rotationStep = ((hash >>> 16) % 9) - 4;
   const sizeJitter = 0.96 + ((hash >>> 24) % 7) * 0.015;
 
   return {
     clusterId: "new-arrivals",
     role,
     heightScale: ROLE_HEIGHT_SCALE[role] * sizeJitter,
-    verticalOffset: verticalStep * 0.012,
-    rotation: rotationStep * 0.14,
+    centerY: positionPattern[(hash >>> 8) % positionPattern.length],
+    rotation: rotationStep * 0.28,
     curated: false,
   };
 }
@@ -336,24 +342,27 @@ export function buildCameraWallLayout(
     naturalAspects = {},
   }: CameraWallOptions,
 ): CameraWallLayout {
-  const safeWidth = Math.max(320, Number.isFinite(stageWidth) ? stageWidth : 320);
+  const safeWidth = Math.max(
+    320,
+    Number.isFinite(stageWidth) ? stageWidth : 320,
+  );
   const safeHeight = Math.max(
     320,
     Number.isFinite(stageHeight) ? stageHeight : 320,
   );
   const compact = safeWidth < 1280;
   const padding = safeWidth * (compact ? 0.08 : 0.05);
-  const baseHeight = safeHeight * (compact ? 0.37 : 0.55);
+  const baseHeight = safeHeight * (compact ? 0.39 : 0.47);
   const baseBorder = Math.round(clamp(safeHeight * 0.012, 6, 12));
   const baseMat = Math.round(clamp(safeHeight * 0.022, 10, 24));
   const maxItemWidth = safeWidth * (compact ? 0.76 : 0.5);
-  const minTop = safeHeight * 0.055;
-  const maxBottom = safeHeight * 0.055;
+  const minTop = safeHeight * 0.06;
+  const maxBottom = safeHeight * 0.06;
   const baseGap = compact
-    ? clamp(safeHeight * 0.045, 16, 34)
-    : clamp(safeHeight * 0.075, 28, 64);
-  const clusterGap = safeHeight * (compact ? 0.05 : 0.075);
-  const hierarchyGap = baseGap * 0.32;
+    ? clamp(safeHeight * 0.04, 22, 36)
+    : clamp(safeHeight * 0.05, 34, 58);
+  const clusterGap = safeHeight * (compact ? 0.11 : 0.12);
+  const hierarchyGap = baseGap * 0.38;
 
   const pieces: CameraWallPiece[] = [];
   let cursor = padding;
@@ -369,8 +378,7 @@ export function buildCameraWallLayout(
         (previous.role === "anchor" || direction.role === "anchor")
           ? hierarchyGap
           : 0;
-      cursor +=
-        baseGap + (sameCluster ? roleBreathingRoom : clusterGap);
+      cursor += baseGap + (sameCluster ? roleBreathingRoom : clusterGap);
     }
 
     const aspect = getCameraAspectRatio(
@@ -397,10 +405,15 @@ export function buildCameraWallLayout(
       itemHeight = mediaHeight + 2 * framePadding;
     }
 
-    const offset = direction.verticalOffset * safeHeight;
-    const idealTop = (safeHeight - itemHeight) / 2 + offset;
-    const maxTop = Math.max(minTop, safeHeight - itemHeight - maxBottom);
-    const top = clamp(idealTop, minTop, maxTop);
+    const desiredCenterY = direction.centerY * safeHeight;
+    const minCenterY = minTop + itemHeight / 2;
+    const maxCenterY = safeHeight - maxBottom - itemHeight / 2;
+    const centerY = clamp(
+      desiredCenterY,
+      minCenterY,
+      Math.max(minCenterY, maxCenterY),
+    );
+    const top = centerY - itemHeight / 2;
 
     pieces.push({
       artwork,
@@ -421,7 +434,7 @@ export function buildCameraWallLayout(
       frameColor: roleFrame.frame,
       matColor: roleFrame.mat,
       centerX: cursor + itemWidth / 2,
-      centerY: top + itemHeight / 2,
+      centerY,
     });
 
     cursor += itemWidth;
