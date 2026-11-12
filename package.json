@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test:artwork-layout": "node scripts/test-artwork-layout.cjs",
     "test:artwork-interaction": "node scripts/test-artwork-interaction.cjs",
-    "test:camera-wall-layout": "node scripts/test-camera-wall-layout.cjs",
+    "test:camera-wall-layout": "node scripts/test-salon-wall-layout.cjs",
+    "test:salon-wall-layout": "node scripts/test-salon-wall-layout.cjs",
     "prebuild": "node --check scripts/backfill-artwork-responsive-images.mjs"
   },
   "dependencies": {
