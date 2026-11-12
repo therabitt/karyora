@@ -521,14 +521,24 @@ export function buildCameraWallLayout(
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Museum-quality ensemble fallback for newly published or unassigned artworks
+  // Genuinely curated ensemble fallback for unassigned artworks
   //
-  // Instead of a rigid 2-stacked-column grid, unrecognised artworks are sorted
-  // by aspect ratio and grouped into 3–5 piece ensembles that mirror the
-  // curated sections above: a horizontal anchor at eye level with companions
-  // above and below, panoramas paired with portrait flanks, stacked columns
-  // of same-family works, etc. All gaps stay at the uniform `gap` value so
-  // the wall feels continuous, not sectioned.
+  // Six distinct composition templates — inspired by real salon hanging —
+  // produce a wall that feels curated rather than generated:
+  //
+  //  T0 "Grand Flanked"    — Huge anchor left, two tiny accents stacked right
+  //  T1 "Stacked Tower"    — Three pieces in one column: sm / LARGE / sm
+  //  T2 "Portrait + Stack" — Tall portrait left, two landscape/square right
+  //  T3 "Panorama Crown"   — Wide anchor center, portrait top-left, portrait bot-right
+  //  T4 "High-Low Scatter" — Three pieces at VERY different heights
+  //  T5 "Shoulder Cluster" — Anchor + right companion at different baselines
+  //
+  // Key aesthetic principles over the previous version:
+  //  • Dramatic size range: accents at 0.42–0.52× anchor, NOT uniform 0.72×
+  //  • Pieces use piece-relative Y alignment (align to anchor's top / bottom /
+  //    midpoint), not always wallCenterY — this kills the rigid row banding
+  //  • Subtle per-piece rotation (hash-based ±0.3°) for organic feel
+  //  • Template chosen by anchor hash → deterministic but varied across wall
   // ──────────────────────────────────────────────────────────────────────────
   const unassigned: { artwork: PublicArtwork; index: number }[] = [];
   artworks.forEach((art, index) => {
@@ -550,51 +560,36 @@ export function buildCameraWallLayout(
       return "tallPortrait";
     }
 
-    function pickFallbackFrame(
-      bucket: AspectBucket,
-      hash: number,
-    ): MuseumFrameStyle {
-      const wide: MuseumFrameStyle[] = [
-        "darkWalnut",
-        "antiqueGold",
-        "floaterCanvas",
-        "blackLacquer",
-      ];
-      const narrow: MuseumFrameStyle[] = [
-        "galleryIron",
-        "naturalOak",
-        "blackLacquer",
-        "darkWalnut",
-      ];
-      const pool =
-        bucket === "panorama" || bucket === "landscape" ? wide : narrow;
-      return pool[hash % pool.length];
+    function pickFallbackFrame(bucket: AspectBucket, hash: number): MuseumFrameStyle {
+      const wide: MuseumFrameStyle[] = ["darkWalnut", "antiqueGold", "floaterCanvas", "blackLacquer"];
+      const narrow: MuseumFrameStyle[] = ["galleryIron", "naturalOak", "blackLacquer", "darkWalnut"];
+      const p = bucket === "panorama" || bucket === "landscape" ? wide : narrow;
+      return p[hash % p.length];
     }
 
-    function pickFallbackHeight(bucket: AspectBucket, hash: number): number {
+    // Anchor heights — LARGER than before so the size contrast is visible
+    function pickAnchorHeight(bucket: AspectBucket, hash: number): number {
       switch (bucket) {
-        case "panorama":
-          return 162 + (hash % 3) * 6; // 162 | 168 | 174
-        case "landscape":
-          return 155 + (hash % 4) * 10; // 155 | 165 | 175 | 185
-        case "square":
-          return 148 + (hash % 3) * 8; // 148 | 156 | 164
-        case "portrait":
-          return 130 + (hash % 4) * 10; // 130 | 140 | 150 | 160
-        case "tallPortrait":
-        default:
-          return 155 + (hash % 3) * 10; // 155 | 165 | 175
+        case "panorama":    return 175 + (hash % 3) * 15; // 175 | 190 | 205
+        case "landscape":   return 180 + (hash % 4) * 12; // 180 | 192 | 204 | 216
+        case "square":      return 170 + (hash % 3) * 15; // 170 | 185 | 200
+        case "portrait":    return 185 + (hash % 3) * 15; // 185 | 200 | 215
+        default:            return 190 + (hash % 3) * 15; // 190 | 205 | 220
       }
     }
 
-    function pickFallbackRole(bucket: AspectBucket, isAnchor: boolean): SalonWallRole {
-      if (isAnchor) return bucket === "panorama" ? "hero" : "anchor";
-      return bucket === "tallPortrait" || bucket === "portrait"
-        ? "accent"
-        : "supporting";
+    // Companion heights as a FRACTION of anchor height
+    // Using very small fractions creates the dramatic size contrast in the reference
+    function companionHBase(anchorHBase: number, ratio: number): number {
+      return Math.max(72, Math.round(anchorHBase * ratio));
     }
 
-    // Annotate each unassigned artwork with geometry info
+    // Subtle per-piece rotation (hash-driven, ±0.3°) — breaks the mechanical flatness
+    function pickRotation(hash: number): number {
+      // values: -0.3 | -0.2 | -0.1 | 0 | 0.1 | 0.2 | 0.3
+      return ((hash % 7) - 3) * 0.1;
+    }
+
     type FallbackItem = {
       artwork: PublicArtwork;
       index: number;
@@ -610,43 +605,41 @@ export function buildCameraWallLayout(
       return { artwork, index, hash, bucket, aspect };
     });
 
-    // Sort: wide artworks first so ensembles are built anchor-first
+    // Sort widest-first so each ensemble's anchor is always the most horizontal piece
     annotated.sort((a, b) => b.aspect - a.aspect);
-
-    // ── ensemble builder ────────────────────────────────────────────────────
-    // Consume annotated[] by pulling items in order and grouping them into
-    // ensembles of 2–5. Each ensemble produces a mini museum cluster.
 
     const pool = [...annotated];
 
-    function takeBucket(
-      buckets: AspectBucket[],
-      fallback?: FallbackItem,
-    ): FallbackItem | undefined {
-      const idx = pool.findIndex((it) => buckets.includes(it.bucket));
-      if (idx >= 0) {
-        const [taken] = pool.splice(idx, 1);
-        return taken;
+    // Pull the first item matching any preferred bucket (or just pool[0])
+    function pull(preferred?: AspectBucket[]): FallbackItem | undefined {
+      if (pool.length === 0) return undefined;
+      if (preferred) {
+        const idx = pool.findIndex((it) => preferred.includes(it.bucket));
+        if (idx >= 0) return pool.splice(idx, 1)[0];
       }
-      if (fallback) {
-        const fi = pool.indexOf(fallback);
-        if (fi >= 0) pool.splice(fi, 1);
-        return fallback;
-      }
-      return undefined;
+      return pool.shift();
     }
 
-    // Helper: place a single fallback item at (left, top) and add to pieces[]
-    function placeFallbackItem(
+    // Safety margins: pieces must be fully inside [topSafe, bottomSafe]
+    const topSafe = Math.round(safeHeight * 0.04);
+    const bottomSafe = Math.round(safeHeight * 0.96);
+    function safeTop(top: number, h: number): number {
+      return Math.max(topSafe, Math.min(bottomSafe - h, top));
+    }
+
+    // Place one item into pieces[], clamping to safe zone
+    function place(
       item: FallbackItem,
       frameKey: MuseumFrameStyle,
-      heightBase: number,
+      hBase: number,
       hasMat: boolean,
       role: SalonWallRole,
       left: number,
       top: number,
+      rotation: number,
     ) {
-      const m = measurePiece(item.artwork, frameKey, heightBase, hasMat);
+      const m = measurePiece(item.artwork, frameKey, hBase, hasMat);
+      const clampedTop = safeTop(top, m.height);
       assignedIndices.add(item.index);
       pieces[item.index] = {
         artwork: item.artwork,
@@ -656,7 +649,7 @@ export function buildCameraWallLayout(
         clusterId: "new-arrivals",
         role,
         left: Math.round(left),
-        top: Math.round(top),
+        top: Math.round(clampedTop),
         width: m.width,
         height: m.height,
         mediaWidth: m.mediaWidth,
@@ -664,232 +657,289 @@ export function buildCameraWallLayout(
         border: m.border,
         mat: m.mat,
         hasMat,
-        rotation: 0,
+        rotation,
         frameColor: m.frameDef.frame,
         matColor: m.frameDef.mat,
         frameStyleKey: frameKey,
         centerX: Math.round(left + m.width / 2),
-        centerY: Math.round(top + m.height / 2),
+        centerY: Math.round(clampedTop + m.height / 2),
       };
-      return m;
-    }
-
-    // Build the stage ceiling/floor safety margins once
-    // Pieces must stay within [topSafe, bottomSafe]
-    const topSafe = Math.round(safeHeight * 0.04);
-    const bottomSafe = Math.round(safeHeight * 0.96);
-
-    // Helper: clamp a top value so the frame stays within safe bounds
-    function safeTop(top: number, h: number): number {
-      return Math.max(topSafe, Math.min(bottomSafe - h, top));
+      // Return measured dims plus the clamped top so callers can derive dependent positions
+      return { ...m, placedTop: Math.round(clampedTop) };
     }
 
     while (pool.length > 0) {
-      // ── pick the ensemble anchor (widest remaining) ────────────────────
-      const anchor = pool.shift()!; // already sorted widest-first
-      const anchorFrame = pickFallbackFrame(anchor.bucket, anchor.hash);
-      const anchorH = pickFallbackHeight(anchor.bucket, anchor.hash);
-      const anchorHasMat =
-        anchorFrame === "blackLacquer" || anchorFrame === "naturalOak";
-      const mAnchor = measurePiece(
-        anchor.artwork,
-        anchorFrame,
-        anchorH,
-        anchorHasMat,
-      );
-      const anchorRole = pickFallbackRole(anchor.bucket, true);
-
-      // Eye-level centre for the anchor
-      const anchorTop = safeTop(
-        Math.round(wallCenterY - mAnchor.height / 2),
-        mAnchor.height,
-      );
+      const anchor = pool.shift()!; // widest remaining → becomes ensemble anchor
+      const aFrame = pickFallbackFrame(anchor.bucket, anchor.hash);
+      const aHBase = pickAnchorHeight(anchor.bucket, anchor.hash);
+      const aHasMat = aFrame === "blackLacquer" || aFrame === "naturalOak";
+      const mA = measurePiece(anchor.artwork, aFrame, aHBase, aHasMat);
+      const aRole: SalonWallRole = anchor.bucket === "panorama" ? "hero" : "anchor";
+      const aRot = pickRotation(anchor.hash);
 
       if (pool.length === 0) {
-        // Solo piece — just place it and finish
-        placeFallbackItem(
-          anchor,
-          anchorFrame,
-          anchorH,
-          anchorHasMat,
-          anchorRole,
-          cursorX,
-          anchorTop,
-        );
-        cursorX += mAnchor.width + paddingX;
+        // Solo — place at eye level and exit
+        const aTop = safeTop(Math.round(wallCenterY - mA.height / 2), mA.height);
+        place(anchor, aFrame, aHBase, aHasMat, aRole, cursorX, aTop, aRot);
+        cursorX += mA.width + paddingX;
         break;
       }
 
-      // ── try to pick a top companion ────────────────────────────────────
-      const topCompanion = takeBucket(
-        ["square", "portrait", "landscape", "tallPortrait"],
-        pool[0],
-      );
+      // Choose template via anchor hash (6 templates, deterministic)
+      const tmpl = anchor.hash % 6;
 
-      // ── try to pick one or two bottom companions ───────────────────────
-      const bot1 = pool.length > 0
-        ? takeBucket(["portrait", "tallPortrait", "square", "landscape"], pool[0])
-        : undefined;
-      const bot2 = pool.length > 0
-        ? takeBucket(["portrait", "tallPortrait", "square"], pool[0])
-        : undefined;
+      // ───────────────────────────────────────────────────────────────────
+      // Template 0: "Grand Flanked"
+      // Anchor (large) on the left. Two small accents stacked to its right,
+      // top-aligned with anchor top. Creates an L-shape / organic cluster.
+      // ───────────────────────────────────────────────────────────────────
+      if (tmpl === 0) {
+        const c1 = pull(["portrait", "tallPortrait", "square", "landscape"]);
+        const c2 = pool.length > 0 ? pull(["portrait", "square", "tallPortrait"]) : undefined;
 
-      // ── measure companions ─────────────────────────────────────────────
-      let mTop: ReturnType<typeof measurePiece> | undefined;
-      let topFrame: MuseumFrameStyle | undefined;
-      let topHasMat = false;
-      let topH = 0;
+        const c1HBase = c1 ? companionHBase(aHBase, 0.49) : 0;
+        const c1Frame = c1 ? pickFallbackFrame(c1.bucket, c1.hash) : "naturalOak";
+        const c1HasMat = c1Frame === "blackLacquer" || c1Frame === "naturalOak";
+        const mC1 = c1 ? measurePiece(c1.artwork, c1Frame, c1HBase, c1HasMat) : null;
 
-      if (topCompanion) {
-        topFrame = pickFallbackFrame(topCompanion.bucket, topCompanion.hash);
-        topH = Math.round(
-          pickFallbackHeight(topCompanion.bucket, topCompanion.hash) * 0.72,
-        );
-        topH = Math.max(80, Math.round(topH * scale));
-        topHasMat =
-          topFrame === "blackLacquer" || topFrame === "naturalOak";
-        mTop = measurePiece(
-          topCompanion.artwork,
-          topFrame,
-          Math.round(topH / scale),
-          topHasMat,
-        );
-      }
+        const c2HBase = c2 ? companionHBase(aHBase, 0.44) : 0;
+        const c2Frame = c2 ? pickFallbackFrame(c2.bucket, c2.hash) : "naturalOak";
+        const c2HasMat = c2Frame === "blackLacquer" || c2Frame === "naturalOak";
+        const mC2 = c2 ? measurePiece(c2.artwork, c2Frame, c2HBase, c2HasMat) : null;
 
-      let mBot1: ReturnType<typeof measurePiece> | undefined;
-      let bot1Frame: MuseumFrameStyle | undefined;
-      let bot1HasMat = false;
+        const rightColW = Math.max(mC1 ? mC1.width : 0, mC2 ? mC2.width : 0);
+        const ensW = mA.width + (rightColW > 0 ? gap + rightColW : 0);
 
-      if (bot1) {
-        bot1Frame = pickFallbackFrame(bot1.bucket, bot1.hash);
-        const bH = Math.round(
-          pickFallbackHeight(bot1.bucket, bot1.hash) * 0.74,
-        );
-        bot1HasMat = bot1Frame === "blackLacquer" || bot1Frame === "naturalOak";
-        mBot1 = measurePiece(bot1.artwork, bot1Frame, Math.round(bH), bot1HasMat);
-      }
+        // Anchor: eye level, left side of ensemble
+        const aTop = safeTop(Math.round(wallCenterY - mA.height / 2), mA.height);
+        place(anchor, aFrame, aHBase, aHasMat, aRole, cursorX, aTop, aRot);
 
-      let mBot2: ReturnType<typeof measurePiece> | undefined;
-      let bot2Frame: MuseumFrameStyle | undefined;
-      let bot2HasMat = false;
+        if (c1 && mC1) {
+          // Top-aligned with anchor: creates a natural "shoulder" hang
+          const c1Top = safeTop(aTop, mC1.height);
+          const c1Left = cursorX + mA.width + gap + Math.round((rightColW - mC1.width) / 2);
+          place(c1, c1Frame, c1HBase, c1HasMat, "accent", c1Left, c1Top, pickRotation(c1.hash));
 
-      if (bot2) {
-        bot2Frame = pickFallbackFrame(bot2.bucket, bot2.hash);
-        const bH = Math.round(
-          pickFallbackHeight(bot2.bucket, bot2.hash) * 0.74,
-        );
-        bot2HasMat = bot2Frame === "blackLacquer" || bot2Frame === "naturalOak";
-        mBot2 = measurePiece(bot2.artwork, bot2Frame, Math.round(bH), bot2HasMat);
-      }
-
-      // ── compute ensemble geometry ──────────────────────────────────────
-      // Bottom row width
-      const botRowW = mBot1 && mBot2
-        ? mBot1.width + gap + mBot2.width
-        : mBot1
-          ? mBot1.width
-          : 0;
-
-      const ensembleW = Math.max(
-        mAnchor.width,
-        mTop ? mTop.width : 0,
-        botRowW,
-      );
-
-      // Vertical span check: top companion must fit above anchor, bottom must fit below
-      // We need: anchorTop - gap - mTop.height >= topSafe
-      // and: anchorTop + mAnchor.height + gap + maxBotH <= bottomSafe
-      const maxBotH = mBot1
-        ? (mBot2 ? Math.max(mBot1.height, mBot2.height) : mBot1.height)
-        : 0;
-
-      // Recompute anchorTop to fit everything within safe zone
-      let fitTop = Math.round(wallCenterY - mAnchor.height / 2);
-      if (mTop) {
-        const neededAbove = mTop.height + gap;
-        fitTop = Math.max(fitTop, topSafe + neededAbove);
-      }
-      if (maxBotH > 0) {
-        const neededBelow = maxBotH + gap;
-        fitTop = Math.min(fitTop, bottomSafe - mAnchor.height - neededBelow);
-      }
-      fitTop = Math.max(topSafe, fitTop);
-
-      // ── place pieces ───────────────────────────────────────────────────
-      const ensLeft = cursorX;
-
-      // Anchor (eye level centre)
-      const anchorPlacedTop = fitTop;
-      const anchorLeft = ensLeft + Math.round((ensembleW - mAnchor.width) / 2);
-      placeFallbackItem(
-        anchor,
-        anchorFrame,
-        anchorH,
-        anchorHasMat,
-        anchorRole,
-        anchorLeft,
-        anchorPlacedTop,
-      );
-
-      // Top companion
-      if (topCompanion && mTop && topFrame !== undefined) {
-        const tTop = safeTop(anchorPlacedTop - gap - mTop.height, mTop.height);
-        const tLeft = ensLeft + Math.round((ensembleW - mTop.width) / 2);
-        placeFallbackItem(
-          topCompanion,
-          topFrame,
-          Math.round(topH / scale),
-          topHasMat,
-          pickFallbackRole(topCompanion.bucket, false),
-          tLeft,
-          tTop,
-        );
-      }
-
-      // Bottom row
-      const botY = anchorPlacedTop + mAnchor.height + gap;
-
-      if (bot1 && mBot1 && bot1Frame !== undefined) {
-        if (bot2 && mBot2 && bot2Frame !== undefined) {
-          // Two bottom companions side by side
-          const rowLeft = ensLeft + Math.round((ensembleW - botRowW) / 2);
-          const b1Top = safeTop(botY, mBot1.height);
-          const b2Top = safeTop(botY, mBot2.height);
-          placeFallbackItem(
-            bot1,
-            bot1Frame,
-            Math.round(mBot1.height / scale),
-            bot1HasMat,
-            pickFallbackRole(bot1.bucket, false),
-            rowLeft,
-            b1Top,
-          );
-          placeFallbackItem(
-            bot2,
-            bot2Frame,
-            Math.round(mBot2.height / scale),
-            bot2HasMat,
-            pickFallbackRole(bot2.bucket, false),
-            rowLeft + mBot1.width + gap,
-            b2Top,
-          );
-        } else {
-          // Single bottom companion, centered
-          const bLeft = ensLeft + Math.round((ensembleW - mBot1.width) / 2);
-          const b1Top = safeTop(botY, mBot1.height);
-          placeFallbackItem(
-            bot1,
-            bot1Frame,
-            Math.round(mBot1.height / scale),
-            bot1HasMat,
-            pickFallbackRole(bot1.bucket, false),
-            bLeft,
-            b1Top,
-          );
+          if (c2 && mC2) {
+            // Directly below c1 — not aligned to anchor bottom, hangs from c1
+            const c2Top = safeTop(c1Top + mC1.height + gap, mC2.height);
+            const c2Left = cursorX + mA.width + gap + Math.round((rightColW - mC2.width) / 2);
+            place(c2, c2Frame, c2HBase, c2HasMat, "accent", c2Left, c2Top, pickRotation(c2.hash));
+          }
         }
-      }
 
-      cursorX += ensembleW + gap;
+        cursorX += ensW + gap;
+
+      // ───────────────────────────────────────────────────────────────────
+      // Template 1: "Stacked Tower"
+      // Three pieces in a single vertical column: small-top / LARGE-middle / small-bottom
+      // All centered at the same X. The scale contrast (0.60 / 1.0 / 0.52) is dramatic.
+      // ───────────────────────────────────────────────────────────────────
+      } else if (tmpl === 1) {
+        const c1 = pull(); // top
+        const c2 = pool.length > 0 ? pull() : undefined; // bottom
+
+        const c1HBase = c1 ? companionHBase(aHBase, 0.60) : 0;
+        const c1Frame = c1 ? pickFallbackFrame(c1.bucket, c1.hash) : "naturalOak";
+        const c1HasMat = c1Frame === "blackLacquer" || c1Frame === "naturalOak";
+        const mC1 = c1 ? measurePiece(c1.artwork, c1Frame, c1HBase, c1HasMat) : null;
+
+        const c2HBase = c2 ? companionHBase(aHBase, 0.52) : 0;
+        const c2Frame = c2 ? pickFallbackFrame(c2.bucket, c2.hash) : "naturalOak";
+        const c2HasMat = c2Frame === "blackLacquer" || c2Frame === "naturalOak";
+        const mC2 = c2 ? measurePiece(c2.artwork, c2Frame, c2HBase, c2HasMat) : null;
+
+        const colW = Math.max(mA.width, mC1 ? mC1.width : 0, mC2 ? mC2.width : 0);
+        const totalH = (mC1 ? mC1.height + gap : 0) + mA.height + (mC2 ? gap + mC2.height : 0);
+        const startY = safeTop(Math.round(wallCenterY - totalH / 2), totalH);
+        let y = startY;
+
+        if (c1 && mC1) {
+          const c1Left = cursorX + Math.round((colW - mC1.width) / 2);
+          place(c1, c1Frame, c1HBase, c1HasMat, "supporting", c1Left, y, pickRotation(c1.hash));
+          y += mC1.height + gap;
+        }
+        const aLeft = cursorX + Math.round((colW - mA.width) / 2);
+        place(anchor, aFrame, aHBase, aHasMat, aRole, aLeft, y, aRot);
+        y += mA.height + gap;
+
+        if (c2 && mC2) {
+          const c2Left = cursorX + Math.round((colW - mC2.width) / 2);
+          place(c2, c2Frame, c2HBase, c2HasMat, "accent", c2Left, y, pickRotation(c2.hash));
+        }
+
+        cursorX += colW + gap;
+
+      // ───────────────────────────────────────────────────────────────────
+      // Template 2: "Portrait + Landscape Stack"
+      // Tall portrait anchor on the left. Two landscape/square pieces
+      // stacked to the right, top-aligned with anchor. The right column's
+      // combined height ≈ anchor height, so the stack fills the same zone.
+      // ───────────────────────────────────────────────────────────────────
+      } else if (tmpl === 2) {
+        const c1 = pull(["landscape", "square", "panorama", "portrait"]);
+        const c2 = pool.length > 0 ? pull(["landscape", "square", "portrait"]) : undefined;
+
+        const c1HBase = c1 ? companionHBase(aHBase, 0.57) : 0;
+        const c1Frame = c1 ? pickFallbackFrame(c1.bucket, c1.hash) : "naturalOak";
+        const c1HasMat = c1Frame === "blackLacquer" || c1Frame === "naturalOak";
+        const mC1 = c1 ? measurePiece(c1.artwork, c1Frame, c1HBase, c1HasMat) : null;
+
+        const c2HBase = c2 ? companionHBase(aHBase, 0.50) : 0;
+        const c2Frame = c2 ? pickFallbackFrame(c2.bucket, c2.hash) : "naturalOak";
+        const c2HasMat = c2Frame === "blackLacquer" || c2Frame === "naturalOak";
+        const mC2 = c2 ? measurePiece(c2.artwork, c2Frame, c2HBase, c2HasMat) : null;
+
+        const rightW = Math.max(mC1 ? mC1.width : 0, mC2 ? mC2.width : 0);
+        const ensW = mA.width + (rightW > 0 ? gap + rightW : 0);
+
+        const aTop = safeTop(Math.round(wallCenterY - mA.height / 2), mA.height);
+        place(anchor, aFrame, aHBase, aHasMat, aRole, cursorX, aTop, aRot);
+
+        if (c1 && mC1) {
+          // Right column top-aligned with anchor top
+          const c1Left = cursorX + mA.width + gap + Math.round((rightW - mC1.width) / 2);
+          const p1 = place(c1, c1Frame, c1HBase, c1HasMat, "supporting", c1Left, safeTop(aTop, mC1.height), pickRotation(c1.hash));
+
+          if (c2 && mC2) {
+            const c2Left = cursorX + mA.width + gap + Math.round((rightW - mC2.width) / 2);
+            place(c2, c2Frame, c2HBase, c2HasMat, "supporting", c2Left, safeTop(p1.placedTop + mC1.height + gap, mC2.height), pickRotation(c2.hash));
+          }
+        }
+
+        cursorX += ensW + gap;
+
+      // ───────────────────────────────────────────────────────────────────
+      // Template 3: "Panorama Crown"
+      // Wide anchor at eye level. Portrait flanks it left and right at
+      // ASYMMETRIC heights: left flank top-aligned with anchor top,
+      // right flank bottom-aligned with anchor bottom. This is the classic
+      // salon asymmetry that feels curated, not mechanical.
+      // ───────────────────────────────────────────────────────────────────
+      } else if (tmpl === 3) {
+        const c1 = pull(["portrait", "tallPortrait", "square"]); // left flank (high)
+        const c2 = pool.length > 0 ? pull(["portrait", "tallPortrait", "square", "landscape"]) : undefined; // right flank (low)
+
+        const c1HBase = c1 ? companionHBase(aHBase, 0.62) : 0;
+        const c1Frame = c1 ? pickFallbackFrame(c1.bucket, c1.hash) : "galleryIron";
+        const c1HasMat = c1Frame === "blackLacquer" || c1Frame === "naturalOak";
+        const mC1 = c1 ? measurePiece(c1.artwork, c1Frame, c1HBase, c1HasMat) : null;
+
+        const c2HBase = c2 ? companionHBase(aHBase, 0.55) : 0;
+        const c2Frame = c2 ? pickFallbackFrame(c2.bucket, c2.hash) : "galleryIron";
+        const c2HasMat = c2Frame === "blackLacquer" || c2Frame === "naturalOak";
+        const mC2 = c2 ? measurePiece(c2.artwork, c2Frame, c2HBase, c2HasMat) : null;
+
+        const leftW = mC1 ? mC1.width + gap : 0;
+        const rightW = mC2 ? gap + mC2.width : 0;
+        const ensW = leftW + mA.width + rightW;
+
+        const aTop = safeTop(Math.round(wallCenterY - mA.height / 2), mA.height);
+        const aLeft = cursorX + leftW;
+        place(anchor, aFrame, aHBase, aHasMat, aRole, aLeft, aTop, aRot);
+
+        if (c1 && mC1) {
+          // Left flank: top edge lines up with anchor top (hangs HIGH relative to anchor)
+          place(c1, c1Frame, c1HBase, c1HasMat, "supporting", cursorX, safeTop(aTop, mC1.height), pickRotation(c1.hash));
+        }
+        if (c2 && mC2) {
+          // Right flank: BOTTOM edge lines up with anchor bottom (hangs LOW — the asymmetry)
+          const c2Top = safeTop(aTop + mA.height - mC2.height, mC2.height);
+          place(c2, c2Frame, c2HBase, c2HasMat, "accent", aLeft + mA.width + gap, c2Top, pickRotation(c2.hash));
+        }
+
+        cursorX += ensW + gap;
+
+      // ───────────────────────────────────────────────────────────────────
+      // Template 4: "High-Low Scatter"
+      // Three pieces placed at deliberately DIFFERENT Y positions across the
+      // full wall height. First piece hangs HIGH (near ceiling zone), second
+      // is at eye level, third hangs LOW (near floor zone). This template
+      // alone covers the full vertical span and breaks any row reading.
+      // ───────────────────────────────────────────────────────────────────
+      } else if (tmpl === 4) {
+        const c1 = pull(); // eye-level second piece
+        const c2 = pool.length > 0 ? pull() : undefined; // low third piece
+
+        const c1HBase = c1 ? companionHBase(aHBase, 0.70) : 0;
+        const c1Frame = c1 ? pickFallbackFrame(c1.bucket, c1.hash) : "naturalOak";
+        const c1HasMat = c1Frame === "blackLacquer" || c1Frame === "naturalOak";
+        const mC1 = c1 ? measurePiece(c1.artwork, c1Frame, c1HBase, c1HasMat) : null;
+
+        const c2HBase = c2 ? companionHBase(aHBase, 0.48) : 0;
+        const c2Frame = c2 ? pickFallbackFrame(c2.bucket, c2.hash) : "naturalOak";
+        const c2HasMat = c2Frame === "blackLacquer" || c2Frame === "naturalOak";
+        const mC2 = c2 ? measurePiece(c2.artwork, c2Frame, c2HBase, c2HasMat) : null;
+
+        // Anchor: HIGH — deliberately near the ceiling zone
+        const highZoneBottom = Math.round(topSafe + safeHeight * 0.30);
+        const aTop = safeTop(highZoneBottom - mA.height, mA.height);
+        place(anchor, aFrame, aHBase, aHasMat, aRole, cursorX, aTop, aRot);
+        let xCursor = cursorX + mA.width + gap;
+
+        if (c1 && mC1) {
+          // Eye level (true center)
+          const midY = safeTop(Math.round(wallCenterY - mC1.height / 2), mC1.height);
+          place(c1, c1Frame, c1HBase, c1HasMat, "supporting", xCursor, midY, pickRotation(c1.hash));
+          xCursor += mC1.width + gap;
+        }
+        if (c2 && mC2) {
+          // LOW — deliberately near the floor zone
+          const lowZoneTop = Math.round(bottomSafe - safeHeight * 0.30);
+          const lowY = safeTop(lowZoneTop, mC2.height);
+          place(c2, c2Frame, c2HBase, c2HasMat, "accent", xCursor, lowY, pickRotation(c2.hash));
+          xCursor += mC2.width;
+        }
+
+        cursorX = xCursor + gap;
+
+      // ───────────────────────────────────────────────────────────────────
+      // Template 5: "Shoulder Cluster"
+      // Anchor and a medium companion side by side at different baselines,
+      // plus a small accent placed high above the companion (not above the
+      // anchor). Creates an offset cluster — no piece shares a baseline.
+      // ───────────────────────────────────────────────────────────────────
+      } else {
+        const c1 = pull(["landscape", "square", "portrait"]); // right companion, medium
+        const c2 = pool.length > 0 ? pull(["portrait", "square", "tallPortrait"]) : undefined; // accent above companion
+
+        const c1HBase = c1 ? companionHBase(aHBase, 0.72) : 0;
+        const c1Frame = c1 ? pickFallbackFrame(c1.bucket, c1.hash) : "naturalOak";
+        const c1HasMat = c1Frame === "blackLacquer" || c1Frame === "naturalOak";
+        const mC1 = c1 ? measurePiece(c1.artwork, c1Frame, c1HBase, c1HasMat) : null;
+
+        const c2HBase = c2 ? companionHBase(aHBase, 0.42) : 0;
+        const c2Frame = c2 ? pickFallbackFrame(c2.bucket, c2.hash) : "galleryIron";
+        const c2HasMat = c2Frame === "blackLacquer" || c2Frame === "naturalOak";
+        const mC2 = c2 ? measurePiece(c2.artwork, c2Frame, c2HBase, c2HasMat) : null;
+
+        // Anchor: slightly below center (bottom-heavy reads as deliberate)
+        const aTop = safeTop(
+          Math.round(wallCenterY - mA.height / 2) + Math.round(safeHeight * 0.04),
+          mA.height,
+        );
+        place(anchor, aFrame, aHBase, aHasMat, aRole, cursorX, aTop, aRot);
+
+        const rightX = cursorX + mA.width + gap;
+        const rightColW = Math.max(mC1 ? mC1.width : 0, mC2 ? mC2.width : 0);
+
+        if (c1 && mC1) {
+          // Companion: slightly above center (asymmetric vertical offset vs anchor)
+          const c1Top = safeTop(
+            Math.round(wallCenterY - mC1.height / 2) - Math.round(safeHeight * 0.05),
+            mC1.height,
+          );
+          const p1 = place(c1, c1Frame, c1HBase, c1HasMat, "supporting", rightX + Math.round((rightColW - mC1.width) / 2), c1Top, pickRotation(c1.hash));
+
+          if (c2 && mC2) {
+            // Small accent: hangs directly above companion (not above anchor)
+            const c2Top = safeTop(p1.placedTop - gap - mC2.height, mC2.height);
+            place(c2, c2Frame, c2HBase, c2HasMat, "accent", rightX + Math.round((rightColW - mC2.width) / 2), c2Top, pickRotation(c2.hash));
+          }
+        }
+
+        cursorX += mA.width + gap + rightColW + gap;
+      }
     }
 
     // Add trailing padding after the last ensemble
