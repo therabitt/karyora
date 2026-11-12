@@ -818,7 +818,9 @@ export function SalonCameraRoom({
                 </span>
               </>
             )}
-            <span className="camera-hint-arrows">← →</span>
+            {resolvedMode.type === "wall" && (
+              <span className="camera-hint-arrows">← →</span>
+            )}
           </div>
 
           <p className="sr-only" aria-live="polite">
