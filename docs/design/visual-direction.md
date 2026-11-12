@@ -270,6 +270,8 @@ The public gallery at `/gallery` is a single continuous horizontal wall seen thr
 - A centered **The Salon Wall** title and the shared hamburger navigation replace the old gallery masthead and navbar.
 - The layout is deterministic and computed in `src/lib/gallery/camera-wall-layout.ts`: varied frame sizes, vertical offsets, small rotations, and tonal frames. Artwork is `object-contain` inside a correctly proportioned mat and is never cropped.
 - The wall starts at its left edge with a small gutter and ends at the last work. Vertical wheel and horizontal trackpad movement, pointer drag, touch swipe, and arrow keys pan the camera. The camera never wraps or loops.
+- The default desktop framing is an overview of the whole hang. The first scroll/wheel or arrow steps into a 1.2× wall view; subsequent wheel/drag pans, and the Overview control returns to the whole hang. The step-in keeps the three registers in frame while giving the camera real side-to-side travel.
+- Pointer capture is claimed only after a gesture becomes a drag, so a simple click or tap always reaches the artwork and opens focus instead of being swallowed by the panner.
 - Clicking or pressing Enter on a frame zooms the camera toward it. On wide screens the title/description sit in a fixed left caption panel; below 1280 px the caption becomes a bottom sheet. The camera's focal point sits close to the viewport centre while leaving the caption clear of the artwork.
 - While focused, previous/next moves to the adjacent work and stops at the ends. `Escape`, the close control, or clicking the wall outside the caption returns to the wall view. Focus is restored to the originating frame.
 - `prefers-reduced-motion` removes camera and caption travel animations.

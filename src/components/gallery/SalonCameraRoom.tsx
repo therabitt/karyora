@@ -163,8 +163,17 @@ export function SalonCameraRoom({
       : { min: 0, max: 0 };
   const currentWallPan =
     resolvedMode.type === "wall" ? resolvedMode.pan : 0;
-  const canScroll =
-    getPanBounds(layout, SALON_WALL_STEP_SCALE, stageSize).max > 0;
+  const stepView = useMemo(() => {
+    const scale = SALON_WALL_STEP_SCALE;
+    const bounds = getPanBounds(layout, scale, stageSize);
+    const visibleWidth = stageSize.width / scale;
+    const pan = Math.min(
+      Math.max((layout.sceneWidth - visibleWidth) / 2, bounds.min),
+      bounds.max,
+    );
+    return { scale, bounds, pan, canScroll: bounds.max > 0 };
+  }, [layout, stageSize]);
+  const canScroll = stepView.canScroll;
 
   const dismissHint = useCallback(() => setShowHint(false), []);
 
@@ -207,19 +216,11 @@ export function SalonCameraRoom({
   );
 
   const enterWallFromOverview = useCallback(() => {
-    if (resolvedMode.type !== "overview") return;
-    const scale = SALON_WALL_STEP_SCALE;
-    const bounds = getPanBounds(layout, scale, stageSize);
-    if (bounds.max <= 0) return;
-    const visibleWidth = stageSize.width / scale;
-    const centeredPan = Math.min(
-      Math.max((layout.sceneWidth - visibleWidth) / 2, bounds.min),
-      bounds.max,
-    );
+    if (resolvedMode.type !== "overview" || !stepView.canScroll) return;
     animate();
-    setMode({ type: "wall", scale, pan: centeredPan });
+    setMode({ type: "wall", scale: stepView.scale, pan: stepView.pan });
     dismissHint();
-  }, [animate, dismissHint, layout, resolvedMode, stageSize]);
+  }, [animate, dismissHint, resolvedMode, stepView]);
 
   const openFocus = useCallback(
     (index: number) => {
@@ -399,9 +400,24 @@ export function SalonCameraRoom({
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     if (focusedIndex !== null) return;
-    if (resolvedMode.type !== "wall") return;
     if ((event.target as HTMLElement).closest("[data-camera-caption]")) return;
 
+    if (resolvedMode.type === "overview") {
+      if (!stepView.canScroll) return;
+      dragRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startPan: stepView.pan,
+        scale: stepView.scale,
+        moved: false,
+        captured: false,
+      };
+      setAnimateCamera(false);
+      dismissHint();
+      return;
+    }
+
+    if (resolvedMode.type !== "wall") return;
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -828,7 +844,7 @@ export function SalonCameraRoom({
               <span>
                 <span className="hidden sm:inline">
                   {canScroll
-                    ? "Scroll to explore · select a work to zoom"
+                    ? "Scroll or drag to explore · select a work to zoom"
                     : "Select a work to zoom"}
                 </span>
                 <span className="sm:hidden">
