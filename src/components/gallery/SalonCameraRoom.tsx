@@ -106,6 +106,11 @@ export function SalonCameraRoom({
       ? getFocusCamera(layout, resolvedMode.index)
       : getWallCamera(layout, resolvedMode.pan);
 
+  const currentWallPan =
+    resolvedMode.type === "wall"
+      ? resolvedMode.pan
+      : getPanForIndex(layout, resolvedMode.index);
+
   const dismissHint = useCallback(() => setShowHint(false), []);
 
   const animate = useCallback(() => {
@@ -134,6 +139,23 @@ export function SalonCameraRoom({
       dismissHint();
     },
     [dismissHint, initialPan, layout, mode],
+  );
+
+  const smoothPanBy = useCallback(
+    (delta: number) => {
+      if (mode?.type === "focus") return;
+      const basePan =
+        mode?.type === "wall"
+          ? getWallCamera(layout, mode.pan).pan
+          : initialPan;
+      animate();
+      setMode({
+        type: "wall",
+        pan: getWallCamera(layout, basePan + delta).pan,
+      });
+      dismissHint();
+    },
+    [animate, dismissHint, initialPan, layout, mode],
   );
 
   const openFocus = useCallback(
@@ -396,7 +418,7 @@ export function SalonCameraRoom({
       stepFocus(direction);
       return;
     }
-    panBy(direction * stageSize.width * 0.35);
+    smoothPanBy(direction * stageSize.width * 0.42);
   };
 
   const sceneStyle: CSSProperties = {
@@ -447,6 +469,7 @@ export function SalonCameraRoom({
           onKeyDown={handleKeyDown}
         >
           <div className="camera-rail" aria-hidden="true" />
+          <div className="camera-baseboard" aria-hidden="true" />
 
           <div
             className="camera-scene"
@@ -499,7 +522,7 @@ export function SalonCameraRoom({
                     data-focused-artwork={isFocused ? "true" : undefined}
                   >
                     <span
-                      className="camera-frame-outer"
+                      className={`camera-frame-outer ${piece.frameStyleKey ? `camera-frame-${piece.frameStyleKey}` : ""}`}
                       style={
                         {
                           padding: piece.border,
@@ -507,17 +530,59 @@ export function SalonCameraRoom({
                         } as CSSProperties
                       }
                     >
-                      <span
-                        className="camera-mat"
-                        style={
-                          {
-                            padding: piece.mat,
-                            background: piece.matColor,
-                          } as CSSProperties
-                        }
-                      >
+                      {piece.hasMat ? (
                         <span
-                          className="camera-media"
+                          className="camera-mat"
+                          style={
+                            {
+                              padding: piece.mat,
+                              background: piece.matColor,
+                            } as CSSProperties
+                          }
+                        >
+                          <span
+                            className="camera-media"
+                            style={{
+                              width: piece.mediaWidth,
+                              height: piece.mediaHeight,
+                            }}
+                          >
+                            {sources.src && !failed ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={sources.src}
+                                srcSet={sources.srcSet}
+                                sizes={`${Math.round(piece.width * 1.6)}px`}
+                                alt={artwork.alt_text || artwork.title}
+                                draggable={false}
+                                loading={
+                                  piece.index < 6 ? "eager" : "lazy"
+                                }
+                                fetchPriority={
+                                  piece.index === 0 ? "high" : "auto"
+                                }
+                                decoding="async"
+                                data-camera-artwork-id={artwork.id}
+                                onLoad={(event) =>
+                                  recordNaturalAspect(
+                                    artwork,
+                                    event.currentTarget,
+                                  )
+                                }
+                                onError={() => markImageFailed(artwork.id)}
+                              />
+                            ) : (
+                              <SalonArtworkPlaceholder
+                                artwork={artwork}
+                                numberLabel={piece.numberLabel}
+                                large={piece.mediaWidth > 260}
+                              />
+                            )}
+                          </span>
+                        </span>
+                      ) : (
+                        <span
+                          className="camera-media camera-media-fullbleed"
                           style={{
                             width: piece.mediaWidth,
                             height: piece.mediaHeight,
@@ -555,9 +620,14 @@ export function SalonCameraRoom({
                             />
                           )}
                         </span>
-                      </span>
+                      )}
                     </span>
                   </a>
+
+                  <span className="camera-tombstone-card" aria-hidden="true">
+                    <span className="camera-tombstone-num">{piece.numberLabel}</span>
+                    <span className="camera-tombstone-title">{artwork.title}</span>
+                  </span>
                 </div>
               );
             })}
@@ -572,6 +642,59 @@ export function SalonCameraRoom({
               onStep={stepFocus}
               backButtonRef={captionBackRef}
             />
+          )}
+
+          {focusedIndex === null && (
+            <>
+              {currentWallPan > layout.panMin + 12 && (
+                <button
+                  type="button"
+                  aria-label="Scroll left along the salon wall"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    smoothPanBy(-stageSize.width * 0.45);
+                  }}
+                  className="camera-nav-btn camera-nav-left absolute left-3 top-1/2 z-20 hidden -translate-y-1/2 items-center justify-center rounded-full border border-border-strong/40 bg-paper/90 p-3 text-ink shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:border-accent hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="15 18 9 12 15 6" />
+                  </svg>
+                </button>
+              )}
+              {currentWallPan < layout.panMax - 12 && (
+                <button
+                  type="button"
+                  aria-label="Scroll right along the salon wall"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    smoothPanBy(stageSize.width * 0.45);
+                  }}
+                  className="camera-nav-btn camera-nav-right absolute right-3 top-1/2 z-20 hidden -translate-y-1/2 items-center justify-center rounded-full border border-border-strong/40 bg-paper/90 p-3 text-ink shadow-lg backdrop-blur-md transition-all hover:scale-105 hover:border-accent hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:inline-flex"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+              )}
+            </>
           )}
 
           <div
