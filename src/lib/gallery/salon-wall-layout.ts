@@ -553,6 +553,8 @@ export function buildSalonWallLayout(
   }
 
   const innerGap = Math.round(clamp(14 * sizeScale, 8, 18));
+  // Kept tight: the camera's step-in scale supplies the side-to-side travel,
+  // so the overview stays dense instead of turning into a field of gaps.
   const clusterGap = Math.round(clamp(52 * sizeScale, 28, 64));
   const stagger = Math.round(clamp(22 * sizeScale, 10, 28));
 

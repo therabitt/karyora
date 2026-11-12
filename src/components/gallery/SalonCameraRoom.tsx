@@ -28,6 +28,7 @@ import {
   getPanBounds,
   getPanForIndex,
   getWallCamera,
+  SALON_WALL_STEP_SCALE,
 } from "@/lib/gallery/salon-wall-camera";
 import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 import { formatArtworkCategory } from "@/lib/utils/artwork-labels";
@@ -59,6 +60,7 @@ interface DragState {
   startPan: number;
   scale: number;
   moved: boolean;
+  captured: boolean;
 }
 
 const DEFAULT_STAGE: StageSize = { width: 1440, height: 760 };
@@ -161,6 +163,8 @@ export function SalonCameraRoom({
       : { min: 0, max: 0 };
   const currentWallPan =
     resolvedMode.type === "wall" ? resolvedMode.pan : 0;
+  const canScroll =
+    getPanBounds(layout, SALON_WALL_STEP_SCALE, stageSize).max > 0;
 
   const dismissHint = useCallback(() => setShowHint(false), []);
 
@@ -204,12 +208,12 @@ export function SalonCameraRoom({
 
   const enterWallFromOverview = useCallback(() => {
     if (resolvedMode.type !== "overview") return;
-    // If the whole hang already fits, there is nothing useful to pan to.
-    if (layout.sceneWidth <= stageSize.width) return;
-    const scale = 1;
+    const scale = SALON_WALL_STEP_SCALE;
     const bounds = getPanBounds(layout, scale, stageSize);
+    if (bounds.max <= 0) return;
+    const visibleWidth = stageSize.width / scale;
     const centeredPan = Math.min(
-      Math.max((layout.sceneWidth - stageSize.width) / 2, bounds.min),
+      Math.max((layout.sceneWidth - visibleWidth) / 2, bounds.min),
       bounds.max,
     );
     animate();
@@ -319,7 +323,7 @@ export function SalonCameraRoom({
         return;
       }
       event.preventDefault();
-      if (focusedIndex !== null || animateCamera) return;
+      if (focusedIndex !== null) return;
       if (resolvedMode.type === "overview") {
         enterWallFromOverview();
         return;
@@ -335,7 +339,6 @@ export function SalonCameraRoom({
     stage.addEventListener("wheel", handleWheel, { passive: false });
     return () => stage.removeEventListener("wheel", handleWheel);
   }, [
-    animateCamera,
     enterWallFromOverview,
     focusedIndex,
     panTo,
@@ -405,17 +408,32 @@ export function SalonCameraRoom({
       startPan: resolvedMode.pan,
       scale: resolvedMode.scale,
       moved: false,
+      captured: false,
     };
     setAnimateCamera(false);
     dismissHint();
-    event.currentTarget.setPointerCapture(event.pointerId);
   };
 
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     const distance = event.clientX - drag.startX;
-    if (Math.abs(distance) > 4) drag.moved = true;
+    if (Math.abs(distance) > 4) {
+      drag.moved = true;
+      // Capture only once the gesture is clearly a drag. Capturing on
+      // pointerdown retargets the following click to the stage and swallows
+      // normal "click a frame to zoom" interactions.
+      if (!drag.captured) {
+        try {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          drag.captured = true;
+        } catch {
+          // The pointer may already be gone; the gesture can simply stop.
+        }
+      }
+    } else {
+      return;
+    }
     const bounds = getPanBounds(layout, drag.scale, stageSize);
     setMode({
       type: "wall",
@@ -431,7 +449,7 @@ export function SalonCameraRoom({
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+    if (drag.captured && event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
     if (drag.moved) {
@@ -480,7 +498,7 @@ export function SalonCameraRoom({
   ) => {
     if (focusedIndex !== null || justClosedRef.current) return;
     if (!event.currentTarget.matches(":focus-visible")) return;
-    if (resolvedMode.type === "overview" && layout.sceneWidth <= stageSize.width) {
+    if (resolvedMode.type === "overview" && !canScroll) {
       dismissHint();
       return;
     }
@@ -807,7 +825,16 @@ export function SalonCameraRoom({
             aria-hidden="true"
           >
             {resolvedMode.type === "overview" ? (
-              <span>Select a work to step closer</span>
+              <span>
+                <span className="hidden sm:inline">
+                  {canScroll
+                    ? "Scroll to explore · select a work to zoom"
+                    : "Select a work to zoom"}
+                </span>
+                <span className="sm:hidden">
+                  Select a work to step closer
+                </span>
+              </span>
             ) : (
               <>
                 <span className="hidden sm:inline">

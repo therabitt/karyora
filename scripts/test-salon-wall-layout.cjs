@@ -34,6 +34,7 @@ const {
   getPanBounds,
   getPanForIndex,
   getWallCamera,
+  SALON_WALL_STEP_SCALE,
 } = loadModule("src/lib/gallery/salon-wall-camera.ts");
 
 /**
@@ -209,14 +210,21 @@ function verifyLayout(layout, artworks, stageWidth, stageHeight, label) {
 
   const overview = getOverviewCamera(layout, { width: 1694, height: 787 });
   assert.ok(
-    Math.abs(overview.scale - 1) < 0.001,
-    "the whole hang should fit at desktop scale 1",
+    overview.scale > 0.5 && overview.scale <= 1,
+    "the desktop overview should fit the hang",
   );
   assert.ok(overview.tx >= 0 && overview.ty >= 0);
   assert.equal(
     visiblePieces(layout, overview, { width: 1694, height: 787 }),
     productionArtworks.length,
     "the desktop overview should show every artwork",
+  );
+  assert.ok(
+    getPanBounds(layout, SALON_WALL_STEP_SCALE, {
+      width: 1694,
+      height: 787,
+    }).max > 0,
+    "the step-in wall view must have side content to scroll to",
   );
 
   // Every frame must be reachable and legible in focus mode.

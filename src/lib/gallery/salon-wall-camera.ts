@@ -31,6 +31,13 @@ const MIN_SCALE = 0.12;
 const MAX_FOCUS_SCALE = 8;
 const MAX_SOURCE_EDGE = 1600;
 
+/**
+ * First scroll / "step closer" framing. The overview shows the whole hang;
+ * this scale gives the camera enough extra width to travel sideways while the
+ * register composition stays intact.
+ */
+export const SALON_WALL_STEP_SCALE = 1.2;
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
 }
