@@ -61,10 +61,15 @@ interface DragState {
   scale: number;
   moved: boolean;
   captured: boolean;
+  fromOverview: boolean;
+  stepped: boolean;
 }
 
 const DEFAULT_STAGE: StageSize = { width: 1440, height: 760 };
 const TRANSITION_MS = 780;
+const STEP_TRANSITION_MS = 520;
+const PAN_TRANSITION_MS = 220;
+const DRAG_STEP_TRANSITION_MS = 240;
 const FOCUSED_IMAGE_SIZES = "(min-width: 1280px) 60vw, 92vw";
 
 export function SalonCameraRoom({
@@ -74,7 +79,7 @@ export function SalonCameraRoom({
 }: SalonCameraRoomProps) {
   const [stageSize, setStageSize] = useState<StageSize>(DEFAULT_STAGE);
   const [mode, setMode] = useState<CameraMode | null>(null);
-  const [animateCamera, setAnimateCamera] = useState(false);
+  const [cameraTransitionMs, setCameraTransitionMs] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [ready, setReady] = useState(false);
@@ -177,23 +182,39 @@ export function SalonCameraRoom({
 
   const dismissHint = useCallback(() => setShowHint(false), []);
 
-  const animate = useCallback(() => {
-    setAnimateCamera(true);
+  const getStepPanForAnchor = useCallback(
+    (anchorX?: number) => {
+      if (!stepView.canScroll || anchorX === undefined) {
+        return stepView.pan;
+      }
+      const overview = getOverviewCamera(layout, stageSize);
+      const sceneX = (anchorX - overview.tx) / overview.scale;
+      const pan = sceneX - anchorX / stepView.scale;
+      return Math.min(
+        Math.max(pan, stepView.bounds.min),
+        stepView.bounds.max,
+      );
+    },
+    [layout, stageSize, stepView],
+  );
+
+  const animate = useCallback((duration = TRANSITION_MS) => {
+    setCameraTransitionMs(duration);
     if (animateTimerRef.current !== null) {
       window.clearTimeout(animateTimerRef.current);
     }
     animateTimerRef.current = window.setTimeout(() => {
-      setAnimateCamera(false);
+      setCameraTransitionMs(0);
       animateTimerRef.current = null;
-    }, TRANSITION_MS);
+    }, duration);
   }, []);
 
   const panTo = useCallback(
-    (nextPan: number, smooth: boolean) => {
+    (nextPan: number, duration: number) => {
       if (resolvedMode.type !== "wall") return;
       const bounds = getPanBounds(layout, resolvedMode.scale, stageSize);
-      if (smooth) animate();
-      else setAnimateCamera(false);
+      if (duration > 0) animate(duration);
+      else setCameraTransitionMs(0);
       setMode({
         type: "wall",
         scale: resolvedMode.scale,
@@ -209,18 +230,31 @@ export function SalonCameraRoom({
       if (resolvedMode.type !== "wall") return;
       panTo(
         resolvedMode.pan + screenDelta / resolvedMode.scale,
-        true,
+        STEP_TRANSITION_MS,
       );
     },
     [panTo, resolvedMode],
   );
 
-  const enterWallFromOverview = useCallback(() => {
-    if (resolvedMode.type !== "overview" || !stepView.canScroll) return;
-    animate();
-    setMode({ type: "wall", scale: stepView.scale, pan: stepView.pan });
-    dismissHint();
-  }, [animate, dismissHint, resolvedMode, stepView]);
+  const enterWallFromOverview = useCallback(
+    (anchorX?: number) => {
+      if (resolvedMode.type !== "overview" || !stepView.canScroll) return;
+      animate(STEP_TRANSITION_MS);
+      setMode({
+        type: "wall",
+        scale: stepView.scale,
+        pan: getStepPanForAnchor(anchorX),
+      });
+      dismissHint();
+    },
+    [
+      animate,
+      dismissHint,
+      getStepPanForAnchor,
+      resolvedMode,
+      stepView,
+    ],
+  );
 
   const openFocus = useCallback(
     (index: number) => {
@@ -326,7 +360,7 @@ export function SalonCameraRoom({
       event.preventDefault();
       if (focusedIndex !== null) return;
       if (resolvedMode.type === "overview") {
-        enterWallFromOverview();
+        enterWallFromOverview(event.clientX);
         return;
       }
       if (resolvedMode.type !== "wall") return;
@@ -334,7 +368,10 @@ export function SalonCameraRoom({
         Math.abs(event.deltaX) > Math.abs(event.deltaY)
           ? event.deltaX
           : event.deltaY;
-      panTo(resolvedMode.pan + delta / resolvedMode.scale, false);
+      panTo(
+        resolvedMode.pan + delta / resolvedMode.scale,
+        PAN_TRANSITION_MS,
+      );
     };
 
     stage.addEventListener("wheel", handleWheel, { passive: false });
@@ -407,12 +444,14 @@ export function SalonCameraRoom({
       dragRef.current = {
         pointerId: event.pointerId,
         startX: event.clientX,
-        startPan: stepView.pan,
+        startPan: getStepPanForAnchor(event.clientX),
         scale: stepView.scale,
         moved: false,
         captured: false,
+        fromOverview: true,
+        stepped: false,
       };
-      setAnimateCamera(false);
+      setCameraTransitionMs(0);
       dismissHint();
       return;
     }
@@ -425,8 +464,10 @@ export function SalonCameraRoom({
       scale: resolvedMode.scale,
       moved: false,
       captured: false,
+      fromOverview: false,
+      stepped: true,
     };
-    setAnimateCamera(false);
+    setCameraTransitionMs(0);
     dismissHint();
   };
 
@@ -450,6 +491,15 @@ export function SalonCameraRoom({
     } else {
       return;
     }
+
+    if (drag.fromOverview && !drag.stepped) {
+      // Ease into the scrollable step while the pointer is already moving, so
+      // the wall does not snap from the overview to the closer framing.
+      drag.stepped = true;
+      drag.scale = stepView.scale;
+      animate(DRAG_STEP_TRANSITION_MS);
+    }
+
     const bounds = getPanBounds(layout, drag.scale, stageSize);
     setMode({
       type: "wall",
@@ -518,9 +568,19 @@ export function SalonCameraRoom({
       dismissHint();
       return;
     }
-    const scale = resolvedMode.type === "wall" ? resolvedMode.scale : 1;
-    const pan = getPanForIndex(layout, index, scale, stageSize);
-    animate();
+    const anchorRect = event.currentTarget.getBoundingClientRect();
+    const anchorX = anchorRect.left + anchorRect.width / 2;
+    const scale =
+      resolvedMode.type === "wall" ? resolvedMode.scale : stepView.scale;
+    const pan =
+      resolvedMode.type === "overview"
+        ? getStepPanForAnchor(anchorX)
+        : getPanForIndex(layout, index, scale, stageSize);
+    animate(
+      resolvedMode.type === "overview"
+        ? STEP_TRANSITION_MS
+        : PAN_TRANSITION_MS,
+    );
     setMode({ type: "wall", scale, pan });
     dismissHint();
   };
@@ -564,9 +624,10 @@ export function SalonCameraRoom({
     height: layout.sceneHeight,
     transform: `translate3d(${camera.tx}px, ${camera.ty}px, 0) scale(${camera.scale})`,
     transformOrigin: "0 0",
-    transition: animateCamera
-      ? "transform 780ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 500ms ease"
-      : "opacity 500ms ease",
+    transition:
+      cameraTransitionMs > 0
+        ? `transform ${cameraTransitionMs}ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 500ms ease`
+        : "opacity 500ms ease",
     opacity: ready ? 1 : 0,
     willChange: "transform",
   };
@@ -823,7 +884,7 @@ export function SalonCameraRoom({
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  animate();
+                  animate(STEP_TRANSITION_MS);
                   setMode({ type: "overview" });
                 }}
                 className="absolute bottom-16 right-4 z-20 inline-flex min-h-10 items-center gap-2 rounded-full border border-border-strong/40 bg-paper/92 px-4 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-ink shadow-lg backdrop-blur-md transition-colors hover:border-accent hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:bottom-4"
