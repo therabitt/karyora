@@ -38,6 +38,33 @@ const MAX_SOURCE_EDGE = 1600;
  */
 export const SALON_WALL_STEP_SCALE = 1.2;
 
+/**
+ * Calculates a comfortable stroll scale that guarantees all registers stay
+ * fully within the vertical viewport without any top or bottom frames being clipped.
+ */
+export function getStrollScale(
+  layout: SalonWallLayout,
+  viewport: SalonWallViewport,
+): number {
+  const safe = safeViewport(viewport);
+  const overview = getOverviewCamera(layout, safe);
+  // Guarantee vertical clearance so no frames are clipped at top or bottom:
+  // reserve comfortable vertical margin so artworks breathe inside the room.
+  const availableHeight = safe.height * 0.90;
+  const maxVerticalScale = availableHeight / Math.max(1, layout.sceneHeight);
+
+  if (safe.width >= 1024) {
+    const desiredScale = Math.max(overview.scale * 1.10, 1.05);
+    return clamp(Math.min(desiredScale, maxVerticalScale), overview.scale, 1.3);
+  }
+
+  // Mobile / tablet:
+  const fitHeightScale = (safe.height * 0.88) / Math.max(1, layout.sceneHeight);
+  const widthTargetScale =
+    safe.width / Math.max(1, sceneWidth(layout) * 0.45);
+  return clamp(Math.min(fitHeightScale, widthTargetScale), 0.7, 2.0);
+}
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.min(Math.max(value, minimum), maximum);
 }
@@ -172,9 +199,10 @@ export function getFocusCamera(
 }
 
 /**
- * Default framing by viewport class:
- * - desktop: the whole hang,
- * - tablet/phone: a closer curated band, with the overview still available.
+ * Default framing:
+ * - Desktop: Overview framing displaying the entire dense, curated salon wall.
+ * - Tablet/phone: A closer curated band so artworks remain legible, with full
+ *   overview accessible via the header toggle.
  */
 export function getDefaultCamera(
   layout: SalonWallLayout,
@@ -189,12 +217,12 @@ export function getDefaultCamera(
   // than the overview. A phone should see several works, not one giant frame.
   const fitHeightScale = (safe.height * 0.92) / sceneHeight(layout);
   const widthTargetScale =
-    safe.width / Math.max(1, sceneWidth(layout) * 0.5);
-  const scale = clamp(Math.min(fitHeightScale, widthTargetScale), 1, 2.1);
+    safe.width / Math.max(1, sceneWidth(layout) * 0.45);
+  const scale = clamp(Math.min(fitHeightScale, widthTargetScale), 0.7, 2.1);
   return {
     mode: "wall",
     scale,
-    pan: 0,
+    pan: layout.initialPan ?? 0,
   };
 }
 

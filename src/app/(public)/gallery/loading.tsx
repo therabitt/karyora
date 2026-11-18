@@ -29,17 +29,17 @@ const SKELETON_ROWS: { width: string; height: string }[][] = [
 export default function GalleryLoading() {
   return (
     <div
-      className="camera-room relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink"
+      className="camera-room relative h-[100dvh] min-h-[100svh] w-full overflow-hidden bg-paper text-ink"
       role="status"
       aria-label="Loading the Salon Wall"
     >
-      <header className="relative flex h-16 shrink-0 items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
-        <div className="w-11 sm:w-12" aria-hidden="true" />
+      <header className="pointer-events-none absolute left-0 right-0 top-0 z-10 flex h-16 items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
+        <div className="h-9 w-24 animate-pulse rounded-full bg-surface-muted/60" aria-hidden="true" />
         <div className="absolute left-1/2 top-1/2 h-7 w-52 -translate-x-1/2 -translate-y-1/2 animate-pulse rounded-xs bg-surface-muted sm:h-8 sm:w-64" />
         <div className="h-10 w-10 animate-pulse rounded-full bg-surface-muted" />
       </header>
 
-      <main className="relative min-h-0 flex-1 overflow-hidden">
+      <main className="relative h-full w-full overflow-hidden">
         <div className="absolute inset-0 flex flex-col justify-center gap-3 px-[5vw] sm:gap-5 sm:px-[7vw]">
           {SKELETON_ROWS.map((row, rowIndex) => (
             <div

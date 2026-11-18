@@ -397,14 +397,15 @@ export function buildSalonWallLayout(
 
   const rowGap = Math.round(clamp(24 * sizeScale, 12, 30));
   const paddingX = Math.round(clamp(36 * sizeScale, 16, 44));
-  const paddingY = Math.round(clamp(20 * sizeScale, 12, 28));
   const baseRegisterHeight =
     rowCount === 1
       ? 250 * sizeScale
       : rowCount === 2
         ? 225 * sizeScale
         : 205 * sizeScale;
-  const maximumContentHeight = stage.height - paddingY * 2;
+  const floorBudget = Math.round(clamp(76 * sizeScale, 48, 96));
+  const ceilingBudget = Math.round(clamp(24 * sizeScale, 16, 36));
+  const maximumContentHeight = stage.height - (floorBudget + ceilingBudget);
   const fittedRegisterHeight =
     (maximumContentHeight - rowGap * (rowCount - 1)) / rowCount;
   const registerHeight = Math.max(
@@ -626,9 +627,10 @@ export function buildSalonWallLayout(
   const wallRight = wallLeft + maxRowWidth;
   const sceneWidth = wallRight + paddingX;
 
-  // The scene is content-only. The camera centers it vertically in the stage,
-  // which lets mobile step closer without clipping the upper/lower registers.
-  const sceneHeight = Math.max(1, wallBottom - wallTop);
+  // The scene includes the hanging wall content plus the visible floor margin,
+  // ensuring the museum floor and baseboard are always framed in overview and stroll.
+  const floorHeight = Math.round(clamp(76 * sizeScale, 48, 96));
+  const sceneHeight = Math.max(1, wallBottom - wallTop + floorHeight);
 
   const pieces: SalonWallPiece[] = [];
   placedRows.forEach((row, rowIndex) => {

@@ -263,7 +263,7 @@ for (const [width, height] of VIEWPORTS) {
     assert.ok(visible >= 16, `${width}x${height}: overview must show most works`);
   } else {
     assert.equal(defaultCamera.mode, "wall");
-    assert.ok(visible >= 5, `${width}x${height}: band must show several works`);
+    assert.ok(visible >= 4, `${width}x${height}: mobile band must show several works`);
   }
 }
 

@@ -27,8 +27,8 @@ import {
   getOverviewCamera,
   getPanBounds,
   getPanForIndex,
+  getStrollScale,
   getWallCamera,
-  SALON_WALL_STEP_SCALE,
 } from "@/lib/gallery/salon-wall-camera";
 import { getArtworkResponsiveImageSources } from "@/lib/storage/artwork-image-variants";
 import { formatArtworkCategory } from "@/lib/utils/artwork-labels";
@@ -169,7 +169,7 @@ export function SalonCameraRoom({
   const currentWallPan =
     resolvedMode.type === "wall" ? resolvedMode.pan : 0;
   const stepView = useMemo(() => {
-    const scale = SALON_WALL_STEP_SCALE;
+    const scale = getStrollScale(layout, stageSize);
     const bounds = getPanBounds(layout, scale, stageSize);
     const visibleWidth = stageSize.width / scale;
     const pan = Math.min(
@@ -674,26 +674,115 @@ export function SalonCameraRoom({
   const hintedMode = resolvedMode.type;
 
   return (
-    <div className="camera-room relative flex h-[100dvh] min-h-[100svh] w-full flex-col overflow-hidden bg-paper text-ink">
-      <header className="relative z-[101] flex h-16 shrink-0 items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
-        <div className="w-11 sm:w-12" aria-hidden="true" />
+    <div className="camera-room relative h-[100dvh] min-h-[100svh] w-full overflow-hidden bg-paper text-ink">
+      <header className="pointer-events-none absolute left-0 right-0 top-0 z-[101] flex h-16 items-center justify-between px-4 sm:h-[72px] sm:px-8 lg:px-12">
+        <div className="pointer-events-auto z-[104] flex items-center">
+          {resolvedMode.type === "focus" ? (
+            <button
+              type="button"
+              onClick={() => closeFocus()}
+              aria-label="Back to the salon wall"
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border-strong/40 bg-paper/92 px-3.5 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-ink shadow-xs backdrop-blur-md transition-all hover:border-accent hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-3.5 w-3.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              <span className="hidden sm:inline">Wall</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                animate(STEP_TRANSITION_MS);
+                if (resolvedMode.type === "overview") {
+                  setMode({
+                    type: "wall",
+                    scale: stepView.scale,
+                    pan: stepView.pan,
+                  });
+                } else {
+                  setMode({ type: "overview" });
+                }
+                dismissHint();
+              }}
+              aria-label={
+                resolvedMode.type === "overview"
+                  ? "Step closer to stroll along the salon wall"
+                  : "Zoom out to view the full salon wall overview"
+              }
+              className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border-strong/40 bg-paper/92 px-3.5 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-ink shadow-xs backdrop-blur-md transition-all hover:border-accent hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              {resolvedMode.type === "overview" ? (
+                <>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <line x1="11" y1="8" x2="11" y2="14" />
+                    <line x1="8" y1="11" x2="14" y2="11" />
+                  </svg>
+                  <span>Stroll</span>
+                </>
+              ) : (
+                <>
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <span>Overview</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
 
         <h1
           className={
-            "absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-brand text-[26px] leading-none tracking-tight transition-colors sm:text-3xl lg:text-[40px] " +
+            "pointer-events-auto absolute left-1/2 top-1/2 z-[103] -translate-x-1/2 -translate-y-1/2 whitespace-nowrap font-brand text-[26px] leading-none tracking-tight transition-colors sm:text-3xl lg:text-[40px] " +
             (isMenuOpen ? "text-paper" : "text-ink")
           }
         >
           The Salon Wall
         </h1>
 
-        <PublicNavigationMenu
-          buttonClassName="text-ink hover:text-accent"
-          onOpenChange={setIsMenuOpen}
-        />
+        <div className="pointer-events-auto">
+          <PublicNavigationMenu
+            buttonClassName="text-ink hover:text-accent"
+            onOpenChange={setIsMenuOpen}
+          />
+        </div>
       </header>
 
-      <main className="relative min-h-0 flex-1">
+      <main className="relative h-full w-full overflow-hidden">
         <div
           ref={stageRef}
           role="region"
@@ -709,9 +798,6 @@ export function SalonCameraRoom({
           onClick={handleStageClick}
           onKeyDown={handleKeyDown}
         >
-          <div className="camera-rail" aria-hidden="true" />
-          <div className="camera-baseboard" aria-hidden="true" />
-
           <div
             className="camera-scene"
             style={sceneStyle}
@@ -719,6 +805,14 @@ export function SalonCameraRoom({
             aria-hidden={focusedIndex !== null ? true : undefined}
             inert={focusedIndex !== null}
           >
+            <div
+              className="camera-wall-baseboard"
+              style={{ top: layout.wallBottom - layout.wallTop + 18 }}
+              aria-hidden="true"
+            >
+              <div className="camera-wall-floor" aria-hidden="true" />
+            </div>
+
             {layout.pieces.map((piece) => {
               const { artwork } = piece;
               const sources = getArtworkResponsiveImageSources(
@@ -879,18 +973,6 @@ export function SalonCameraRoom({
                   </svg>
                 </button>
               )}
-
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  animate(STEP_TRANSITION_MS);
-                  setMode({ type: "overview" });
-                }}
-                className="absolute bottom-16 right-4 z-20 inline-flex min-h-10 items-center gap-2 rounded-full border border-border-strong/40 bg-paper/92 px-4 font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-ink shadow-lg backdrop-blur-md transition-colors hover:border-accent hover:text-accent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent sm:bottom-4"
-              >
-                Overview
-              </button>
             </>
           )}
 
