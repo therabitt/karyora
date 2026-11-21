@@ -125,10 +125,27 @@ export function getWallCamera(
     safe.width > sceneWidth(layout) * safeScale
       ? (safe.width - sceneWidth(layout) * safeScale) / 2
       : 0;
+
+  // Shift the scene downward so there is comfortable wall breathing room
+  // above the artworks and the floor/baseboard remain visible at the bottom.
+  // The header overlays ~48 px at the top; we compensate by pushing the scene
+  // down so the visual centre of the composition sits slightly below the
+  // geometric centre, giving equal perceived weight to ceiling and floor.
+  const totalSceneH = sceneHeight(layout) * safeScale;
+  const rawTy = (safe.height - totalSceneH) / 2;
+  // headerCompensation: half the header height so the artwork band is centred
+  // in the remaining visible area (below header), not the full stage.
+  const headerH = 48;
+  const headerCompensation = headerH / 2;
+  // Extra wall-top breathing: push another small fraction down so dinding atas
+  // has more presence than a pure geometric centre would give.
+  const wallBreath = totalSceneH * 0.03;
+  const ty = rawTy + headerCompensation + wallBreath;
+
   return {
     scale: safeScale,
     tx: centered - clampedPan * safeScale,
-    ty: (safe.height - sceneHeight(layout) * safeScale) / 2,
+    ty,
   };
 }
 
