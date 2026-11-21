@@ -264,16 +264,22 @@ Image dimensions are stored as nullable image_width/image_height presentation me
 
 ## Gallery: The Salon Wall camera room
 
-The public gallery at `/gallery` is a single continuous horizontal wall seen through a camera, not a scrolling catalog.
+The public gallery at `/gallery` is a single continuous horizontal salon wall seen through a camera room, not a scrolling catalog.
 
-- All published works are loaded into one wall. There is no pagination, filtering, search, sort, counter, wall plaque, or footer.
-- A centered **The Salon Wall** title and the shared hamburger navigation replace the old gallery masthead and navbar.
-- The layout is deterministic and computed in `src/lib/gallery/camera-wall-layout.ts`: varied frame sizes, vertical offsets, small rotations, and tonal frames. Artwork is `object-contain` inside a correctly proportioned mat and is never cropped.
+- All published works are loaded into one wall. There is no pagination, search, sort, counter, or footer. Chromatic wayfinding / palette color filter system is explicitly canceled.
+- A centered **The Salon Wall** title, the composite Overview / Stroll / Wall navigation control in the top-left header, and the shared hamburger navigation replace the old gallery masthead and navbar.
+- The layout is deterministic and computed via a 2D Curated Ensemble algorithm in `src/lib/gallery/salon-wall-layout.ts`: anchor works anchor varied clusters, supporting works sit at eye level and tiered registers, and accent pieces nest vertically without rigid row-aligned conveyors. Varied frame moldings, mats, and tonal borders give an authentic museum salon feel. Artwork is `object-contain` inside a correctly proportioned mat and is never cropped.
+- Room atmosphere in `src/app/globals.css`: warm plaster wall gradient, top-down ambient light, dark vignette edge dimming on the perimeter, warm wood/stone baseboard moulding, and an elevated gallery picture rail. Graph-paper grids and high-contrast white spotlights are avoided.
 - The wall starts at its left edge with a small gutter and ends at the last work. Vertical wheel and horizontal trackpad movement, pointer drag, touch swipe, and arrow keys pan the camera. The camera never wraps or loops.
-- Clicking or pressing Enter on a frame zooms the camera toward it. On wide screens the title/description sit in a fixed left caption panel; below 1280 px the caption becomes a bottom sheet. The camera's focal point sits close to the viewport centre while leaving the caption clear of the artwork.
-- While focused, previous/next moves to the adjacent work and stops at the ends. `Escape`, the close control, or clicking the wall outside the caption returns to the wall view. Focus is restored to the originating frame.
+- The default framing:
+  - On desktop (≥1024px), visitors enter in **Overview** mode: the complete curated salon wall is presented densely, filling ~75–85% of the viewport height with clear, legible artworks and zero gaping voids.
+  - On tablet/phone, visitors enter in a curated vertical band for optimal mobile legibility.
+  - The header control displays a "Stroll" button in overview to step into 1.2× scale, an "Overview" button when strolling, and a "← Wall" button when in focus mode. Vertical wheel, arrow keys, or clicking "Stroll" smoothly transitions into the wall stroll.
+- Pointer capture is claimed only after a gesture becomes a drag, so a simple click or tap always reaches the artwork and opens focus instead of being swallowed by the panner.
+- Clicking or pressing Enter on a frame zooms the camera toward it. On wide screens the title/description sit in a fixed left caption panel; below 1280 px the caption becomes a bottom sheet. The focus caption body uses clear editorial museum typography (`DM Sans` via `font-sans`), reserving script/handwriting for titles. The camera's focal point sits close to the viewport centre while leaving the caption clear of the artwork.
+- While focused, previous/next moves to the adjacent work and stops at the ends. `Escape`, the header "← Wall" button, or clicking the wall outside the caption returns to the wall view. Focus is restored to the originating frame.
 - `prefers-reduced-motion` removes camera and caption travel animations.
 - Each frame remains a real `/artworks/[slug]` link. A normal click is upgraded to the camera zoom; Ctrl/Cmd/Shift/Alt clicks navigate normally.
 - Public data still comes from `getAllPublishedArtworks` and only `public_image_path` is used. Responsive variants are selected through `getArtworkResponsiveImageSources`; legacy rows without dimensions fall back to natural image dimensions after load; failed images use the designed “Image unavailable” frame.
 
-Verification for this surface includes the wall at 360, 390, 768, 1024, 1279, 1280, and 1440 px; wheel, drag, touch swipe, arrow keys, Tab focus, `?item=`, both wall ends, zoom in/out, next/previous, outside-click close, the navigation menu, long caption content on mobile, and `npm run test:camera-wall-layout`. Do not claim a check that did not run.
+Verification for this surface includes the wall at 360, 390, 768, 1024, 1279, 1280, 1440, and 1694 px; wheel, drag, touch swipe, arrow keys, Tab focus, `?item=`, both wall ends, zoom in/out, next/previous, outside-click close, the navigation menu, long caption content on mobile, and `npm run test:salon-wall-layout`. Do not claim a check that did not run.

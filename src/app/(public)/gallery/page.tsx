@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 interface GalleryPageProps {
   searchParams: Promise<{
     item?: string;
+    artwork?: string;
   }>;
 }
 
@@ -40,6 +41,10 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
     Number.isFinite(itemNumber) && itemNumber > 0
       ? Math.floor(itemNumber) - 1
       : null;
+  const initialSlug =
+    typeof params.artwork === "string" && params.artwork.trim().length > 0
+      ? params.artwork.trim()
+      : null;
 
   const artworks = await getAllPublishedArtworks();
 
@@ -48,6 +53,10 @@ export default async function GalleryPage({ searchParams }: GalleryPageProps) {
   }
 
   return (
-    <SalonCameraRoom artworks={artworks} initialIndex={initialIndex} />
+    <SalonCameraRoom
+      artworks={artworks}
+      initialIndex={initialIndex}
+      initialSlug={initialSlug}
+    />
   );
 }

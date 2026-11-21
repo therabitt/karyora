@@ -9,13 +9,14 @@
     "lint": "eslint",
     "test:artwork-layout": "node scripts/test-artwork-layout.cjs",
     "test:artwork-interaction": "node scripts/test-artwork-interaction.cjs",
-    "test:camera-wall-layout": "node scripts/test-camera-wall-layout.cjs",
+    "test:camera-wall-layout": "node scripts/test-salon-wall-layout.cjs",
+    "test:salon-wall-layout": "node scripts/test-salon-wall-layout.cjs",
     "prebuild": "node --check scripts/backfill-artwork-responsive-images.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.118.0",
-    "next": "16.4.2",
+    "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",
@@ -28,7 +29,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.4.2",
+    "eslint-config-next": "16.4.6",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
